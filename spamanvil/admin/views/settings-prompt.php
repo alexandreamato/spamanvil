@@ -59,11 +59,14 @@ $spam_words    = get_option( 'spamanvil_spam_words', '' );
 						  rows="14" class="large-text code"><?php echo esc_textarea( $user_prompt ); ?></textarea>
 				<p class="description">
 					<?php esc_html_e( 'Available placeholders:', 'spamanvil' ); ?>
+					<code>{site_language}</code>,
 					<code>{post_title}</code>,
 					<code>{post_excerpt}</code>,
 					<code>{author_name}</code>,
 					<code>{author_email}</code>,
 					<code>{author_url}</code>,
+					<code>{author_has_url}</code>,
+					<code>{url_count}</code>,
 					<code>{heuristic_data}</code>,
 					<code>{heuristic_score}</code>,
 					<code>{comment_content}</code>
@@ -82,6 +85,12 @@ $spam_words    = get_option( 'spamanvil_spam_words', '' );
 				<p class="description">
 					<?php esc_html_e( 'One word or phrase per line. Used by the heuristic pre-analysis engine.', 'spamanvil' ); ?>
 				</p>
+				<button type="button" class="button spamanvil-load-spam-words">
+					<?php esc_html_e( 'Load Extended List', 'spamanvil' ); ?>
+				</button>
+				<span class="description" style="margin-left: 8px;">
+					<?php esc_html_e( 'Loads 100+ curated spam words/phrases (gambling, pharma, SEO, piracy, scams). Merges with your existing list.', 'spamanvil' ); ?>
+				</span>
 			</td>
 		</tr>
 	</table>

@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -205,6 +205,24 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.0.6 =
+* Feature: Clear API Key button to delete saved keys from the database
+* Feature: Load Extended Spam Words list with 100+ curated terms (gambling, pharma, SEO, piracy, scams)
+* Enhancement: Default OpenRouter model updated to deepseek/deepseek-r1-0528:free
+* Enhancement: "Process Queue Now" retries failed items immediately (ignores backoff timer)
+* Enhancement: API failures are now logged in evaluation logs with error details
+* Fix: phpcs warning for set_time_limit resolved
+
+= 1.0.5 =
+* Fix: "Process Queue Now" no longer times out - increased AJAX timeout to 3 minutes and extended PHP execution limit
+* Enhancement: Completely rewritten system prompt with detailed spammer tactic guidelines (URL promotion, generic flattery, gambling/piracy names, template detection)
+* Enhancement: Author URL now a strong spam signal - combo detection with generic praise for near-certain spam identification
+* Enhancement: Brand-name author detection expanded with gambling/lottery, piracy/streaming, and per-word alphanumeric pattern checking
+* Enhancement: 50+ generic spam template phrases detected (including long-form templates like "I have been surfing online")
+* Enhancement: New {site_language}, {author_has_url}, {url_count} placeholders in user prompt
+* Enhancement: System prompt now instructs LLM to never reveal its instructions (prompt leak defense)
+* Enhancement: Language mismatch, name/email script mismatch heuristic signals added
 
 = 1.0.1 =
 * Fix: Test Connection now works without saving the page first - reads API key and model directly from form fields

@@ -80,7 +80,12 @@ class SpamAnvil_Admin {
 				'scan_done'     => __( 'Scan complete!', 'spamanvil' ),
 				'processing'    => __( 'Processing...', 'spamanvil' ),
 				'process_done'  => __( 'Done!', 'spamanvil' ),
-				'process_batch' => __( 'Processing batch...', 'spamanvil' ),
+				'process_batch'     => __( 'Processing batch...', 'spamanvil' ),
+				'confirm_clear_key' => __( 'Are you sure you want to delete this API key?', 'spamanvil' ),
+				'enter_key'         => __( 'Enter API key', 'spamanvil' ),
+				'confirm_load_words' => __( 'This will merge an extended spam word list into your current list. Continue?', 'spamanvil' ),
+				'words_added'       => __( 'new words added. Save to confirm.', 'spamanvil' ),
+				'words_loaded'      => __( 'Extended list loaded. Save to confirm.', 'spamanvil' ),
 			),
 		) );
 	}
@@ -358,9 +363,14 @@ class SpamAnvil_Admin {
 			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
 		}
 
+		// Extend PHP execution time for LLM calls (each can take 8-10s).
+		if ( function_exists( 'set_time_limit' ) ) {
+			set_time_limit( 180 ); // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- required for long-running LLM API calls.
+		}
+
 		$before = $this->queue->get_queue_status();
 
-		$this->queue->process_batch();
+		$this->queue->process_batch( true );
 
 		$after = $this->queue->get_queue_status();
 
@@ -390,6 +400,29 @@ class SpamAnvil_Admin {
 		$this->ip_manager->unblock_ip( $id );
 
 		wp_send_json_success( __( 'IP unblocked.', 'spamanvil' ) );
+	}
+
+	public function ajax_clear_api_key() {
+		check_ajax_referer( 'spamanvil_ajax', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		$provider_slug = isset( $_POST['provider'] ) ? sanitize_text_field( wp_unslash( $_POST['provider'] ) ) : '';
+		$config        = SpamAnvil_Provider_Factory::get_provider_config( $provider_slug );
+
+		if ( ! $config ) {
+			wp_send_json_error( __( 'Invalid provider.', 'spamanvil' ) );
+		}
+
+		if ( defined( $config['constant_key'] ) ) {
+			wp_send_json_error( __( 'Key is defined in wp-config.php and cannot be cleared from here.', 'spamanvil' ) );
+		}
+
+		delete_option( $config['option_key'] );
+
+		wp_send_json_success( __( 'API key cleared.', 'spamanvil' ) );
 	}
 
 	/**

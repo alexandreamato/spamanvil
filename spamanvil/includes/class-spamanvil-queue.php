@@ -48,7 +48,13 @@ class SpamAnvil_Queue {
 		return $wpdb->insert_id;
 	}
 
-	public function process_batch() {
+	/**
+	 * Process a batch of queued items.
+	 *
+	 * @param bool $force When true (manual "Process Queue Now"), retry failed items
+	 *                    immediately regardless of backoff schedule.
+	 */
+	public function process_batch( $force = false ) {
 		// Prevent concurrent execution with a transient lock.
 		$lock_key = 'spamanvil_queue_lock';
 		if ( get_transient( $lock_key ) ) {
@@ -58,7 +64,7 @@ class SpamAnvil_Queue {
 
 		try {
 			$batch_size = (int) get_option( 'spamanvil_batch_size', 5 );
-			$items      = $this->claim_items( $batch_size );
+			$items      = $this->claim_items( $batch_size, $force );
 
 			foreach ( $items as $item ) {
 				$this->process_single( $item );
@@ -68,23 +74,36 @@ class SpamAnvil_Queue {
 		}
 	}
 
-	private function claim_items( $limit ) {
+	private function claim_items( $limit, $force = false ) {
 		global $wpdb;
 
 		$now = current_time( 'mysql' );
 
-		// Select queued items + failed items past retry_at, atomically claim them.
-		$items = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$this->table}
-				WHERE (status = 'queued')
-				   OR (status = 'failed' AND retry_at IS NOT NULL AND retry_at <= %s)
-				ORDER BY created_at ASC
-				LIMIT %d",
-				$now,
-				$limit
-			)
-		);
+		if ( $force ) {
+			// Manual trigger: grab all failed items immediately, ignore backoff.
+			$items = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$this->table}
+					WHERE status IN ('queued', 'failed')
+					ORDER BY created_at ASC
+					LIMIT %d",
+					$limit
+				)
+			);
+		} else {
+			// Cron: only grab failed items whose retry_at has passed.
+			$items = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$this->table}
+					WHERE (status = 'queued')
+					   OR (status = 'failed' AND retry_at IS NOT NULL AND retry_at <= %s)
+					ORDER BY created_at ASC
+					LIMIT %d",
+					$now,
+					$limit
+				)
+			);
+		}
 
 		if ( empty( $items ) ) {
 			return array();
@@ -124,18 +143,41 @@ class SpamAnvil_Queue {
 		$provider = $this->provider_factory->create_with_fallback();
 
 		if ( is_wp_error( $provider ) ) {
-			$this->handle_failure( $item, $provider->get_error_message() );
+			$error_msg = $provider->get_error_message();
+			$this->handle_failure( $item, $error_msg );
 			$this->stats->increment( 'llm_errors' );
+			$this->stats->log_evaluation( array(
+				'comment_id'        => $item->comment_id,
+				'score'             => null,
+				'provider'          => 'none',
+				'model'             => 'none',
+				'reason'            => 'Provider error: ' . $error_msg,
+				'heuristic_score'   => $item->heuristic_score,
+				'heuristic_details' => '',
+			) );
 			return;
 		}
 
 		// Call LLM.
-		$result = $provider->analyze( $system_prompt, $user_prompt );
+		$start_ms = microtime( true );
+		$result   = $provider->analyze( $system_prompt, $user_prompt );
+		$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
 		$this->stats->increment( 'llm_calls' );
 
 		if ( is_wp_error( $result ) ) {
-			$this->handle_failure( $item, $result->get_error_message() );
+			$error_msg = $result->get_error_message();
+			$this->handle_failure( $item, $error_msg );
 			$this->stats->increment( 'llm_errors' );
+			$this->stats->log_evaluation( array(
+				'comment_id'         => $item->comment_id,
+				'score'              => null,
+				'provider'           => get_option( 'spamanvil_primary_provider', '' ),
+				'model'              => '',
+				'reason'             => 'LLM error: ' . $error_msg,
+				'heuristic_score'    => $item->heuristic_score,
+				'heuristic_details'  => '',
+				'processing_time_ms' => $elapsed,
+			) );
 			return;
 		}
 
@@ -204,18 +246,90 @@ class SpamAnvil_Queue {
 		// Sanitize comment content for prompt - truncate oversized content.
 		$safe_content = $this->sanitize_for_prompt( $comment->comment_content );
 
+		// URL analysis for prompt context.
+		$author_has_url = ! empty( $comment->comment_author_url ) ? 'YES — be more critical of this comment' : 'No';
+		$url_count      = count( wp_extract_urls( $comment->comment_content ) );
+
 		$replacements = array(
+			'{site_language}'   => self::get_site_language_name(),
 			'{post_title}'      => $post ? $post->post_title : '',
 			'{post_excerpt}'    => $post ? wp_trim_words( $post->post_content, 50, '...' ) : '',
 			'{author_name}'     => $comment->comment_author,
 			'{author_email}'    => $comment->comment_author_email,
 			'{author_url}'      => $comment->comment_author_url,
+			'{author_has_url}'  => $author_has_url,
+			'{url_count}'       => $url_count,
 			'{heuristic_data}'  => $heuristic_data,
 			'{heuristic_score}' => $heuristic_analysis['score'],
 			'{comment_content}' => $safe_content,
 		);
 
 		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );
+	}
+
+	/**
+	 * Get human-readable site language name from WordPress locale.
+	 *
+	 * @return string Language name (e.g. "Portuguese (Brazil)", "English (US)").
+	 */
+	private static function get_site_language_name() {
+		$locale = get_locale();
+
+		$languages = array(
+			'en_US' => 'English (US)',
+			'en_GB' => 'English (UK)',
+			'en_AU' => 'English (Australia)',
+			'en_CA' => 'English (Canada)',
+			'pt_BR' => 'Portuguese (Brazil)',
+			'pt_PT' => 'Portuguese (Portugal)',
+			'es_ES' => 'Spanish (Spain)',
+			'es_MX' => 'Spanish (Mexico)',
+			'es_AR' => 'Spanish (Argentina)',
+			'fr_FR' => 'French (France)',
+			'fr_CA' => 'French (Canada)',
+			'de_DE' => 'German',
+			'de_AT' => 'German (Austria)',
+			'de_CH' => 'German (Switzerland)',
+			'it_IT' => 'Italian',
+			'nl_NL' => 'Dutch',
+			'ru_RU' => 'Russian',
+			'ja'    => 'Japanese',
+			'zh_CN' => 'Chinese (Simplified)',
+			'zh_TW' => 'Chinese (Traditional)',
+			'ko_KR' => 'Korean',
+			'ar'    => 'Arabic',
+			'hi_IN' => 'Hindi',
+			'tr_TR' => 'Turkish',
+			'pl_PL' => 'Polish',
+			'sv_SE' => 'Swedish',
+			'da_DK' => 'Danish',
+			'nb_NO' => 'Norwegian',
+			'fi'    => 'Finnish',
+			'he_IL' => 'Hebrew',
+			'th'    => 'Thai',
+			'vi'    => 'Vietnamese',
+			'id_ID' => 'Indonesian',
+			'uk'    => 'Ukrainian',
+			'cs_CZ' => 'Czech',
+			'el'    => 'Greek',
+			'ro_RO' => 'Romanian',
+			'hu_HU' => 'Hungarian',
+		);
+
+		if ( isset( $languages[ $locale ] ) ) {
+			return $languages[ $locale ];
+		}
+
+		// Fallback: try just the language part (e.g. 'es' from 'es_CL').
+		$lang = substr( $locale, 0, 2 );
+		foreach ( $languages as $code => $name ) {
+			if ( strpos( $code, $lang ) === 0 ) {
+				return $name;
+			}
+		}
+
+		// Last resort: return the locale code itself.
+		return $locale;
 	}
 
 	/**

@@ -86,6 +86,7 @@ class SpamAnvil {
 			add_action( 'wp_ajax_spamanvil_unblock_ip', array( $this->admin, 'ajax_unblock_ip' ) );
 			add_action( 'wp_ajax_spamanvil_scan_pending', array( $this->admin, 'ajax_scan_pending' ) );
 			add_action( 'wp_ajax_spamanvil_process_queue', array( $this->admin, 'ajax_process_queue' ) );
+			add_action( 'wp_ajax_spamanvil_clear_api_key', array( $this->admin, 'ajax_clear_api_key' ) );
 		}
 
 		// Plugin action links.

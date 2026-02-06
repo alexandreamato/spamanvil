@@ -14,7 +14,7 @@ $fallback         = get_option( 'spamanvil_fallback_provider', '' );
 
 $default_models = array(
 	'openai'      => 'gpt-4o-mini',
-	'openrouter'  => 'meta-llama/llama-3.3-70b-instruct:free',
+	'openrouter'  => 'deepseek/deepseek-r1-0528:free',
 	'featherless' => 'meta-llama/Meta-Llama-3.1-8B-Instruct',
 	'anthropic'   => 'claude-sonnet-4-5-20250929',
 	'gemini'      => 'gemini-2.0-flash',
@@ -104,6 +104,12 @@ $signup_urls = array(
 								   class="regular-text"
 								   autocomplete="off">
 							<?php if ( $masked_key ) : ?>
+								<button type="button"
+										class="button button-small spamanvil-clear-key-btn"
+										data-provider="<?php echo esc_attr( $slug ); ?>"
+										style="margin-left: 4px; color: #b32d2e;">
+									<?php esc_html_e( 'Clear Key', 'spamanvil' ); ?>
+								</button>
 								<p class="description">
 									<?php
 									printf(
