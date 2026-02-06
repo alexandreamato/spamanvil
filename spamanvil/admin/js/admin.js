@@ -8,6 +8,7 @@
         initUnblockIP();
         initResetPrompt();
         initThresholdSuggestion();
+        initScanPending();
     });
 
     /**
@@ -128,6 +129,41 @@
             var $slider = $('input[name="spamanvil_threshold"]');
             $slider.val(value).trigger('input');
             $(this).replaceWith('<span class="description"><strong>' + spamAnvil.strings.applied + '</strong></span>');
+        });
+    }
+
+    /**
+     * Scan Pending Comments AJAX.
+     */
+    function initScanPending() {
+        $('.spamanvil-scan-pending-btn').on('click', function() {
+            var $btn = $(this);
+            var $result = $('.spamanvil-scan-pending-result');
+
+            $btn.prop('disabled', true);
+            $result.removeClass('success error').text(spamAnvil.strings.scanning);
+
+            $.post(spamAnvil.ajax_url, {
+                action: 'spamanvil_scan_pending',
+                nonce: spamAnvil.nonce
+            }, function(response) {
+                $btn.prop('disabled', false);
+
+                if (response.success) {
+                    var d = response.data;
+                    $result.addClass('success').text(
+                        spamAnvil.strings.scan_done +
+                        ' ' + d.enqueued + ' enqueued, ' +
+                        d.auto_spam + ' auto-spam, ' +
+                        d.already_queued + ' already queued.'
+                    );
+                } else {
+                    $result.addClass('error').text(response.data);
+                }
+            }).fail(function() {
+                $btn.prop('disabled', false);
+                $result.addClass('error').text(spamAnvil.strings.error + ' Network error');
+            });
         });
     }
 

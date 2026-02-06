@@ -56,7 +56,8 @@ class SpamAnvil {
 				$this->provider_factory,
 				$this->stats,
 				$this->ip_manager,
-				$this->queue
+				$this->queue,
+				$this->heuristics
 			);
 		}
 	}
@@ -83,6 +84,7 @@ class SpamAnvil {
 			// AJAX handlers.
 			add_action( 'wp_ajax_spamanvil_test_connection', array( $this->admin, 'ajax_test_connection' ) );
 			add_action( 'wp_ajax_spamanvil_unblock_ip', array( $this->admin, 'ajax_unblock_ip' ) );
+			add_action( 'wp_ajax_spamanvil_scan_pending', array( $this->admin, 'ajax_scan_pending' ) );
 		}
 
 		// Plugin action links.

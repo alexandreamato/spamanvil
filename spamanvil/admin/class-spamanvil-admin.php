@@ -10,19 +10,22 @@ class SpamAnvil_Admin {
 	private $stats;
 	private $ip_manager;
 	private $queue;
+	private $heuristics;
 
 	public function __construct(
 		SpamAnvil_Encryptor $encryptor,
 		SpamAnvil_Provider_Factory $provider_factory,
 		SpamAnvil_Stats $stats,
 		SpamAnvil_IP_Manager $ip_manager,
-		SpamAnvil_Queue $queue
+		SpamAnvil_Queue $queue,
+		SpamAnvil_Heuristics $heuristics
 	) {
 		$this->encryptor        = $encryptor;
 		$this->provider_factory = $provider_factory;
 		$this->stats            = $stats;
 		$this->ip_manager       = $ip_manager;
 		$this->queue            = $queue;
+		$this->heuristics       = $heuristics;
 	}
 
 	public function add_menu_page() {
@@ -73,6 +76,8 @@ class SpamAnvil_Admin {
 				'unblocked'  => __( 'IP unblocked successfully', 'spamanvil' ),
 				'confirm'    => __( 'Are you sure?', 'spamanvil' ),
 				'applied'    => __( 'Applied! Save to confirm.', 'spamanvil' ),
+				'scanning'   => __( 'Scanning...', 'spamanvil' ),
+				'scan_done'  => __( 'Scan complete!', 'spamanvil' ),
 			),
 		) );
 	}
@@ -265,6 +270,82 @@ class SpamAnvil_Admin {
 		}
 
 		wp_send_json_success( $result );
+	}
+
+	public function ajax_scan_pending() {
+		check_ajax_referer( 'spamanvil_ajax', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		// Get all comments with 'hold' status.
+		$comments = get_comments( array( 'status' => 'hold', 'number' => 0 ) );
+
+		if ( empty( $comments ) ) {
+			wp_send_json_success( array(
+				'enqueued'       => 0,
+				'auto_spam'      => 0,
+				'already_queued' => 0,
+			) );
+		}
+
+		// Get comment IDs already in the queue.
+		global $wpdb;
+		$queue_table       = $wpdb->prefix . 'spamanvil_queue';
+		$already_queued_ids = $wpdb->get_col( "SELECT comment_id FROM {$queue_table} WHERE status IN ('queued', 'processing', 'failed')" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom plugin table, no user input.
+
+		$enqueued       = 0;
+		$auto_spam      = 0;
+		$already_queued = 0;
+
+		$heuristic_threshold = (int) get_option( 'spamanvil_heuristic_auto_spam', 95 );
+
+		foreach ( $comments as $comment ) {
+			if ( in_array( (string) $comment->comment_ID, $already_queued_ids, true ) ) {
+				$already_queued++;
+				continue;
+			}
+
+			// Run heuristics.
+			$analysis = $this->heuristics->analyze( array(
+				'comment_content'      => $comment->comment_content,
+				'comment_author'       => $comment->comment_author,
+				'comment_author_email' => $comment->comment_author_email,
+				'comment_author_url'   => $comment->comment_author_url,
+			) );
+
+			if ( $analysis['score'] >= $heuristic_threshold ) {
+				wp_spam_comment( $comment->comment_ID );
+				$this->stats->increment( 'heuristic_blocked' );
+				$this->stats->increment( 'comments_checked' );
+				$this->stats->log_evaluation( array(
+					'comment_id'        => $comment->comment_ID,
+					'score'             => $analysis['score'],
+					'provider'          => 'heuristics',
+					'model'             => 'regex',
+					'reason'            => 'Auto-blocked by heuristic analysis (scan pending)',
+					'heuristic_score'   => $analysis['score'],
+					'heuristic_details' => $this->heuristics->format_for_prompt( $analysis ),
+				) );
+
+				$ip = get_comment_author_IP( $comment->comment_ID );
+				if ( ! empty( $ip ) ) {
+					$this->ip_manager->record_spam_attempt( $ip );
+				}
+
+				$auto_spam++;
+			} else {
+				$this->queue->enqueue( $comment->comment_ID, $analysis['score'] );
+				$enqueued++;
+			}
+		}
+
+		wp_send_json_success( array(
+			'enqueued'       => $enqueued,
+			'auto_spam'      => $auto_spam,
+			'already_queued' => $already_queued,
+		) );
 	}
 
 	public function ajax_unblock_ip() {

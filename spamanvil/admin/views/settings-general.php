@@ -45,6 +45,27 @@ $threshold_suggestion = $this->stats->get_threshold_suggestion();
 		</div>
 	</div>
 
+	<?php
+	$pending_count = wp_count_comments();
+	$pending_count = $pending_count->moderated;
+	?>
+	<div class="spamanvil-card">
+		<h2><?php esc_html_e( 'Scan Pending Comments', 'spamanvil' ); ?></h2>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: number of pending comments */
+				esc_html__( 'There are %s comments awaiting moderation. You can scan them now to run heuristic analysis and enqueue them for LLM evaluation.', 'spamanvil' ),
+				'<strong>' . esc_html( number_format_i18n( $pending_count ) ) . '</strong>'
+			);
+			?>
+		</p>
+		<button type="button" class="button button-secondary spamanvil-scan-pending-btn" <?php disabled( $pending_count, 0 ); ?>>
+			<?php esc_html_e( 'Scan Pending Comments', 'spamanvil' ); ?>
+		</button>
+		<span class="spamanvil-scan-pending-result"></span>
+	</div>
+
 	<table class="form-table">
 		<tr>
 			<th scope="row"><?php esc_html_e( 'Enable Plugin', 'spamanvil' ); ?></th>

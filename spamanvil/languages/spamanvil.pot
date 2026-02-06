@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.0.0\n"
+"Project-Id-Version: SpamAnvil 1.0.3\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/\n"
 "POT-Creation-Date: 2024-01-01 00:00+0000\n"
 "MIME-Version: 1.0\n"
@@ -70,4 +70,21 @@ msgstr ""
 
 #: admin/views/settings-providers.php
 msgid "Test Connection"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Scanning..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Scan complete!"
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "Scan Pending Comments"
+msgstr ""
+
+#. translators: %s: number of pending comments
+#: admin/views/settings-general.php
+msgid "There are %s comments awaiting moderation. You can scan them now to run heuristic analysis and enqueue them for LLM evaluation."
 msgstr ""
