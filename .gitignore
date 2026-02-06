@@ -1,2 +1,9 @@
 .DS_Store
 *.zip
+
+# Never commit real keys or environment files
+.env
+.env.*
+*.key
+*.pem
+wp-config.php
