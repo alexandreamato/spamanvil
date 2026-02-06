@@ -137,7 +137,7 @@ abstract class SpamAnvil_Provider {
 			'method'  => 'POST',
 			'headers' => $headers,
 			'body'    => wp_json_encode( $body ),
-			'timeout' => 30,
+			'timeout' => 60,
 		);
 
 		return wp_safe_remote_post( $url, $args );

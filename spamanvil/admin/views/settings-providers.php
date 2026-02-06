@@ -11,6 +11,7 @@ settings_errors( 'spamanvil' );
 $providers        = SpamAnvil_Provider_Factory::get_available_providers();
 $primary          = get_option( 'spamanvil_primary_provider', '' );
 $fallback         = get_option( 'spamanvil_fallback_provider', '' );
+$fallback2        = get_option( 'spamanvil_fallback2_provider', '' );
 
 $default_models = array(
 	'openai'      => 'gpt-4o-mini',
@@ -62,7 +63,23 @@ $signup_urls = array(
 					<?php endforeach; ?>
 				</select>
 				<p class="description">
-					<?php esc_html_e( 'Used when the primary provider fails.', 'spamanvil' ); ?>
+					<?php esc_html_e( 'Used when the primary provider fails or times out.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<th scope="row"><?php esc_html_e( 'Fallback Provider 2', 'spamanvil' ); ?></th>
+			<td>
+				<select name="spamanvil_fallback2_provider">
+					<option value=""><?php esc_html_e( '-- None --', 'spamanvil' ); ?></option>
+					<?php foreach ( $providers as $slug => $name ) : ?>
+						<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $fallback2, $slug ); ?>>
+							<?php echo esc_html( $name ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+				<p class="description">
+					<?php esc_html_e( 'Used when both the primary and first fallback fail.', 'spamanvil' ); ?>
 				</p>
 			</td>
 		</tr>

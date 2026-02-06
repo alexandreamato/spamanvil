@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.0.6\n"
+"Project-Id-Version: SpamAnvil 1.0.7\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/\n"
 "POT-Creation-Date: 2024-01-01 00:00+0000\n"
 "MIME-Version: 1.0\n"
@@ -58,6 +58,18 @@ msgstr ""
 
 #: admin/views/settings-providers.php
 msgid "Fallback Provider"
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "Fallback Provider 2"
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "Used when both the primary and first fallback fail."
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "Used when the primary provider fails or times out."
 msgstr ""
 
 #: admin/views/settings-providers.php

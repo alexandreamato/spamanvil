@@ -80,11 +80,11 @@ class SpamAnvil_Queue {
 		$now = current_time( 'mysql' );
 
 		if ( $force ) {
-			// Manual trigger: grab all failed items immediately, ignore backoff.
+			// Manual trigger: grab all queued, failed and max_retries items immediately.
 			$items = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT * FROM {$this->table}
-					WHERE status IN ('queued', 'failed')
+					WHERE status IN ('queued', 'failed', 'max_retries')
 					ORDER BY created_at ASC
 					LIMIT %d",
 					$limit
@@ -112,9 +112,15 @@ class SpamAnvil_Queue {
 		$ids = wp_list_pluck( $items, 'id' );
 		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
 
+		$set_clause = "status = 'processing', updated_at = %s";
+		if ( $force ) {
+			// Reset attempts so max_retries items get a fresh retry cycle.
+			$set_clause .= ', attempts = 0';
+		}
+
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$this->table} SET status = 'processing', updated_at = %s WHERE id IN ($placeholders)",
+				"UPDATE {$this->table} SET {$set_clause} WHERE id IN ($placeholders)",
 				array_merge( array( $now ), $ids )
 			)
 		);
@@ -139,45 +145,13 @@ class SpamAnvil_Queue {
 
 		do_action( 'spamanvil_before_analysis', $comment, $item );
 
-		// Get provider.
-		$provider = $this->provider_factory->create_with_fallback();
-
-		if ( is_wp_error( $provider ) ) {
-			$error_msg = $provider->get_error_message();
-			$this->handle_failure( $item, $error_msg );
-			$this->stats->increment( 'llm_errors' );
-			$this->stats->log_evaluation( array(
-				'comment_id'        => $item->comment_id,
-				'score'             => null,
-				'provider'          => 'none',
-				'model'             => 'none',
-				'reason'            => 'Provider error: ' . $error_msg,
-				'heuristic_score'   => $item->heuristic_score,
-				'heuristic_details' => '',
-			) );
-			return;
-		}
-
-		// Call LLM.
-		$start_ms = microtime( true );
-		$result   = $provider->analyze( $system_prompt, $user_prompt );
-		$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
-		$this->stats->increment( 'llm_calls' );
+		// Try each provider in the chain (primary → fallback → fallback2).
+		$result = $this->try_provider_chain( $item, $comment, $system_prompt, $user_prompt );
 
 		if ( is_wp_error( $result ) ) {
+			// All providers failed.
 			$error_msg = $result->get_error_message();
 			$this->handle_failure( $item, $error_msg );
-			$this->stats->increment( 'llm_errors' );
-			$this->stats->log_evaluation( array(
-				'comment_id'         => $item->comment_id,
-				'score'              => null,
-				'provider'           => get_option( 'spamanvil_primary_provider', '' ),
-				'model'              => '',
-				'reason'             => 'LLM error: ' . $error_msg,
-				'heuristic_score'    => $item->heuristic_score,
-				'heuristic_details'  => '',
-				'processing_time_ms' => $elapsed,
-			) );
 			return;
 		}
 
@@ -226,6 +200,73 @@ class SpamAnvil_Queue {
 		$this->stats->increment( 'comments_checked' );
 
 		do_action( 'spamanvil_after_analysis', $comment, $result, $is_spam );
+	}
+
+	/**
+	 * Try each provider in the fallback chain until one succeeds.
+	 *
+	 * @param object     $item           Queue item.
+	 * @param WP_Comment $comment        Comment object.
+	 * @param string     $system_prompt  System prompt.
+	 * @param string     $user_prompt    User prompt.
+	 * @return array|WP_Error LLM result array on success, WP_Error if all providers failed.
+	 */
+	private function try_provider_chain( $item, $comment, $system_prompt, $user_prompt ) {
+		$chain  = $this->provider_factory->get_provider_chain();
+		$errors = array();
+
+		if ( empty( $chain ) ) {
+			$this->stats->increment( 'llm_errors' );
+			$error_msg = 'No LLM provider configured';
+			$this->stats->log_evaluation( array(
+				'comment_id'        => $item->comment_id,
+				'score'             => null,
+				'provider'          => 'none',
+				'model'             => 'none',
+				'reason'            => 'Provider error: ' . $error_msg,
+				'heuristic_score'   => $item->heuristic_score,
+				'heuristic_details' => '',
+			) );
+			return new WP_Error( 'spamanvil_no_provider', $error_msg );
+		}
+
+		foreach ( $chain as $slug ) {
+			$provider = $this->provider_factory->create( $slug );
+
+			if ( is_wp_error( $provider ) ) {
+				$errors[] = $slug . ': ' . $provider->get_error_message();
+				continue;
+			}
+
+			$start_ms = microtime( true );
+			$result   = $provider->analyze( $system_prompt, $user_prompt );
+			$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
+			$this->stats->increment( 'llm_calls' );
+
+			if ( ! is_wp_error( $result ) ) {
+				// Success — return immediately.
+				return $result;
+			}
+
+			// This provider failed — log the error and try next.
+			$error_msg = $result->get_error_message();
+			$errors[]  = $slug . ': ' . $error_msg;
+			$this->stats->increment( 'llm_errors' );
+			$this->stats->log_evaluation( array(
+				'comment_id'         => $item->comment_id,
+				'score'              => null,
+				'provider'           => $slug,
+				'model'              => '',
+				'reason'             => 'LLM error (trying next provider): ' . $error_msg,
+				'heuristic_score'    => $item->heuristic_score,
+				'heuristic_details'  => '',
+				'processing_time_ms' => $elapsed,
+			) );
+		}
+
+		// All providers failed.
+		$combined = implode( ' | ', $errors );
+		return new WP_Error( 'spamanvil_all_providers_failed', $combined );
 	}
 
 	private function build_user_prompt( $comment, $item ) {

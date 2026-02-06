@@ -180,6 +180,7 @@ class SpamAnvil_Admin {
 
 		update_option( 'spamanvil_primary_provider', sanitize_text_field( wp_unslash( $_POST['spamanvil_primary_provider'] ?? '' ) ) );
 		update_option( 'spamanvil_fallback_provider', sanitize_text_field( wp_unslash( $_POST['spamanvil_fallback_provider'] ?? '' ) ) );
+		update_option( 'spamanvil_fallback2_provider', sanitize_text_field( wp_unslash( $_POST['spamanvil_fallback2_provider'] ?? '' ) ) );
 
 		$providers = array( 'openai', 'openrouter', 'featherless', 'anthropic', 'gemini', 'generic' );
 
@@ -374,8 +375,8 @@ class SpamAnvil_Admin {
 
 		$after = $this->queue->get_queue_status();
 
-		$processed = $before['queued'] - $after['queued'];
-		$remaining = $after['queued'] + $after['failed'];
+		$processed = ( $before['queued'] + $before['failed'] + $before['max_retries'] ) - ( $after['queued'] + $after['failed'] + $after['max_retries'] );
+		$remaining = $after['queued'] + $after['failed'] + $after['max_retries'];
 
 		wp_send_json_success( array(
 			'processed' => max( 0, $processed ),

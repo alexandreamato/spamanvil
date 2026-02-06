@@ -72,7 +72,7 @@ $logs     = $this->stats->get_logs( $page_num, 25 );
 							<br><small><?php echo esc_html( $log->model ); ?></small>
 						<?php endif; ?>
 					</td>
-					<td class="column-reason"><?php echo esc_html( $log->reason ?? '' ); ?></td>
+					<td class="column-reason" title="<?php echo esc_attr( $log->reason ?? '' ); ?>"><?php echo esc_html( $log->reason ?? '' ); ?></td>
 					<td><?php echo null !== $log->processing_time_ms ? esc_html( number_format_i18n( $log->processing_time_ms ) ) : '&mdash;'; ?></td>
 					<td><?php echo esc_html( $log->created_at ); ?></td>
 				</tr>

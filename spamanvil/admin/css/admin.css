@@ -239,10 +239,11 @@
 }
 
 .column-reason {
-	max-width: 200px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	max-width: 300px;
+	word-break: break-word;
+	white-space: normal;
+	font-size: 12px;
+	line-height: 1.4;
 }
 
 /* Responsive */

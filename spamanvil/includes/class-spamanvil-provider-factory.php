@@ -140,10 +140,41 @@ class SpamAnvil_Provider_Factory {
 			}
 		}
 
+		$fallback2 = get_option( 'spamanvil_fallback2_provider', '' );
+
+		if ( ! empty( $fallback2 ) ) {
+			$provider = $this->create( $fallback2 );
+			if ( ! is_wp_error( $provider ) ) {
+				return $provider;
+			}
+		}
+
 		return new WP_Error(
 			'spamanvil_no_provider',
 			__( 'No LLM provider is configured. Please configure a provider in the plugin settings.', 'spamanvil' )
 		);
+	}
+
+	/**
+	 * Get ordered list of configured provider slugs for the fallback chain.
+	 *
+	 * @return array Provider slugs (primary, fallback, fallback2) — only those that are set.
+	 */
+	public function get_provider_chain() {
+		$slugs = array();
+		$seen  = array();
+
+		$keys = array( 'spamanvil_primary_provider', 'spamanvil_fallback_provider', 'spamanvil_fallback2_provider' );
+
+		foreach ( $keys as $key ) {
+			$slug = get_option( $key, '' );
+			if ( ! empty( $slug ) && ! isset( $seen[ $slug ] ) ) {
+				$slugs[]          = $slug;
+				$seen[ $slug ]    = true;
+			}
+		}
+
+		return $slugs;
 	}
 
 	private function resolve_api_key( $config ) {

@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -205,6 +205,15 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.0.7 =
+* Fix: Fallback providers now actually triggered on API timeouts and errors (previously only used when API key was missing)
+* Fix: HTTP timeout increased from 30s to 60s to support slower reasoning models (e.g. DeepSeek R1)
+* Feature: Provider chain tries Primary → Fallback → Fallback 2 before giving up
+* Feature: Second fallback provider option (3 providers in the chain)
+* Enhancement: Each provider failure is individually logged before trying the next
+* Enhancement: "Process Queue Now" also retries max_retries items (resets attempt counter for a fresh cycle)
+* Enhancement: Evaluation log "Reason" column now wraps text instead of being truncated
 
 = 1.0.6 =
 * Feature: Clear API Key button to delete saved keys from the database
