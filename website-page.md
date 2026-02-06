@@ -32,6 +32,7 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 - **AI-Powered Spam Detection** — Each comment is analyzed by an LLM that scores it 0-100 for spam probability
 - **Intelligent Heuristics Engine** — Pre-analyzes comments with regex patterns, spam word detection, URL counting, and prompt injection detection to catch obvious spam without API calls
 - **Scan Pending Comments** — Instantly analyze all comments already sitting in your moderation queue. Perfect for new installations on sites with existing pending comments
+- **Process Queue Now** — Don't want to wait for WP-Cron? Trigger immediate queue processing with one click. Processes batches automatically until the queue is empty, with real-time progress
 - **Async Background Processing** — Comments are queued and processed via WP-Cron so your site stays fast
 - **Smart IP Blocking** — Automatically blocks repeat offenders with escalating ban durations (24h, 48h, 96h...)
 - **Automatic Retry with Backoff** — Failed API calls retry up to 3 times with exponential delays
@@ -133,6 +134,7 @@ Yes! If you run a local model with an OpenAI-compatible API (e.g., LM Studio, Ol
 
 ### 1.0.3
 - New: Scan Pending Comments — analyze all comments already in the moderation queue with one click. Runs heuristics, auto-blocks obvious spam, and enqueues the rest for LLM analysis. Ideal for new installations on sites with existing pending comments.
+- New: Process Queue Now — trigger immediate queue processing from the admin panel instead of waiting for WP-Cron. Processes batches in sequence with real-time progress and updates the queue counters live.
 
 ### 1.0.1
 - Fix: Test Connection now works without saving the page first — reads API key and model directly from form fields
