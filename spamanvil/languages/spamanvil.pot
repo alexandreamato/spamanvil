@@ -1,0 +1,73 @@
+# Copyright (C) 2024 Alexandre Amato
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: SpamAnvil 1.0.0\n"
+"Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/\n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2024-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+
+#: spamanvil.php
+msgid "Settings"
+msgstr ""
+
+#: includes/class-spamanvil-comment-processor.php
+msgid "Your comment has been blocked. If you believe this is an error, please contact the site administrator."
+msgstr ""
+
+#: includes/class-spamanvil-comment-processor.php
+msgid "Comment Blocked"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "SpamAnvil"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "SpamAnvil Settings"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Settings saved."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Permission denied."
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "Enable Plugin"
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "Processing Mode"
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "Spam Threshold"
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "Primary Provider"
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "Fallback Provider"
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "API Key"
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "Model"
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "Test Connection"
+msgstr ""

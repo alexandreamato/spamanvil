@@ -1,0 +1,265 @@
+/* SpamAnvil Admin Styles */
+
+.spamanvil-wrap {
+	max-width: 1200px;
+}
+
+.spamanvil-content {
+	margin-top: 20px;
+}
+
+/* Cards */
+.spamanvil-card {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 4px;
+	padding: 15px 20px;
+	margin-bottom: 20px;
+}
+
+.spamanvil-card h2,
+.spamanvil-card h3 {
+	margin-top: 0;
+	padding-top: 0;
+	border-bottom: 1px solid #eee;
+	padding-bottom: 10px;
+}
+
+.spamanvil-get-key-link {
+	float: right;
+	font-size: 13px;
+	font-weight: 400;
+	text-decoration: none;
+	color: #2271b1;
+}
+
+.spamanvil-get-key-link:hover {
+	color: #135e96;
+	text-decoration: underline;
+}
+
+/* Status Grid */
+.spamanvil-status-grid {
+	display: flex;
+	gap: 15px;
+	flex-wrap: wrap;
+}
+
+.spamanvil-status-grid .status-item {
+	text-align: center;
+	padding: 10px 20px;
+	background: #f6f7f7;
+	border-radius: 4px;
+	min-width: 100px;
+}
+
+.spamanvil-status-grid .status-number {
+	display: block;
+	font-size: 24px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.spamanvil-status-grid .status-label {
+	display: block;
+	font-size: 12px;
+	color: #646970;
+	margin-top: 4px;
+}
+
+/* Stats Grid */
+.spamanvil-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 15px;
+	margin-bottom: 30px;
+}
+
+.spamanvil-stat-card {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 4px;
+	padding: 20px;
+	text-align: center;
+	border-left: 4px solid #2271b1;
+}
+
+.spamanvil-stat-card .stat-number {
+	font-size: 32px;
+	font-weight: 700;
+	color: #1d2327;
+	line-height: 1.2;
+}
+
+.spamanvil-stat-card .stat-label {
+	font-size: 13px;
+	color: #646970;
+	margin-top: 5px;
+}
+
+.spamanvil-stat-danger {
+	border-left-color: #d63638;
+}
+
+.spamanvil-stat-success {
+	border-left-color: #00a32a;
+}
+
+.spamanvil-stat-warning {
+	border-left-color: #dba617;
+}
+
+/* Range Slider */
+.spamanvil-range {
+	width: 300px;
+	vertical-align: middle;
+}
+
+.spamanvil-range-value {
+	display: inline-block;
+	min-width: 40px;
+	text-align: center;
+	font-weight: 600;
+	font-size: 16px;
+	vertical-align: middle;
+	margin-left: 10px;
+	background: #f0f0f1;
+	padding: 2px 8px;
+	border-radius: 3px;
+}
+
+/* Score badges */
+.spamanvil-score {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.spamanvil-score-high {
+	background: #facfd2;
+	color: #8a1e22;
+}
+
+.spamanvil-score-medium {
+	background: #fcf0c3;
+	color: #6e4e00;
+}
+
+.spamanvil-score-low {
+	background: #c8f5d2;
+	color: #0a5417;
+}
+
+/* Badges */
+.spamanvil-badge {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	background: #f0f0f1;
+	color: #646970;
+	margin-left: 5px;
+}
+
+.spamanvil-badge-red {
+	background: #facfd2;
+	color: #8a1e22;
+}
+
+.spamanvil-active-block {
+	font-weight: 600;
+}
+
+/* Test Connection */
+.spamanvil-test-result {
+	display: inline-block;
+	margin-left: 10px;
+	font-style: italic;
+}
+
+.spamanvil-test-result.success {
+	color: #00a32a;
+	font-style: normal;
+	font-weight: 600;
+}
+
+.spamanvil-test-result.error {
+	color: #d63638;
+	font-style: normal;
+}
+
+/* List */
+.spamanvil-list {
+	list-style: disc;
+	margin-left: 20px;
+}
+
+.spamanvil-list li {
+	margin-bottom: 4px;
+}
+
+/* Notice */
+.spamanvil-notice {
+	background: #fcf9e8;
+	border-left: 4px solid #dba617;
+	padding: 8px 12px;
+	margin-top: 8px;
+}
+
+/* Threshold Suggestion */
+.spamanvil-threshold-suggestion {
+	margin-top: 10px;
+	padding: 10px 14px;
+	background: #f0f6fc;
+	border-left: 4px solid #2271b1;
+	border-radius: 2px;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.spamanvil-threshold-suggestion .button-small {
+	margin-left: 8px;
+	vertical-align: baseline;
+}
+
+/* Table columns */
+.column-id {
+	width: 60px;
+}
+
+.column-score {
+	width: 80px;
+}
+
+.column-time {
+	width: 80px;
+}
+
+.column-reason {
+	max-width: 200px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+	.spamanvil-stats-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.spamanvil-range {
+		width: 100%;
+	}
+
+	.spamanvil-status-grid {
+		flex-direction: column;
+	}
+
+	.spamanvil-status-grid .status-item {
+		min-width: auto;
+	}
+}
