@@ -15,7 +15,7 @@ $fallback2        = get_option( 'spamanvil_fallback2_provider', '' );
 
 $default_models = array(
 	'openai'      => 'gpt-4o-mini',
-	'openrouter'  => 'deepseek/deepseek-r1-0528:free',
+	'openrouter'  => 'openai/gpt-oss-20b:free',
 	'featherless' => 'meta-llama/Meta-Llama-3.1-8B-Instruct',
 	'anthropic'   => 'claude-sonnet-4-5-20250929',
 	'gemini'      => 'gemini-2.0-flash',

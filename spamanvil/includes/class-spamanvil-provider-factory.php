@@ -24,7 +24,7 @@ class SpamAnvil_Provider_Factory {
 			'constant_key'  => 'SPAMANVIL_OPENROUTER_API_KEY',
 			'option_key'    => 'spamanvil_openrouter_api_key',
 			'model_option'  => 'spamanvil_openrouter_model',
-			'default_model' => 'deepseek/deepseek-r1-0528:free',
+			'default_model' => 'openai/gpt-oss-20b:free',
 		),
 		'featherless' => array(
 			'class'         => 'SpamAnvil_OpenAI_Compatible',
