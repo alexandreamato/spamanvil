@@ -112,18 +112,22 @@ class SpamAnvil_Queue {
 		$ids = wp_list_pluck( $items, 'id' );
 		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
 
-		$set_clause = "status = 'processing', updated_at = %s";
 		if ( $force ) {
 			// Reset attempts so max_retries items get a fresh retry cycle.
-			$set_clause .= ', attempts = 0';
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$this->table} SET status = 'processing', updated_at = %s, attempts = 0 WHERE id IN ($placeholders)",
+					array_merge( array( $now ), $ids )
+				)
+			);
+		} else {
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$this->table} SET status = 'processing', updated_at = %s WHERE id IN ($placeholders)",
+					array_merge( array( $now ), $ids )
+				)
+			);
 		}
-
-		$wpdb->query(
-			$wpdb->prepare(
-				"UPDATE {$this->table} SET {$set_clause} WHERE id IN ($placeholders)",
-				array_merge( array( $now ), $ids )
-			)
-		);
 
 		return $items;
 	}
