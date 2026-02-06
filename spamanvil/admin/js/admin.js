@@ -9,6 +9,7 @@
         initResetPrompt();
         initThresholdSuggestion();
         initScanPending();
+        initProcessQueue();
     });
 
     /**
@@ -130,6 +131,69 @@
             $slider.val(value).trigger('input');
             $(this).replaceWith('<span class="description"><strong>' + spamAnvil.strings.applied + '</strong></span>');
         });
+    }
+
+    /**
+     * Process Queue Now AJAX (loops batches until empty).
+     */
+    function initProcessQueue() {
+        var totalProcessed = 0;
+
+        $('.spamanvil-process-queue-btn').on('click', function() {
+            var $btn = $(this);
+            var $result = $('.spamanvil-process-queue-result');
+
+            totalProcessed = 0;
+            $btn.prop('disabled', true);
+            $result.removeClass('success error').text(spamAnvil.strings.processing);
+
+            processBatch($btn, $result);
+        });
+
+        function processBatch($btn, $result) {
+            $.post(spamAnvil.ajax_url, {
+                action: 'spamanvil_process_queue',
+                nonce: spamAnvil.nonce
+            }, function(response) {
+                if (response.success) {
+                    var d = response.data;
+                    totalProcessed += d.processed;
+
+                    if (d.remaining > 0 && d.processed > 0) {
+                        $result.text(
+                            spamAnvil.strings.process_batch +
+                            ' ' + totalProcessed + ' processed, ' +
+                            d.remaining + ' remaining...'
+                        );
+                        processBatch($btn, $result);
+                    } else {
+                        $btn.prop('disabled', false);
+                        $result.addClass('success').text(
+                            spamAnvil.strings.process_done +
+                            ' ' + totalProcessed + ' processed, ' +
+                            d.remaining + ' remaining.'
+                        );
+                        updateQueueCounters(d.queue);
+                    }
+                } else {
+                    $btn.prop('disabled', false);
+                    $result.addClass('error').text(response.data);
+                }
+            }).fail(function() {
+                $btn.prop('disabled', false);
+                $result.addClass('error').text(spamAnvil.strings.error + ' Network error');
+            });
+        }
+
+        function updateQueueCounters(queue) {
+            var $items = $('.spamanvil-status-grid .status-item');
+            if ($items.length >= 4 && queue) {
+                $items.eq(0).find('.status-number').text(queue.queued);
+                $items.eq(1).find('.status-number').text(queue.processing);
+                $items.eq(2).find('.status-number').text(queue.failed);
+                $items.eq(3).find('.status-number').text(queue.max_retries);
+            }
+        }
     }
 
     /**

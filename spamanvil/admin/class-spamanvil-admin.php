@@ -76,8 +76,11 @@ class SpamAnvil_Admin {
 				'unblocked'  => __( 'IP unblocked successfully', 'spamanvil' ),
 				'confirm'    => __( 'Are you sure?', 'spamanvil' ),
 				'applied'    => __( 'Applied! Save to confirm.', 'spamanvil' ),
-				'scanning'   => __( 'Scanning...', 'spamanvil' ),
-				'scan_done'  => __( 'Scan complete!', 'spamanvil' ),
+				'scanning'      => __( 'Scanning...', 'spamanvil' ),
+				'scan_done'     => __( 'Scan complete!', 'spamanvil' ),
+				'processing'    => __( 'Processing...', 'spamanvil' ),
+				'process_done'  => __( 'Done!', 'spamanvil' ),
+				'process_batch' => __( 'Processing batch...', 'spamanvil' ),
 			),
 		) );
 	}
@@ -345,6 +348,29 @@ class SpamAnvil_Admin {
 			'enqueued'       => $enqueued,
 			'auto_spam'      => $auto_spam,
 			'already_queued' => $already_queued,
+		) );
+	}
+
+	public function ajax_process_queue() {
+		check_ajax_referer( 'spamanvil_ajax', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		$before = $this->queue->get_queue_status();
+
+		$this->queue->process_batch();
+
+		$after = $this->queue->get_queue_status();
+
+		$processed = $before['queued'] - $after['queued'];
+		$remaining = $after['queued'] + $after['failed'];
+
+		wp_send_json_success( array(
+			'processed' => max( 0, $processed ),
+			'remaining' => $remaining,
+			'queue'     => $after,
 		) );
 	}
 

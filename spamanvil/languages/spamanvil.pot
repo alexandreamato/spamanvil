@@ -88,3 +88,19 @@ msgstr ""
 #: admin/views/settings-general.php
 msgid "There are %s comments awaiting moderation. You can scan them now to run heuristic analysis and enqueue them for LLM evaluation."
 msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Processing..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Done!"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Processing batch..."
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "Process Queue Now"
+msgstr ""

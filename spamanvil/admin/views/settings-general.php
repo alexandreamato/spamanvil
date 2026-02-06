@@ -43,6 +43,13 @@ $threshold_suggestion = $this->stats->get_threshold_suggestion();
 				<span class="status-label"><?php esc_html_e( 'Max Retries', 'spamanvil' ); ?></span>
 			</div>
 		</div>
+		<?php $total_actionable = $queue_status['queued'] + $queue_status['failed']; ?>
+		<p>
+			<button type="button" class="button button-secondary spamanvil-process-queue-btn" <?php disabled( $total_actionable, 0 ); ?>>
+				<?php esc_html_e( 'Process Queue Now', 'spamanvil' ); ?>
+			</button>
+			<span class="spamanvil-process-queue-result"></span>
+		</p>
 	</div>
 
 	<?php
