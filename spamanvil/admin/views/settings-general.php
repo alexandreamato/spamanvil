@@ -3,6 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+// Reason: Template variables in an included view file, scoped by the calling method.
+
 settings_errors( 'spamanvil' );
 
 $enabled           = get_option( 'spamanvil_enabled', '1' );

@@ -1,15 +1,15 @@
-=== SpamAnvil - AI Anti-Spam for Comments ===
+=== SpamAnvil ===
 Contributors: aaamato
 Donate link: https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/
 Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
-Tested up to: 6.7
+Tested up to: 6.9
 Requires PHP: 7.4
 Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Stop comment spam with AI. SpamAnvil uses ChatGPT, Claude, Gemini and other LLMs to detect spam that traditional filters miss. 100% free, no subscription.
+Stop comment spam with AI. Uses ChatGPT, Claude, Gemini and other LLMs to catch spam that traditional filters miss. 100% free.
 
 == Description ==
 

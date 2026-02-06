@@ -9,7 +9,9 @@ global $wpdb;
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 // Reason: Uninstall must drop custom plugin tables and clean up options directly.
+// Variables are local to this uninstall script, not true globals.
 
 // Drop custom tables.
 $tables = array(

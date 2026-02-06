@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter
 // Reason: All queries target custom plugin tables (spamanvil_stats, spamanvil_logs).
 // Table names come from $wpdb->prefix and are safe. WordPress object cache is not
 // applicable to custom tables, and $wpdb->prepare() is used for all user values.

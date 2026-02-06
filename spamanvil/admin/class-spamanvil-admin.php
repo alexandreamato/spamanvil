@@ -296,7 +296,7 @@ class SpamAnvil_Admin {
 		// Get comment IDs already in the queue.
 		global $wpdb;
 		$queue_table       = $wpdb->prefix . 'spamanvil_queue';
-		$already_queued_ids = $wpdb->get_col( "SELECT comment_id FROM {$queue_table} WHERE status IN ('queued', 'processing', 'failed')" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom plugin table, no user input.
+		$already_queued_ids = $wpdb->get_col( "SELECT comment_id FROM {$queue_table} WHERE status IN ('queued', 'processing', 'failed')" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- custom plugin table, table name from $wpdb->prefix.
 
 		$enqueued       = 0;
 		$auto_spam      = 0;
