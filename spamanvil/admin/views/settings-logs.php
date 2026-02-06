@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$page_num = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+$page_num = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination.
 $logs     = $this->stats->get_logs( $page_num, 25 );
 ?>
 

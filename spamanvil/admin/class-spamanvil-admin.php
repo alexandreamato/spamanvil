@@ -37,7 +37,7 @@ class SpamAnvil_Admin {
 
 	public function register_settings() {
 		// Handle form submissions.
-		if ( isset( $_POST['spamanvil_save_settings'] ) ) {
+		if ( isset( $_POST['spamanvil_save_settings'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified per-tab inside handle_save_settings().
 			$this->handle_save_settings();
 		}
 	}
@@ -82,7 +82,7 @@ class SpamAnvil_Admin {
 			return;
 		}
 
-		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general';
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab navigation.
 		$tabs       = array(
 			'general'    => __( 'General', 'spamanvil' ),
 			'providers'  => __( 'Providers', 'spamanvil' ),
@@ -118,26 +118,22 @@ class SpamAnvil_Admin {
 	}
 
 	private function handle_save_settings() {
-		$tab = isset( $_POST['spamanvil_tab'] ) ? sanitize_text_field( wp_unslash( $_POST['spamanvil_tab'] ) ) : '';
+		$tab = isset( $_POST['spamanvil_tab'] ) ? sanitize_text_field( wp_unslash( $_POST['spamanvil_tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified per-tab inside each save method.
 
 		switch ( $tab ) {
 			case 'general':
-				check_admin_referer( 'spamanvil_general' );
 				$this->save_general_settings();
 				break;
 
 			case 'providers':
-				check_admin_referer( 'spamanvil_providers' );
 				$this->save_provider_settings();
 				break;
 
 			case 'prompt':
-				check_admin_referer( 'spamanvil_prompt' );
 				$this->save_prompt_settings();
 				break;
 
 			case 'ip':
-				check_admin_referer( 'spamanvil_ip' );
 				$this->save_ip_settings();
 				break;
 		}
@@ -146,6 +142,8 @@ class SpamAnvil_Admin {
 	}
 
 	private function save_general_settings() {
+		check_admin_referer( 'spamanvil_general' );
+
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
@@ -161,6 +159,8 @@ class SpamAnvil_Admin {
 	}
 
 	private function save_provider_settings() {
+		check_admin_referer( 'spamanvil_providers' );
+
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
@@ -195,6 +195,8 @@ class SpamAnvil_Admin {
 	}
 
 	private function save_prompt_settings() {
+		check_admin_referer( 'spamanvil_prompt' );
+
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
@@ -211,6 +213,8 @@ class SpamAnvil_Admin {
 	}
 
 	private function save_ip_settings() {
+		check_admin_referer( 'spamanvil_ip' );
+
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}

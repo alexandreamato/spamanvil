@@ -3,6 +3,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// Reason: All queries target custom plugin tables (spamanvil_stats, spamanvil_logs).
+// Table names come from $wpdb->prefix and are safe. WordPress object cache is not
+// applicable to custom tables, and $wpdb->prepare() is used for all user values.
+
 class SpamAnvil_Stats {
 
 	private $stats_table;
@@ -119,7 +126,6 @@ class SpamAnvil_Stats {
 
 		$offset = ( $page - 1 ) * $per_page;
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from $wpdb->prefix, safe.
 		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->logs_table}" );
 
 		$items = $wpdb->get_results(

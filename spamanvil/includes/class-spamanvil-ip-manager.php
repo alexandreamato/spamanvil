@@ -3,6 +3,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// Reason: All queries target custom plugin table (spamanvil_blocked_ips).
+// Table name comes from $wpdb->prefix and is safe.
+
 class SpamAnvil_IP_Manager {
 
 	private $table;
@@ -118,7 +124,6 @@ class SpamAnvil_IP_Manager {
 
 		$offset = ( $page - 1 ) * $per_page;
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from $wpdb->prefix, safe.
 		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table}" );
 
 		$items = $wpdb->get_results(

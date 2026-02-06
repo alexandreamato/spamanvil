@@ -3,6 +3,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// Reason: All queries target custom plugin table (spamanvil_queue).
+// Table name comes from $wpdb->prefix and is safe.
+
 class SpamAnvil_Queue {
 
 	private $table;
@@ -89,7 +95,7 @@ class SpamAnvil_Queue {
 
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$this->table} SET status = 'processing', updated_at = %s WHERE id IN ($placeholders)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$this->table} SET status = 'processing', updated_at = %s WHERE id IN ($placeholders)",
 				array_merge( array( $now ), $ids )
 			)
 		);

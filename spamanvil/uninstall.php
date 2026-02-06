@@ -5,6 +5,12 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// Reason: Uninstall must drop custom plugin tables and clean up options directly.
+
 // Drop custom tables.
 $tables = array(
 	$wpdb->prefix . 'spamanvil_queue',
@@ -14,7 +20,7 @@ $tables = array(
 );
 
 foreach ( $tables as $table ) {
-	$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
 }
 
 // Delete all plugin options.

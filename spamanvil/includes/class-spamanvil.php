@@ -26,18 +26,9 @@ class SpamAnvil {
 	private function __construct() {}
 
 	public function init() {
-		$this->load_textdomain();
 		$this->instantiate_components();
 		$this->check_db_version();
 		$this->define_hooks();
-	}
-
-	private function load_textdomain() {
-		load_plugin_textdomain(
-			'spamanvil',
-			false,
-			dirname( SPAMANVIL_PLUGIN_BASENAME ) . '/languages/'
-		);
 	}
 
 	private function instantiate_components() {

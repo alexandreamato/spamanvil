@@ -7,7 +7,7 @@ settings_errors( 'spamanvil' );
 
 $ip_enabled   = get_option( 'spamanvil_ip_blocking_enabled', '1' );
 $ip_threshold = (int) get_option( 'spamanvil_ip_block_threshold', 3 );
-$page_num     = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+$page_num     = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination.
 $blocked_list = $this->ip_manager->get_blocked_list( $page_num );
 ?>
 
