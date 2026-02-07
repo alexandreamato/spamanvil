@@ -18,21 +18,6 @@ $spam_words    = get_option( 'spamanvil_spam_words', '' );
 	<input type="hidden" name="spamanvil_tab" value="prompt">
 	<input type="hidden" name="spamanvil_save_settings" value="1">
 
-	<div class="spamanvil-card">
-		<h3><?php esc_html_e( 'Prompt Injection Defense', 'spamanvil' ); ?></h3>
-		<p class="description">
-			<?php esc_html_e( 'SpamAnvil protects against prompt injection by:', 'spamanvil' ); ?>
-		</p>
-		<ul class="spamanvil-list">
-			<li><?php esc_html_e( 'Wrapping comment content in <comment_data> boundary tags', 'spamanvil' ); ?></li>
-			<li><?php esc_html_e( 'System prompt explicitly instructs the LLM to ignore instructions within comments', 'spamanvil' ); ?></li>
-			<li><?php esc_html_e( 'Strict JSON response validation - only {"score", "reason"} accepted', 'spamanvil' ); ?></li>
-			<li><?php esc_html_e( 'Content is truncated at 5,000 characters to prevent oversized payloads', 'spamanvil' ); ?></li>
-			<li><?php esc_html_e( 'Temperature set to 0 for deterministic, consistent responses', 'spamanvil' ); ?></li>
-			<li><?php esc_html_e( 'Heuristic engine detects common injection patterns (e.g., "ignore previous instructions") and raises spam score', 'spamanvil' ); ?></li>
-		</ul>
-	</div>
-
 	<table class="form-table">
 		<tr>
 			<th scope="row">
