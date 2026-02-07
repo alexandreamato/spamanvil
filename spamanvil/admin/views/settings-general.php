@@ -10,6 +10,7 @@ settings_errors( 'spamanvil' );
 
 $enabled           = get_option( 'spamanvil_enabled', '1' );
 $mode              = get_option( 'spamanvil_mode', 'async' );
+$anvil_mode        = get_option( 'spamanvil_anvil_mode', '0' );
 $threshold         = (int) get_option( 'spamanvil_threshold', 70 );
 $heuristic_auto    = (int) get_option( 'spamanvil_heuristic_auto_spam', 95 );
 $batch_size        = (int) get_option( 'spamanvil_batch_size', 5 );
@@ -100,6 +101,19 @@ $threshold_suggestion = $this->stats->get_threshold_suggestion();
 				</select>
 				<p class="description">
 					<?php esc_html_e( 'Async mode holds comments as pending and processes them in the background. Sync mode processes immediately but adds latency to comment submission.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
+
+		<tr>
+			<th scope="row"><?php esc_html_e( 'Anvil Mode', 'spamanvil' ); ?></th>
+			<td>
+				<label>
+					<input type="checkbox" name="spamanvil_anvil_mode" value="1" <?php checked( $anvil_mode, '1' ); ?>>
+					<?php esc_html_e( 'Send comments to ALL configured providers', 'spamanvil' ); ?>
+				</label>
+				<p class="description">
+					<?php esc_html_e( 'If any provider flags a comment as spam, it is blocked. Uses more API calls but provides stronger protection. Requires at least 2 providers configured.', 'spamanvil' ); ?>
 				</p>
 			</td>
 		</tr>

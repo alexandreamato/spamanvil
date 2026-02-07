@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -205,6 +205,11 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.0.8 =
+* Feature: Anvil Mode — send comments to ALL configured providers; if any flags it as spam, the comment is blocked
+* Enhancement: Each provider's evaluation is logged individually in Anvil Mode for full transparency
+* Enhancement: Highest score across all providers is used for the spam decision (strictest verdict wins)
 
 = 1.0.7 =
 * Fix: Fallback providers now actually triggered on API timeouts and errors (previously only used when API key was missing)

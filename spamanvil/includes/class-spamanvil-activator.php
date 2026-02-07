@@ -124,9 +124,9 @@ Score guidelines:
 - 81-100: Almost certainly spam
 
 UNDERSTANDING SPAMMER TACTICS:
-Spammers post comments solely to promote their URLs. They use flattery and generic praise to get comments approved. Understanding this is critical:
+Spammers abuse blog comments for many purposes: promoting URLs and backlinks, spreading misinformation, distributing malware links, SEO manipulation, phishing, and advertising illegal services. They use flattery and generic praise to get comments approved. Understanding this is critical:
 
-1. AUTHOR URL IS A MAJOR RED FLAG. Most legitimate commenters do NOT include a website URL. When an author provides a URL, be significantly more suspicious of the entire comment. A generic or vague comment + author URL = almost certainly spam (score 80+). The comment exists only to get the URL published.
+1. AUTHOR URL IS A STRONG SPAM SIGNAL. Most legitimate commenters do NOT include a website URL. When an author provides a URL, be more suspicious — but evaluate in context. A generic or vague comment + author URL = almost certainly spam (score 80+). However, an author URL combined with a specific, on-topic comment that references the post content may be a legitimate professional or blogger. Judge the URL itself too: a normal personal/company domain with a common TLD is less suspicious than a domain containing gambling keywords, SEO terms, or recently-created exotic TLDs.
 
 2. GENERIC PRAISE WITHOUT SPECIFICS = SPAM TEMPLATE. Comments like "Great article!", "This is a fantastic resource", "I have been surfing online for more than 3 hours", "Everything is very open with a clear clarification" are mass-produced templates. They sound positive but say nothing specific about the post. Score 70+ even without a URL, score 85+ with a URL.
 
@@ -141,6 +141,24 @@ Spammers post comments solely to promote their URLs. They use flattery and gener
 7. URLS IN COMMENT BODY. Links inside the comment text, especially to commercial/unrelated sites, are strong spam indicators. More URLs = more suspicious.
 
 8. OVERLY LONG GENERIC TEXT. Some spam templates are long paragraphs of vague praise or generic statements designed to look legitimate. Length does NOT equal legitimacy — check for specific references to the post.
+
+SIGNS OF A LEGITIMATE COMMENT (lower the score when these are present):
+
+1. SPECIFIC REFERENCE TO POST CONTENT. Mentions a concrete point, image, tutorial step, number, or technical term from the post. Spam is generic and interchangeable between any post.
+
+2. CONTEXTUAL QUESTION OR PERSONAL EXPERIENCE. Asks something that only makes sense for this post, or describes a specific situation with plausible details (e.g. "I tried this on macOS 14 and got error X", "the extension doesn\'t show in my menu").
+
+3. COHERENT IDENTITY. The author name, email, and website (if any) are consistent. A personal or corporate email matching the name, a normal domain with a common TLD related to the person or company. Spam uses strange domains, freshly-created TLDs, or gambling/SEO keywords in the domain.
+
+4. IMPERFECT, HUMAN LANGUAGE. Small errors, less polished phrasing, personal style. Spam tends to be overly polished, full of compliments and canned phrases.
+
+5. LOW LINK INTENT. Legitimate comments rarely need a link, and when they have an author URL, the comment text does not revolve around promoting something. Spam exists because of the link.
+
+6. REPLY IN THREAD. A comment that responds to another commenter, mentions their name, or continues an existing conversation. Spam rarely does this convincingly.
+
+7. NO MONETIZATION KEYWORDS. Real comments rarely use terms like gambling, lottery, "live draw", "SEO", "backlink", "affiliate marketing". When they do, it is clearly in a relevant technical context.
+
+8. NATURAL LENGTH AND STRUCTURE. Real comments vary but have a natural flow: a short opening, an observation, a question. Spam is either extremely short and generic ("awesome post") or artificially long with excessive praise.
 
 Do NOT include any text outside the JSON object. Do NOT wrap the response in markdown code blocks.';
 	}

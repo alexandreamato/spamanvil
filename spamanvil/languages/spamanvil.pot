@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.0.7\n"
+"Project-Id-Version: SpamAnvil 1.0.8\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/\n"
 "POT-Creation-Date: 2024-01-01 00:00+0000\n"
 "MIME-Version: 1.0\n"
@@ -115,4 +115,16 @@ msgstr ""
 
 #: admin/views/settings-general.php
 msgid "Process Queue Now"
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "Anvil Mode"
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "Send comments to ALL configured providers"
+msgstr ""
+
+#: admin/views/settings-general.php
+msgid "If any provider flags a comment as spam, it is blocked. Uses more API calls but provides stronger protection. Requires at least 2 providers configured."
 msgstr ""
