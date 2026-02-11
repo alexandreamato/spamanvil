@@ -81,6 +81,12 @@ class SpamAnvil_Admin {
 				'processing'    => __( 'Processing...', 'spamanvil' ),
 				'process_done'  => __( 'Done!', 'spamanvil' ),
 				'process_batch'     => __( 'Processing batch...', 'spamanvil' ),
+				'process_stop'      => __( 'Stop', 'spamanvil' ),
+				'process_stopping'  => __( 'Stopping...', 'spamanvil' ),
+				'process_stopped'   => __( 'Stopped.', 'spamanvil' ),
+				'process_retrying'  => __( 'Connection error, retrying...', 'spamanvil' ),
+				'process_failed'    => __( 'Failed after multiple retries.', 'spamanvil' ),
+				'items_min'         => __( 'items/min', 'spamanvil' ),
 				'confirm_clear_key' => __( 'Are you sure you want to delete this API key?', 'spamanvil' ),
 				'enter_key'         => __( 'Enter API key', 'spamanvil' ),
 				'confirm_load_words' => __( 'This will merge an extended spam word list into your current list. Continue?', 'spamanvil' ),
@@ -369,14 +375,15 @@ class SpamAnvil_Admin {
 			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
 		}
 
-		// Extend PHP execution time for LLM calls (each can take 8-10s).
+		// Extend PHP execution time — 45s is safe for most hosting environments.
 		if ( function_exists( 'set_time_limit' ) ) {
-			set_time_limit( 180 ); // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- required for long-running LLM API calls.
+			set_time_limit( 45 ); // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- required for long-running LLM API calls.
 		}
 
 		$before = $this->queue->get_queue_status();
 
-		$this->queue->process_batch( true );
+		// Time guard: stop processing after 25s to finish well within server timeouts.
+		$this->queue->process_batch( true, 25 );
 
 		$after = $this->queue->get_queue_status();
 

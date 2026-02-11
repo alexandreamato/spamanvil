@@ -47,13 +47,23 @@ $threshold_suggestion = $this->stats->get_threshold_suggestion();
 				<span class="status-label"><?php esc_html_e( 'Max Retries', 'spamanvil' ); ?></span>
 			</div>
 		</div>
-		<?php $total_actionable = $queue_status['queued'] + $queue_status['failed']; ?>
+		<?php $total_actionable = $queue_status['queued'] + $queue_status['failed'] + $queue_status['max_retries']; ?>
 		<p>
 			<button type="button" class="button button-secondary spamanvil-process-queue-btn" <?php disabled( $total_actionable, 0 ); ?>>
 				<?php esc_html_e( 'Process Queue Now', 'spamanvil' ); ?>
 			</button>
+			<button type="button" class="button button-secondary spamanvil-stop-queue-btn" style="display:none;">
+				<?php esc_html_e( 'Stop', 'spamanvil' ); ?>
+			</button>
 			<span class="spamanvil-process-queue-result"></span>
 		</p>
+		<div class="spamanvil-progress-wrap">
+			<div class="spamanvil-progress-bar">
+				<div class="spamanvil-progress-fill" style="width: 0%;"></div>
+				<div class="spamanvil-progress-text"></div>
+			</div>
+			<div class="spamanvil-progress-details"></div>
+		</div>
 	</div>
 
 	<?php

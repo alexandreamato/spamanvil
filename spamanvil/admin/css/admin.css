@@ -246,6 +246,49 @@
 	line-height: 1.4;
 }
 
+/* Progress Bar */
+.spamanvil-progress-wrap {
+	display: none;
+	margin-top: 12px;
+}
+
+.spamanvil-progress-bar {
+	width: 100%;
+	height: 22px;
+	background: #f0f0f1;
+	border-radius: 4px;
+	overflow: hidden;
+	position: relative;
+}
+
+.spamanvil-progress-fill {
+	height: 100%;
+	background: #2271b1;
+	border-radius: 4px;
+	transition: width 0.3s ease;
+	min-width: 0;
+}
+
+.spamanvil-progress-text {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.spamanvil-progress-details {
+	margin-top: 6px;
+	font-size: 13px;
+	color: #646970;
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
 	.spamanvil-stats-grid {

@@ -51,27 +51,72 @@ class SpamAnvil_Queue {
 	/**
 	 * Process a batch of queued items.
 	 *
-	 * @param bool $force When true (manual "Process Queue Now"), retry failed items
-	 *                    immediately regardless of backoff schedule.
+	 * @param bool $force      When true (manual "Process Queue Now"), retry failed items
+	 *                         immediately regardless of backoff schedule.
+	 * @param int  $time_limit Maximum seconds to spend processing. 0 = no limit (cron default).
+	 *                         When set, the loop stops after each item if elapsed time exceeds
+	 *                         the limit, and releases remaining claimed items back to the queue.
+	 * @return int Number of items processed.
 	 */
-	public function process_batch( $force = false ) {
+	public function process_batch( $force = false, $time_limit = 0 ) {
 		// Prevent concurrent execution with a transient lock.
 		$lock_key = 'spamanvil_queue_lock';
 		if ( get_transient( $lock_key ) ) {
-			return;
+			return 0;
 		}
 		set_transient( $lock_key, true, 300 ); // 5-minute lock.
 
+		$processed = 0;
 		try {
 			$batch_size = (int) get_option( 'spamanvil_batch_size', 5 );
 			$items      = $this->claim_items( $batch_size, $force );
+			$start_time = microtime( true );
 
 			foreach ( $items as $item ) {
 				$this->process_single( $item );
+				$processed++;
+
+				// Time guard: stop if approaching limit.
+				if ( $time_limit > 0 ) {
+					$elapsed = microtime( true ) - $start_time;
+					if ( $elapsed >= $time_limit ) {
+						// Release unclaimed items back to queue.
+						$remaining_ids = array_slice( wp_list_pluck( $items, 'id' ), $processed );
+						if ( ! empty( $remaining_ids ) ) {
+							$this->release_items( $remaining_ids );
+						}
+						break;
+					}
+				}
 			}
 		} finally {
 			delete_transient( $lock_key );
 		}
+
+		return $processed;
+	}
+
+	/**
+	 * Release claimed items back to 'queued' status so they can be picked up next round.
+	 *
+	 * @param array $ids Queue item IDs to release.
+	 */
+	private function release_items( $ids ) {
+		global $wpdb;
+
+		if ( empty( $ids ) ) {
+			return;
+		}
+
+		$ids          = array_map( 'absint', $ids );
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$this->table} SET status = 'queued', updated_at = %s WHERE id IN ($placeholders)",
+				array_merge( array( current_time( 'mysql' ) ), $ids )
+			)
+		);
 	}
 
 	private function claim_items( $limit, $force = false ) {

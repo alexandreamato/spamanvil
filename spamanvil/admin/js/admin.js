@@ -234,61 +234,157 @@
 
     /**
      * Process Queue Now AJAX (loops batches until empty).
+     * Features: time-guarded batches, auto-retry, progress bar, stop button.
      */
     function initProcessQueue() {
         var totalProcessed = 0;
+        var totalItems     = 0;
+        var startTime      = 0;
+        var stopped        = false;
+        var retryCount     = 0;
+        var maxRetries     = 3;
+        var retryDelay     = 2000;
+        var currentXhr     = null;
 
-        $('.spamanvil-process-queue-btn').on('click', function() {
-            var $btn = $(this);
-            var $result = $('.spamanvil-process-queue-result');
+        var $btn     = $('.spamanvil-process-queue-btn');
+        var $stopBtn = $('.spamanvil-stop-queue-btn');
+        var $result  = $('.spamanvil-process-queue-result');
+        var $wrap    = $('.spamanvil-progress-wrap');
+        var $fill    = $('.spamanvil-progress-fill');
+        var $text    = $('.spamanvil-progress-text');
+        var $details = $('.spamanvil-progress-details');
 
+        $btn.on('click', function() {
             totalProcessed = 0;
-            $btn.prop('disabled', true);
-            $result.removeClass('success error').text(spamAnvil.strings.processing);
+            retryCount     = 0;
+            stopped        = false;
+            startTime      = Date.now();
 
-            processBatch($btn, $result);
+            // Calculate total from queue counters.
+            var $items = $('.spamanvil-status-grid .status-item');
+            totalItems = 0;
+            if ($items.length >= 4) {
+                totalItems += parseInt($items.eq(0).find('.status-number').text(), 10) || 0;
+                totalItems += parseInt($items.eq(2).find('.status-number').text(), 10) || 0;
+                totalItems += parseInt($items.eq(3).find('.status-number').text(), 10) || 0;
+            }
+
+            $btn.prop('disabled', true).hide();
+            $stopBtn.show();
+            $result.removeClass('success error').text(spamAnvil.strings.processing);
+            $wrap.show();
+            updateProgress(0, totalItems);
+
+            processBatch();
         });
 
-        function processBatch($btn, $result) {
-            $.ajax({
+        $stopBtn.on('click', function() {
+            stopped = true;
+            $stopBtn.prop('disabled', true).text(spamAnvil.strings.process_stopping);
+            if (currentXhr) {
+                currentXhr.abort();
+            }
+        });
+
+        function processBatch() {
+            if (stopped) {
+                finish(spamAnvil.strings.process_stopped + ' ' + totalProcessed + ' processed.');
+                return;
+            }
+
+            currentXhr = $.ajax({
                 url: spamAnvil.ajax_url,
                 type: 'POST',
-                timeout: 180000,
+                timeout: 45000,
                 data: {
                     action: 'spamanvil_process_queue',
                     nonce: spamAnvil.nonce
                 },
                 success: function(response) {
-                    if (response.success) {
-                        var d = response.data;
-                        totalProcessed += d.processed;
+                    currentXhr = null;
+                    retryCount = 0;
 
-                        if (d.remaining > 0 && d.processed > 0) {
-                            $result.text(
-                                spamAnvil.strings.process_batch +
-                                ' ' + totalProcessed + ' processed, ' +
-                                d.remaining + ' remaining...'
-                            );
-                            processBatch($btn, $result);
-                        } else {
-                            $btn.prop('disabled', false);
-                            $result.addClass('success').text(
-                                spamAnvil.strings.process_done +
-                                ' ' + totalProcessed + ' processed, ' +
-                                d.remaining + ' remaining.'
-                            );
-                            updateQueueCounters(d.queue);
-                        }
+                    if (!response.success) {
+                        finish(response.data, true);
+                        return;
+                    }
+
+                    var d = response.data;
+                    totalProcessed += d.processed;
+
+                    // Recalculate total if server reports more items than expected.
+                    if (totalProcessed + d.remaining > totalItems) {
+                        totalItems = totalProcessed + d.remaining;
+                    }
+
+                    updateProgress(totalProcessed, totalProcessed + d.remaining);
+                    updateQueueCounters(d.queue);
+
+                    if (stopped) {
+                        finish(spamAnvil.strings.process_stopped + ' ' + totalProcessed + ' processed, ' + d.remaining + ' remaining.');
+                        return;
+                    }
+
+                    if (d.remaining > 0 && d.processed > 0) {
+                        $result.text(
+                            spamAnvil.strings.process_batch +
+                            ' ' + totalProcessed + ' processed, ' +
+                            d.remaining + ' remaining...'
+                        );
+                        processBatch();
                     } else {
-                        $btn.prop('disabled', false);
-                        $result.addClass('error').text(response.data);
+                        finish(
+                            spamAnvil.strings.process_done +
+                            ' ' + totalProcessed + ' processed, ' +
+                            d.remaining + ' remaining.'
+                        );
                     }
                 },
-                error: function() {
-                    $btn.prop('disabled', false);
-                    $result.addClass('error').text(spamAnvil.strings.error + ' Network error');
+                error: function(xhr, status) {
+                    currentXhr = null;
+
+                    if (stopped || status === 'abort') {
+                        finish(spamAnvil.strings.process_stopped + ' ' + totalProcessed + ' processed.');
+                        return;
+                    }
+
+                    retryCount++;
+                    if (retryCount <= maxRetries) {
+                        $result.text(
+                            spamAnvil.strings.process_retrying +
+                            ' (' + retryCount + '/' + maxRetries + ')'
+                        );
+                        setTimeout(processBatch, retryDelay);
+                    } else {
+                        finish(spamAnvil.strings.process_failed + ' ' + totalProcessed + ' processed.', true);
+                    }
                 }
             });
+        }
+
+        function updateProgress(processed, total) {
+            var pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+            $fill.css('width', pct + '%');
+            $text.text(processed + ' / ' + total + ' (' + pct + '%)');
+
+            // Speed and elapsed time.
+            var elapsed = (Date.now() - startTime) / 1000;
+            var speed   = elapsed > 0 ? (processed / elapsed * 60).toFixed(1) : 0;
+            var mins    = Math.floor(elapsed / 60);
+            var secs    = Math.floor(elapsed % 60);
+            var time    = (mins > 0 ? mins + 'm ' : '') + secs + 's';
+            $details.text(speed + ' ' + spamAnvil.strings.items_min + ' — ' + time);
+        }
+
+        function finish(message, isError) {
+            $btn.prop('disabled', false).show();
+            $stopBtn.hide().prop('disabled', false).text(spamAnvil.strings.process_stop);
+            currentXhr = null;
+            if (isError) {
+                $result.addClass('error').text(message);
+            } else {
+                $result.addClass('success').text(message);
+            }
         }
 
         function updateQueueCounters(queue) {
@@ -313,26 +409,33 @@
             $btn.prop('disabled', true);
             $result.removeClass('success error').text(spamAnvil.strings.scanning);
 
-            $.post(spamAnvil.ajax_url, {
-                action: 'spamanvil_scan_pending',
-                nonce: spamAnvil.nonce
-            }, function(response) {
-                $btn.prop('disabled', false);
+            $.ajax({
+                url: spamAnvil.ajax_url,
+                type: 'POST',
+                timeout: 60000,
+                data: {
+                    action: 'spamanvil_scan_pending',
+                    nonce: spamAnvil.nonce
+                },
+                success: function(response) {
+                    $btn.prop('disabled', false);
 
-                if (response.success) {
-                    var d = response.data;
-                    $result.addClass('success').text(
-                        spamAnvil.strings.scan_done +
-                        ' ' + d.enqueued + ' enqueued, ' +
-                        d.auto_spam + ' auto-spam, ' +
-                        d.already_queued + ' already queued.'
-                    );
-                } else {
-                    $result.addClass('error').text(response.data);
+                    if (response.success) {
+                        var d = response.data;
+                        $result.addClass('success').text(
+                            spamAnvil.strings.scan_done +
+                            ' ' + d.enqueued + ' enqueued, ' +
+                            d.auto_spam + ' auto-spam, ' +
+                            d.already_queued + ' already queued.'
+                        );
+                    } else {
+                        $result.addClass('error').text(response.data);
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false);
+                    $result.addClass('error').text(spamAnvil.strings.error + ' Network error');
                 }
-            }).fail(function() {
-                $btn.prop('disabled', false);
-                $result.addClass('error').text(spamAnvil.strings.error + ' Network error');
             });
         });
     }
