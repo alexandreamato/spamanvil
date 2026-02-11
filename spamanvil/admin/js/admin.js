@@ -239,6 +239,8 @@
     function initProcessQueue() {
         var totalProcessed = 0;
         var totalItems     = 0;
+        var totalSpam      = 0;
+        var totalHam       = 0;
         var startTime      = 0;
         var stopped        = false;
         var retryCount     = 0;
@@ -256,6 +258,8 @@
 
         $btn.on('click', function() {
             totalProcessed = 0;
+            totalSpam      = 0;
+            totalHam       = 0;
             retryCount     = 0;
             stopped        = false;
             startTime      = Date.now();
@@ -311,6 +315,8 @@
 
                     var d = response.data;
                     totalProcessed += d.processed;
+                    totalSpam      += d.batch_spam || 0;
+                    totalHam       += d.batch_ham  || 0;
 
                     // Recalculate total if server reports more items than expected.
                     if (totalProcessed + d.remaining > totalItems) {
@@ -373,7 +379,14 @@
             var mins    = Math.floor(elapsed / 60);
             var secs    = Math.floor(elapsed % 60);
             var time    = (mins > 0 ? mins + 'm ' : '') + secs + 's';
-            $details.text(speed + ' ' + spamAnvil.strings.items_min + ' — ' + time);
+
+            // Spam/ham results.
+            var results = '';
+            if (totalSpam > 0 || totalHam > 0) {
+                results = ' — ' + spamAnvil.strings.spam + ': ' + totalSpam + ' | ' + spamAnvil.strings.ham + ': ' + totalHam;
+            }
+
+            $details.text(speed + ' ' + spamAnvil.strings.items_min + ' — ' + time + results);
         }
 
         function finish(message, isError) {
