@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.8
+Stable tag: 1.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -210,7 +210,8 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 
 == Changelog ==
 
-= 1.1.8 =
+= 1.1.9 =
+* Fix: "Process Queue Now" and "Scan Pending Comments" now show an error with a link to configure a provider instead of attempting to process without one
 * Feature: Portuguese (Brazilian) translation — pt_BR
 * Enhancement: Updated POT file with all translatable strings
 

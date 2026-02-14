@@ -93,8 +93,10 @@ class SpamAnvil_Admin {
 		);
 
 		wp_localize_script( 'spamanvil-admin', 'spamAnvil', array(
-			'ajax_url' => admin_url( 'admin-ajax.php' ),
-			'nonce'    => wp_create_nonce( 'spamanvil_ajax' ),
+			'ajax_url'     => admin_url( 'admin-ajax.php' ),
+			'nonce'        => wp_create_nonce( 'spamanvil_ajax' ),
+			'has_provider' => ( '' !== get_option( 'spamanvil_primary_provider', '' ) ),
+			'providers_url' => admin_url( 'options-general.php?page=spamanvil&tab=providers' ),
 			'strings'  => array(
 				'testing'    => __( 'Testing...', 'spamanvil' ),
 				'success'    => __( 'Connection successful!', 'spamanvil' ),
@@ -121,6 +123,8 @@ class SpamAnvil_Admin {
 				'confirm_load_words' => __( 'This will merge an extended spam word list into your current list. Continue?', 'spamanvil' ),
 				'words_added'       => __( 'new words added. Save to confirm.', 'spamanvil' ),
 				'words_loaded'      => __( 'Extended list loaded. Save to confirm.', 'spamanvil' ),
+				'no_provider'       => __( 'No provider configured.', 'spamanvil' ),
+				'configure_provider' => __( 'Configure a Provider', 'spamanvil' ),
 			),
 		) );
 	}
@@ -459,6 +463,10 @@ class SpamAnvil_Admin {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		if ( '' === get_option( 'spamanvil_primary_provider', '' ) ) {
+			wp_send_json_error( __( 'No provider configured. Go to the Providers tab to set one up.', 'spamanvil' ) );
 		}
 
 		// Extend PHP execution time — 45s is safe for most hosting environments.

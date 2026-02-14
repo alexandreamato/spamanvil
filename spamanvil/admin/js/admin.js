@@ -258,6 +258,15 @@
         var $details = $('.spamanvil-progress-details');
 
         $btn.on('click', function() {
+            if (!spamAnvil.has_provider) {
+                $result.addClass('error').html(
+                    spamAnvil.strings.no_provider +
+                    ' <a href="' + spamAnvil.providers_url + '">' +
+                    spamAnvil.strings.configure_provider + ' &rarr;</a>'
+                );
+                return;
+            }
+
             totalProcessed = 0;
             totalSpam      = 0;
             totalHam       = 0;
@@ -467,6 +476,15 @@
         $('.spamanvil-scan-pending-btn').on('click', function() {
             var $btn = $(this);
             var $result = $('.spamanvil-scan-pending-result');
+
+            if (!spamAnvil.has_provider) {
+                $result.addClass('error').html(
+                    spamAnvil.strings.no_provider +
+                    ' <a href="' + spamAnvil.providers_url + '">' +
+                    spamAnvil.strings.configure_provider + ' &rarr;</a>'
+                );
+                return;
+            }
 
             $btn.prop('disabled', true);
             $result.removeClass('success error').text(spamAnvil.strings.scanning);
