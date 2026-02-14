@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.5
+Stable tag: 1.1.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -210,7 +210,9 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 
 == Changelog ==
 
-= 1.1.5 =
+= 1.1.6 =
+* Feature: Dashboard widget on the main WordPress admin page showing total spam blocked
+* Enhancement: "Rate ★★★★★" link appears in the widget after 20+ spam blocked
 * Enhancement: "Spam Comments Blocked" hero banner now shown on both General and Statistics tabs
 
 = 1.1.4 =

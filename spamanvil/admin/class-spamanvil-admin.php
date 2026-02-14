@@ -62,6 +62,17 @@ class SpamAnvil_Admin {
 	}
 
 	public function enqueue_assets( $hook ) {
+		// Load CSS on plugin settings page and main dashboard (for widget).
+		if ( 'index.php' === $hook ) {
+			wp_enqueue_style(
+				'spamanvil-admin',
+				SPAMANVIL_PLUGIN_URL . 'admin/css/admin.css',
+				array(),
+				SPAMANVIL_VERSION
+			);
+			return;
+		}
+
 		if ( 'settings_page_spamanvil' !== $hook ) {
 			return;
 		}
@@ -564,5 +575,49 @@ class SpamAnvil_Admin {
 	public function has_constant_key( $provider_slug ) {
 		$config = SpamAnvil_Provider_Factory::get_provider_config( $provider_slug );
 		return $config && defined( $config['constant_key'] );
+	}
+
+	public function register_dashboard_widget() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		wp_add_dashboard_widget(
+			'spamanvil_dashboard_widget',
+			__( 'SpamAnvil', 'spamanvil' ),
+			array( $this, 'render_dashboard_widget' )
+		);
+	}
+
+	public function render_dashboard_widget() {
+		$alltime_spam      = $this->stats->get_total( 'spam_detected' );
+		$alltime_heuristic = $this->stats->get_total( 'heuristic_blocked' );
+		$alltime_ip        = $this->stats->get_total( 'ip_blocked' );
+		$alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
+
+		?>
+		<div class="spamanvil-widget">
+			<div class="spamanvil-widget-number"><?php echo esc_html( number_format_i18n( $alltime_blocked ) ); ?></div>
+			<div class="spamanvil-widget-label"><?php esc_html_e( 'Spam Comments Blocked', 'spamanvil' ); ?></div>
+			<div class="spamanvil-widget-breakdown">
+				<?php
+				printf(
+					/* translators: 1: LLM spam count, 2: heuristic count, 3: IP blocked count */
+					esc_html__( '%1$s by AI  |  %2$s by Heuristics  |  %3$s by IP Blocking', 'spamanvil' ),
+					'<strong>' . esc_html( number_format_i18n( $alltime_spam ) ) . '</strong>',
+					'<strong>' . esc_html( number_format_i18n( $alltime_heuristic ) ) . '</strong>',
+					'<strong>' . esc_html( number_format_i18n( $alltime_ip ) ) . '</strong>'
+				);
+				?>
+			</div>
+			<div class="spamanvil-widget-links">
+				<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil' ) ); ?>"><?php esc_html_e( 'Settings', 'spamanvil' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=stats' ) ); ?>"><?php esc_html_e( 'Statistics', 'spamanvil' ); ?></a>
+				<?php if ( $alltime_blocked >= 20 && ! get_option( 'spamanvil_dismiss_review' ) ) : ?>
+					<a href="https://wordpress.org/support/plugin/spamanvil/reviews/#new-post" target="_blank" rel="noopener noreferrer" class="spamanvil-widget-rate"><?php esc_html_e( 'Rate ★★★★★', 'spamanvil' ); ?></a>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
 	}
 }

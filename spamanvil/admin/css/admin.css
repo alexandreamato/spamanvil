@@ -383,6 +383,50 @@
 	color: #2271b1;
 }
 
+/* Dashboard Widget */
+.spamanvil-widget {
+	text-align: center;
+	padding: 10px 0;
+}
+
+.spamanvil-widget-number {
+	font-size: 48px;
+	font-weight: 800;
+	color: #1d2327;
+	line-height: 1;
+	letter-spacing: -1px;
+}
+
+.spamanvil-widget-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: #d63638;
+	margin-top: 4px;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
+.spamanvil-widget-breakdown {
+	font-size: 12px;
+	color: #646970;
+	margin-top: 12px;
+}
+
+.spamanvil-widget-links {
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid #f0f0f1;
+	display: flex;
+	justify-content: center;
+	gap: 16px;
+	font-size: 13px;
+}
+
+.spamanvil-widget-rate {
+	color: #dba617 !important;
+	font-weight: 600;
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
 	.spamanvil-hero-banner {
