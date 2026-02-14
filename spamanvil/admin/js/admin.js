@@ -326,6 +326,7 @@
 
                     updateProgress(totalProcessed, totalProcessed + d.remaining);
                     updateQueueCounters(d.queue);
+                    updateSpamCounters(d.alltime);
 
                     if (stopped) {
                         finish(spamAnvil.strings.process_stopped + ' ' + totalProcessed + ' processed, ' + d.remaining + ' remaining.');
@@ -409,6 +410,17 @@
                 $items.eq(2).find('.status-number').text(queue.failed);
                 $items.eq(3).find('.status-number').text(queue.max_retries);
             }
+        }
+
+        function updateSpamCounters(alltime) {
+            if (!alltime) { return; }
+            var total = (alltime.ai || 0) + (alltime.heuristic || 0) + (alltime.ip || 0);
+
+            // Update hero banner(s).
+            $('.spamanvil-hero-number').text(total.toLocaleString());
+
+            // Update widget number (WP dashboard).
+            $('.spamanvil-widget-number').text(total.toLocaleString());
         }
     }
 

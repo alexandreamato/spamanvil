@@ -484,6 +484,11 @@ class SpamAnvil_Admin {
 			'queue'      => $after,
 			'batch_spam' => max( 0, $stats_after['spam_detected'] - $stats_before['spam_detected'] ),
 			'batch_ham'  => max( 0, $stats_after['ham_approved'] - $stats_before['ham_approved'] ),
+			'alltime'    => array(
+				'ai'        => $this->stats->get_total( 'spam_detected' ),
+				'heuristic' => $this->stats->get_total( 'heuristic_blocked' ),
+				'ip'        => $this->stats->get_total( 'ip_blocked' ),
+			),
 		) );
 	}
 

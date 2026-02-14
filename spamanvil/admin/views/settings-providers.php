@@ -7,7 +7,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Reason: Template variables in an included view file, scoped by the calling method.
 
 settings_errors( 'spamanvil' );
-
+?>
+<div class="spamanvil-notice" style="margin-bottom: 16px;">
+	<strong><?php esc_html_e( 'Tip:', 'spamanvil' ); ?></strong>
+	<?php esc_html_e( 'Set a monthly spending limit on your API key to avoid unexpected charges. SpamAnvil uses very little — typically less than $0.10/month for most sites — but a limit ensures peace of mind. Most providers offer this in their billing settings.', 'spamanvil' ); ?>
+</div>
+<?php
 $providers        = SpamAnvil_Provider_Factory::get_available_providers();
 $primary          = get_option( 'spamanvil_primary_provider', '' );
 $fallback         = get_option( 'spamanvil_fallback_provider', '' );
