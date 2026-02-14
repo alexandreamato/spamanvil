@@ -12,6 +12,7 @@
         initThresholdSuggestion();
         initScanPending();
         initProcessQueue();
+        initDismissNotice();
     });
 
     /**
@@ -409,6 +410,42 @@
                 $items.eq(3).find('.status-number').text(queue.max_retries);
             }
         }
+    }
+
+    /**
+     * Persistent notice dismissal via AJAX.
+     */
+    function initDismissNotice() {
+        function dismiss(noticeKey, $container) {
+            $.post(spamAnvil.ajax_url, {
+                action: 'spamanvil_dismiss_notice',
+                nonce: spamAnvil.nonce,
+                notice: noticeKey
+            });
+            $container.fadeTo(100, 0, function() {
+                $(this).slideUp(100, function() {
+                    $(this).remove();
+                });
+            });
+        }
+
+        // "No thanks" button.
+        $('.spamanvil-dismiss-btn').on('click', function() {
+            var noticeKey = $(this).data('notice');
+            dismiss(noticeKey, $(this).closest('.notice'));
+        });
+
+        // WordPress dismiss button (X) on our notices.
+        $(document).on('click', '.spamanvil-dismissible .notice-dismiss', function() {
+            var noticeKey = $(this).closest('.spamanvil-dismissible').data('notice');
+            if (noticeKey) {
+                $.post(spamAnvil.ajax_url, {
+                    action: 'spamanvil_dismiss_notice',
+                    nonce: spamAnvil.nonce,
+                    notice: noticeKey
+                });
+            }
+        });
     }
 
     /**

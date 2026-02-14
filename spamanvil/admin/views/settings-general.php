@@ -224,6 +224,19 @@ $threshold_suggestion = $this->stats->get_threshold_suggestion();
 		</tr>
 
 		<tr>
+			<th scope="row"><?php esc_html_e( 'Delete Data on Uninstall', 'spamanvil' ); ?></th>
+			<td>
+				<label>
+					<input type="checkbox" name="spamanvil_delete_data" value="1" <?php checked( get_option( 'spamanvil_delete_data', '0' ), '1' ); ?>>
+					<?php esc_html_e( 'Delete all plugin data when the plugin is deleted', 'spamanvil' ); ?>
+				</label>
+				<p class="description">
+					<?php esc_html_e( 'When disabled, your settings, statistics, logs, and blocked IPs are preserved if you reinstall the plugin. Enable this only if you want a complete removal.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
+
+		<tr>
 			<th scope="row"><?php esc_html_e( 'Privacy Notice', 'spamanvil' ); ?></th>
 			<td>
 				<label>

@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.9
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,7 +31,7 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 * **Anthropic Claude** (Claude Sonnet, Haiku, etc.)
 * **Google Gemini** (Gemini 2.0 Flash, Pro, etc.)
 * **OpenRouter** (100+ models, including FREE ones)
-* **[Featherless.ai](https://featherless.ai/)** (Open-source models)
+* **Featherless.ai** (Open-source models)
 * **Any OpenAI-compatible API** (LM Studio, Ollama via proxy, vLLM, etc.)
 
 = Key Features =
@@ -191,6 +191,10 @@ SpamAnvil uses 6 layers of prompt injection defense: (1) comment content is wrap
 
 Yes! If you run a local model with an OpenAI-compatible API (e.g., LM Studio, Ollama with a proxy, vLLM, Text Generation WebUI), you can connect it using the "Generic OpenAI-Compatible" provider option with your local URL.
 
+= Who developed SpamAnvil? =
+
+SpamAnvil was created by [Dr. Alexandre Amato](https://vascular.pro), a vascular surgeon and software developer based in Brazil. When he's not in the operating room, he builds open-source tools and medical education resources such as [Enciclopédia Médica](https://enciclopedia.med.br).
+
 = What WordPress versions are supported? =
 
 SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
@@ -205,6 +209,18 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.1.1 =
+* Feature: Data preservation on uninstall — settings, stats, logs, and blocked IPs are kept by default when reinstalling
+* Enhancement: New "Delete Data on Uninstall" option in General settings for users who want a complete removal
+
+= 1.1.0 =
+* Feature: Welcome redirect after activation with setup guidance
+* Feature: Review request notice after 50+ comments checked (dismissible, never nags)
+* Feature: Unconfigured provider warning on plugin settings pages
+* Feature: Contextual "Tips & Insights" card on Statistics page with actionable suggestions
+* Enhancement: "Rate ★★★★★" and "Docs" action links on the Plugins page
+* Enhancement: All marketing notices are dismissible and only shown on plugin pages
 
 = 1.0.8 =
 * Feature: Anvil Mode — send comments to ALL configured providers; if any flags it as spam, the comment is blocked

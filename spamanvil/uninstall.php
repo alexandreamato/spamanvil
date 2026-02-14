@@ -3,7 +3,14 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-global $wpdb;
+// Always clear scheduled hooks (safe, no data loss).
+wp_clear_scheduled_hook( 'spamanvil_process_queue' );
+wp_clear_scheduled_hook( 'spamanvil_cleanup_logs' );
+
+// Only delete data if the user opted in.
+if ( '1' !== get_option( 'spamanvil_delete_data', '0' ) ) {
+	return;
+}
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -12,6 +19,8 @@ global $wpdb;
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 // Reason: Uninstall must drop custom plugin tables and clean up options directly.
 // Variables are local to this uninstall script, not true globals.
+
+global $wpdb;
 
 // Drop custom tables.
 $tables = array(
@@ -36,7 +45,3 @@ $options = $wpdb->get_col(
 foreach ( $options as $option ) {
 	delete_option( $option );
 }
-
-// Clear scheduled hooks.
-wp_clear_scheduled_hook( 'spamanvil_process_queue' );
-wp_clear_scheduled_hook( 'spamanvil_cleanup_logs' );

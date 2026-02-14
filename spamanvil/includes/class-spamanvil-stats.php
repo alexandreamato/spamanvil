@@ -40,6 +40,17 @@ class SpamAnvil_Stats {
 		);
 	}
 
+	public function get_total( $key ) {
+		global $wpdb;
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(stat_value), 0) FROM {$this->stats_table} WHERE stat_key = %s",
+				$key
+			)
+		);
+	}
+
 	public function get_summary( $days = 30 ) {
 		global $wpdb;
 

@@ -130,7 +130,7 @@ WP-Cron (every 5 min):
 - **POT file** must contain ALL translatable strings (regenerate with `wp i18n make-pot`)
 - **Tested up to** must match latest WordPress version at submission time
 
-## Building the Plugin
+## Building the Plugin ZIP
 
 ```bash
 # From the project root (parent of spamanvil/):
@@ -138,6 +138,106 @@ cd spamanvil && zip -r ../spamanvil.zip . -x ".*" -x "__MACOSX/*"
 ```
 
 After any JS/CSS changes, bump `SPAMANVIL_VERSION` in `spamanvil.php` to bust browser cache.
+
+## Publishing to WordPress.org (SVN)
+
+The plugin is hosted on WordPress.org via SVN. The local SVN working copy is at `svn-spamanvil/` (git-ignored). The SVN repo URL is `https://plugins.svn.wordpress.org/spamanvil`.
+
+### SVN Directory Layout
+
+```
+svn-spamanvil/
+├── assets/             # WordPress.org page assets (NOT shipped with plugin)
+│   ├── icon-128x128.png
+│   ├── icon-256x256.png
+│   ├── banner-772x250.png
+│   ├── banner-772x250.gif    # Animated banner
+│   └── banner-1544x500.png   # Retina banner
+├── trunk/              # Current development version (mirrors spamanvil/)
+└── tags/
+    └── X.Y.Z/          # Tagged releases (one directory per version)
+```
+
+### Pre-Flight Checklist
+
+Before publishing, verify ALL of these:
+
+1. **Version consistency** — The same version string must appear in all 3 places:
+   - `spamanvil/spamanvil.php` → Plugin header `Version:` AND `SPAMANVIL_VERSION` constant
+   - `spamanvil/readme.txt` → `Stable tag:` field
+2. **Changelog** — `readme.txt` has a `= X.Y.Z =` entry under `== Changelog ==`
+3. **Tested up to** — `readme.txt` `Tested up to:` matches the latest stable WordPress version
+4. **POT file** — Regenerate if any translatable strings changed:
+   ```bash
+   wp i18n make-pot spamanvil/ spamanvil/languages/spamanvil.pot
+   ```
+5. **No secrets** — Grep for API keys, passwords, debug flags left in code
+6. **ABSPATH check** — Every PHP file starts with `if ( ! defined( 'ABSPATH' ) ) { exit; }`
+
+### Deployment Commands
+
+```bash
+# All commands from project root:
+PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/llm_anti_spam"
+SVN_DIR="$PROJECT_ROOT/svn-spamanvil"
+PLUGIN_DIR="$PROJECT_ROOT/spamanvil"
+VERSION="1.1.0"  # ← Update this each release
+
+# 1. Update SVN working copy
+cd "$SVN_DIR" && svn up
+
+# 2. Sync plugin files to trunk (delete old, copy new)
+rm -rf "$SVN_DIR/trunk/"*
+cp -R "$PLUGIN_DIR/"* "$SVN_DIR/trunk/"
+
+# 3. Create version tag
+svn cp "$SVN_DIR/trunk" "$SVN_DIR/tags/$VERSION"
+
+# 4. Stage all changes (adds new files, removes deleted ones)
+cd "$SVN_DIR" && svn add --force trunk/ tags/$VERSION/ 2>/dev/null
+svn status | grep '^!' | awk '{print $2}' | xargs -I {} svn rm {}
+
+# 5. Review and commit
+svn status
+svn commit -m "Release $VERSION"
+```
+
+**SVN credentials**: WordPress.org username + application password. SVN will prompt on first commit; macOS Keychain caches it.
+
+### Updating Only Assets (No New Release)
+
+Assets (icons, banners, screenshots) live in `assets/` and are deployed independently from plugin code:
+
+```bash
+cd "$SVN_DIR"
+# (regenerate assets if needed)
+python3 "$PROJECT_ROOT/create_assets.py"
+svn add assets/* 2>/dev/null
+svn commit -m "Update assets" assets/
+```
+
+Screenshot naming: `screenshot-1.png`, `screenshot-2.png`, etc. Must match descriptions in `readme.txt` `== Screenshots ==` section.
+
+### Asset Generator
+
+`create_assets.py` (in project root) generates all WordPress.org visual assets using Pillow:
+- Icons: 128x128 and 256x256 PNG (dark background, anvil + sparks + "SA")
+- Banner: 772x250 static PNG + 1544x500 retina PNG
+- Banner: 772x250 animated GIF (3-scene: drop, features, CTA)
+
+```bash
+pip install Pillow  # if needed
+python3 create_assets.py
+```
+
+### Important SVN Notes
+
+- SVN `trunk/` IS the published version (WordPress.org reads from it immediately)
+- `Stable tag:` in readme.txt tells WordPress.org which `tags/` directory to serve as download
+- If `Stable tag: trunk`, users download trunk directly (use for beta testing only)
+- Assets in `assets/` are NOT included in the plugin ZIP — they only appear on the WordPress.org page
+- WordPress.org caches aggressively; asset changes can take up to 24h to appear
+- Never commit `.svn/`, `.git/`, `.DS_Store`, or IDE files to SVN
 
 ## Key Options
 

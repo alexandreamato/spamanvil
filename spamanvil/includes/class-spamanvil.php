@@ -79,6 +79,7 @@ class SpamAnvil {
 		if ( is_admin() && $this->admin ) {
 			add_action( 'admin_menu', array( $this->admin, 'add_menu_page' ) );
 			add_action( 'admin_init', array( $this->admin, 'register_settings' ) );
+			add_action( 'admin_init', array( $this->admin, 'maybe_redirect_after_activation' ) );
 			add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
 
 			// AJAX handlers.
@@ -87,6 +88,7 @@ class SpamAnvil {
 			add_action( 'wp_ajax_spamanvil_scan_pending', array( $this->admin, 'ajax_scan_pending' ) );
 			add_action( 'wp_ajax_spamanvil_process_queue', array( $this->admin, 'ajax_process_queue' ) );
 			add_action( 'wp_ajax_spamanvil_clear_api_key', array( $this->admin, 'ajax_clear_api_key' ) );
+			add_action( 'wp_ajax_spamanvil_dismiss_notice', array( $this->admin, 'ajax_dismiss_notice' ) );
 		}
 
 		// Plugin action links.
@@ -108,6 +110,18 @@ class SpamAnvil {
 			__( 'Settings', 'spamanvil' )
 		);
 		array_unshift( $links, $settings_link );
+
+		$links[] = sprintf(
+			'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+			'https://wordpress.org/support/plugin/spamanvil/reviews/#new-post',
+			esc_html__( 'Rate ★★★★★', 'spamanvil' )
+		);
+		$links[] = sprintf(
+			'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+			'https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/',
+			esc_html__( 'Docs', 'spamanvil' )
+		);
+
 		return $links;
 	}
 

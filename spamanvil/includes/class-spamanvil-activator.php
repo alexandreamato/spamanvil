@@ -86,6 +86,7 @@ class SpamAnvil_Activator {
 
 	private static function set_default_options() {
 		$defaults = array(
+			'spamanvil_activated_at'         => time(),
 			'spamanvil_enabled'              => '1',
 			'spamanvil_mode'                 => 'async',
 			'spamanvil_threshold'            => 70,
@@ -98,6 +99,7 @@ class SpamAnvil_Activator {
 			'spamanvil_ip_block_threshold'   => 3,
 			'spamanvil_privacy_notice'       => '1',
 			'spamanvil_skip_moderators'      => '1',
+			'spamanvil_delete_data'          => '0',
 			'spamanvil_system_prompt'        => self::get_default_system_prompt(),
 			'spamanvil_user_prompt'          => self::get_default_user_prompt(),
 			'spamanvil_spam_words'           => self::get_default_spam_words(),

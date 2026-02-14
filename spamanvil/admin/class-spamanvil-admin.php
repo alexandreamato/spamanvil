@@ -28,6 +28,22 @@ class SpamAnvil_Admin {
 		$this->heuristics       = $heuristics;
 	}
 
+	public function maybe_redirect_after_activation() {
+		if ( ! get_transient( 'spamanvil_activation_redirect' ) ) {
+			return;
+		}
+
+		delete_transient( 'spamanvil_activation_redirect' );
+
+		// Skip redirect on bulk activation, AJAX, or network admin.
+		if ( wp_doing_ajax() || is_network_admin() || isset( $_GET['activate-multi'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only redirect guard.
+			return;
+		}
+
+		wp_safe_redirect( admin_url( 'options-general.php?page=spamanvil&welcome=1' ) );
+		exit;
+	}
+
 	public function add_menu_page() {
 		add_options_page(
 			__( 'SpamAnvil', 'spamanvil' ),
@@ -113,9 +129,60 @@ class SpamAnvil_Admin {
 			'logs'       => __( 'Logs', 'spamanvil' ),
 		);
 
+		$is_welcome    = isset( $_GET['welcome'] ) && '1' === $_GET['welcome']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display flag.
+		$show_welcome  = $is_welcome && ! get_option( 'spamanvil_dismiss_welcome' );
+		$show_setup    = get_option( 'spamanvil_enabled', '1' ) === '1'
+			&& empty( get_option( 'spamanvil_primary_provider', '' ) )
+			&& ! get_option( 'spamanvil_dismiss_setup' );
+		$show_review   = ! get_option( 'spamanvil_dismiss_review' )
+			&& $this->stats->get_total( 'comments_checked' ) >= 50;
+
 		?>
 		<div class="wrap spamanvil-wrap">
 			<h1><?php esc_html_e( 'SpamAnvil Settings', 'spamanvil' ); ?></h1>
+
+			<?php if ( $show_welcome ) : ?>
+				<div class="notice notice-info is-dismissible spamanvil-dismissible" data-notice="spamanvil_dismiss_welcome">
+					<p>
+						<strong><?php esc_html_e( 'Welcome to SpamAnvil!', 'spamanvil' ); ?></strong>
+						<?php esc_html_e( 'Thank you for installing SpamAnvil. To get started, configure an AI provider below.', 'spamanvil' ); ?>
+					</p>
+					<p>
+						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=providers' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Configure a Provider', 'spamanvil' ); ?></a>
+						<a href="https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'Read the Docs', 'spamanvil' ); ?></a>
+					</p>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( $show_setup ) : ?>
+				<div class="notice notice-warning is-dismissible spamanvil-dismissible" data-notice="spamanvil_dismiss_setup">
+					<p>
+						<strong><?php esc_html_e( 'SpamAnvil is enabled but no provider is configured.', 'spamanvil' ); ?></strong>
+						<?php esc_html_e( 'Comments cannot be analyzed until you configure at least one AI provider.', 'spamanvil' ); ?>
+					</p>
+					<p>
+						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=providers' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Configure a Provider', 'spamanvil' ); ?></a>
+					</p>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( $show_review ) : ?>
+				<div class="notice notice-info is-dismissible spamanvil-dismissible" data-notice="spamanvil_dismiss_review">
+					<p>
+						<?php
+						printf(
+							/* translators: %s: number of comments checked */
+							esc_html__( 'SpamAnvil has checked %s comments for you! If it\'s helping keep your site clean, would you mind leaving a quick review? It really helps!', 'spamanvil' ),
+							'<strong>' . esc_html( number_format_i18n( $this->stats->get_total( 'comments_checked' ) ) ) . '</strong>'
+						);
+						?>
+					</p>
+					<p>
+						<a href="https://wordpress.org/support/plugin/spamanvil/reviews/#new-post" target="_blank" rel="noopener noreferrer" class="button button-primary"><?php esc_html_e( 'Leave a Review', 'spamanvil' ); ?></a>
+						<button type="button" class="button spamanvil-dismiss-btn" data-notice="spamanvil_dismiss_review"><?php esc_html_e( 'No thanks, don\'t ask again', 'spamanvil' ); ?></button>
+					</p>
+				</div>
+			<?php endif; ?>
 
 			<nav class="nav-tab-wrapper">
 				<?php foreach ( $tabs as $slug => $label ) : ?>
@@ -177,6 +244,7 @@ class SpamAnvil_Admin {
 		update_option( 'spamanvil_batch_size', absint( $_POST['spamanvil_batch_size'] ?? 5 ) );
 		update_option( 'spamanvil_log_retention', absint( $_POST['spamanvil_log_retention'] ?? 30 ) );
 		update_option( 'spamanvil_skip_moderators', isset( $_POST['spamanvil_skip_moderators'] ) ? '1' : '0' );
+		update_option( 'spamanvil_delete_data', isset( $_POST['spamanvil_delete_data'] ) ? '1' : '0' );
 		update_option( 'spamanvil_privacy_notice', isset( $_POST['spamanvil_privacy_notice'] ) ? '1' : '0' );
 	}
 
@@ -442,6 +510,26 @@ class SpamAnvil_Admin {
 		delete_option( $config['option_key'] );
 
 		wp_send_json_success( __( 'API key cleared.', 'spamanvil' ) );
+	}
+
+	public function ajax_dismiss_notice() {
+		check_ajax_referer( 'spamanvil_ajax', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		$notice = isset( $_POST['notice'] ) ? sanitize_text_field( wp_unslash( $_POST['notice'] ) ) : '';
+
+		$allowed = array( 'spamanvil_dismiss_welcome', 'spamanvil_dismiss_review', 'spamanvil_dismiss_setup' );
+
+		if ( ! in_array( $notice, $allowed, true ) ) {
+			wp_send_json_error( __( 'Invalid notice.', 'spamanvil' ) );
+		}
+
+		update_option( $notice, '1' );
+
+		wp_send_json_success();
 	}
 
 	/**
