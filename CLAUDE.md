@@ -78,10 +78,12 @@ Comment submitted
 
 WP-Cron (every 5 min):
   → Claim batch from queue (transient lock prevents concurrent runs)
+  → Loop: claim batch_size items → process each → repeat until queue empty or 50s elapsed
   → For each: Build prompt → Call LLM → Parse JSON → Apply threshold
   → score >= threshold(70): Mark spam + record IP attempt
   → score < threshold: Auto-approve
   → On failure: Exponential backoff (60s, 300s, 900s), max 3 retries
+  → spawn_cron() called after Scan Pending to trigger immediate processing
 ```
 
 ## Supported Providers
@@ -181,7 +183,7 @@ Before publishing, verify ALL of these:
 PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/llm_anti_spam"
 SVN_DIR="$PROJECT_ROOT/svn-spamanvil"
 PLUGIN_DIR="$PROJECT_ROOT/spamanvil"
-VERSION="1.1.2"  # ← Update this each release
+VERSION="1.1.4"  # ← Update this each release
 
 # 1. Update SVN working copy
 cd "$SVN_DIR" && svn up
