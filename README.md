@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="spamanvil-promo.gif" alt="SpamAnvil - AI Anti-Spam for WordPress" width="800">
+  <a href="https://wordpress.org/plugins/spamanvil/">
+    <img src="screenshot-wporg.png" alt="SpamAnvil on WordPress.org" width="800">
+  </a>
 </p>
 
 <h1 align="center">SpamAnvil</h1>
@@ -11,10 +13,11 @@
 </p>
 
 <p align="center">
+  <a href="https://wordpress.org/plugins/spamanvil/"><img src="https://img.shields.io/badge/WordPress.org-Plugin%20Directory-21759b.svg" alt="WordPress.org"></a>
   <a href="https://www.gnu.org/licenses/gpl-2.0.html"><img src="https://img.shields.io/badge/license-GPLv2-blue.svg" alt="License: GPLv2"></a>
   <a href="https://wordpress.org/plugins/spamanvil/"><img src="https://img.shields.io/badge/WordPress-5.8%2B-21759b.svg" alt="WordPress 5.8+"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-7.4%2B-777bb4.svg" alt="PHP 7.4+"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-1.0.1-green.svg" alt="Version 1.0.1"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.0.9-green.svg" alt="Version 1.0.9"></a>
 </p>
 
 ---
