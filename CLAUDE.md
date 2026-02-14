@@ -30,7 +30,7 @@ spamanvil/                          ← Plugin root (this gets zipped for upload
 │       ├── class-spamanvil-anthropic.php          # Claude (unique auth + format)
 │       └── class-spamanvil-gemini.php             # Gemini (unique format)
 ├── admin/
-│   ├── class-spamanvil-admin.php   # 6-tab settings page, AJAX handlers, form save logic, notices
+│   ├── class-spamanvil-admin.php   # 6-tab settings page, AJAX handlers, form save logic, notices, dashboard widget
 │   ├── css/admin.css               # WP-consistent styling (.spamanvil- prefix)
 │   ├── js/admin.js                 # Range sliders, Test Connection, Unblock IP, notice dismiss
 │   └── views/
@@ -39,6 +39,7 @@ spamanvil/                          ← Plugin root (this gets zipped for upload
 │       ├── settings-prompt.php     # Editable system/user prompts + spam words
 │       ├── settings-ip.php         # Block settings + blocked IP list
 │       ├── settings-stats.php      # Hero banner (all-time spam blocked) + 30-day stats + tips
+│       # Note: Hero banner also appears on settings-general.php
 │       └── settings-logs.php       # Evaluation logs with scores, reasons, timing
 └── languages/
     └── spamanvil.pot               # Translation template
@@ -183,7 +184,7 @@ Before publishing, verify ALL of these:
 PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/llm_anti_spam"
 SVN_DIR="$PROJECT_ROOT/svn-spamanvil"
 PLUGIN_DIR="$PROJECT_ROOT/spamanvil"
-VERSION="1.1.4"  # ← Update this each release
+VERSION="1.1.6"  # ← Update this each release
 
 # 1. Update SVN working copy
 cd "$SVN_DIR" && svn up
@@ -255,6 +256,10 @@ python3 create_assets.py
 | `spamanvil_log_retention` | `30` | Days to keep logs |
 | `spamanvil_ip_block_threshold` | `3` | Spam attempts before IP block |
 | `spamanvil_delete_data` | `'0'` | Delete all data on uninstall (off by default) |
+
+## Dashboard Widget
+
+A WordPress admin dashboard widget (`spamanvil_dashboard_widget`) shows the total spam blocked count with AI/Heuristic/IP breakdown. Links to Settings and Statistics pages. A "Rate ★★★★★" link appears when `alltime_blocked >= 20` and the review notice hasn't been dismissed.
 
 ## Extensibility Hooks
 
