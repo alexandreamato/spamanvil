@@ -125,6 +125,7 @@ class SpamAnvil_Admin {
 				'words_loaded'      => __( 'Extended list loaded. Save to confirm.', 'spamanvil' ),
 				'no_provider'       => __( 'No provider configured.', 'spamanvil' ),
 				'configure_provider' => __( 'Configure a Provider', 'spamanvil' ),
+				'batch_all_failed'  => __( 'Batch failed — check Logs tab for details.', 'spamanvil' ),
 			),
 		) );
 	}
@@ -194,6 +195,7 @@ class SpamAnvil_Admin {
 					</p>
 					<p>
 						<a href="https://wordpress.org/support/plugin/spamanvil/reviews/#new-post" target="_blank" rel="noopener noreferrer" class="button button-primary"><?php esc_html_e( 'Leave a Review', 'spamanvil' ); ?></a>
+						<a href="https://github.com/sponsors/alexandreamato" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'or buy me a beer ☕', 'spamanvil' ); ?></a>
 						<button type="button" class="button spamanvil-dismiss-btn" data-notice="spamanvil_dismiss_review"><?php esc_html_e( 'No thanks, don\'t ask again', 'spamanvil' ); ?></button>
 					</p>
 				</div>
@@ -214,6 +216,16 @@ class SpamAnvil_Admin {
 				if ( file_exists( $view_file ) ) {
 					include $view_file;
 				}
+				?>
+			</div>
+
+			<div class="spamanvil-footer-card">
+				<?php
+				printf(
+					/* translators: %s: sponsor link */
+					esc_html__( "What's the next WordPress problem I'll solve and make free? I'm tired of expensive solutions for simple problems. %s", 'spamanvil' ),
+					'<a href="https://github.com/sponsors/alexandreamato" target="_blank" rel="noopener noreferrer" class="spamanvil-sponsor-link">' . esc_html__( 'Buy me a beer ☕', 'spamanvil' ) . '</a>'
+				);
 				?>
 			</div>
 		</div>
@@ -478,16 +490,17 @@ class SpamAnvil_Admin {
 		$stats_before = $this->stats->get_summary( 1 );
 
 		// Time guard: stop processing after 25s to finish well within server timeouts.
-		$this->queue->process_batch( true, 25 );
+		$attempted = $this->queue->process_batch( true, 25 );
 
 		$after       = $this->queue->get_queue_status();
 		$stats_after = $this->stats->get_summary( 1 );
 
-		$processed = ( $before['queued'] + $before['failed'] + $before['max_retries'] ) - ( $after['queued'] + $after['failed'] + $after['max_retries'] );
+		$completed = max( 0, $after['completed'] - $before['completed'] );
 		$remaining = $after['queued'] + $after['failed'] + $after['max_retries'];
 
 		wp_send_json_success( array(
-			'processed'  => max( 0, $processed ),
+			'processed'  => $completed,
+			'attempted'  => $attempted,
 			'remaining'  => $remaining,
 			'queue'      => $after,
 			'batch_spam' => max( 0, $stats_after['spam_detected'] - $stats_before['spam_detected'] ),
@@ -629,6 +642,7 @@ class SpamAnvil_Admin {
 				<?php if ( $alltime_blocked >= 20 && ! get_option( 'spamanvil_dismiss_review' ) ) : ?>
 					<a href="https://wordpress.org/support/plugin/spamanvil/reviews/#new-post" target="_blank" rel="noopener noreferrer" class="spamanvil-widget-rate"><?php esc_html_e( 'Rate ★★★★★', 'spamanvil' ); ?></a>
 				<?php endif; ?>
+				<a href="https://github.com/sponsors/alexandreamato" target="_blank" rel="noopener noreferrer" class="spamanvil-widget-rate"><?php esc_html_e( 'Sponsor ☕', 'spamanvil' ); ?></a>
 			</div>
 		</div>
 		<?php

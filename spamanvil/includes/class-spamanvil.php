@@ -122,6 +122,11 @@ class SpamAnvil {
 			'https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/',
 			esc_html__( 'Docs', 'spamanvil' )
 		);
+		$links[] = sprintf(
+			'<a href="%s" target="_blank" rel="noopener noreferrer" style="color:#dba617;font-weight:600;">%s</a>',
+			'https://github.com/sponsors/alexandreamato',
+			esc_html__( 'Sponsor ☕', 'spamanvil' )
+		);
 
 		return $links;
 	}

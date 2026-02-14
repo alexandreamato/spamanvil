@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.1.9\n"
+"Project-Id-Version: SpamAnvil 1.2.0\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-"
 "plugin-for-wordpress/\n"
 "POT-Creation-Date: 2026-02-14 18:30-0300\n"
@@ -98,6 +98,12 @@ msgstr ""
 "Com base em %3$s comentários avaliados, o limite ideal é %1$s (precisão: "
 "%2$s%%)."
 
+msgid "Buy me a beer ☕"
+msgstr "Me pague uma cerveja ☕"
+
+msgid "Batch failed — check Logs tab for details."
+msgstr "Lote falhou — verifique a aba Registros para detalhes."
+
 msgid "Batch Size"
 msgstr "Tamanho do Lote"
 
@@ -186,6 +192,17 @@ msgstr "Excluir todos os dados do plugin quando o plugin for excluído"
 
 msgid "Docs"
 msgstr "Documentação"
+
+#, php-format
+msgid ""
+"What's the next WordPress problem I'll solve and make free? I'm tired of "
+"expensive solutions for simple problems. %s"
+msgstr ""
+"Qual é o próximo problema do WordPress que vou resolver e disponibilizar de "
+"graça? Estou cansado de soluções caras para problemas simples. %s"
+
+msgid "or buy me a beer ☕"
+msgstr "ou me pague uma cerveja ☕"
 
 msgid "Done!"
 msgstr "Concluído!"
@@ -518,6 +535,20 @@ msgstr "Ignorar Moderadores"
 
 msgid "Skip spam checking for users with moderate_comments capability"
 msgstr "Ignorar verificação de spam para usuários com permissão moderate_comments"
+
+msgid "Sponsor ☕"
+msgstr "Apoie ☕"
+
+#, php-format
+msgid ""
+"SpamAnvil is 100%% free and always will be. If it's saving you time, "
+"consider %s."
+msgstr ""
+"O SpamAnvil é 100%% gratuito e sempre será. Se está economizando seu tempo, "
+"considere %s."
+
+msgid "sponsoring the project"
+msgstr "apoiar o projeto"
 
 msgid "Spam"
 msgstr "Spam"

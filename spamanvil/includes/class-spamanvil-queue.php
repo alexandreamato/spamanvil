@@ -61,7 +61,7 @@ class SpamAnvil_Queue {
 	public function process_batch( $force = false, $time_limit = 0 ) {
 		// Prevent concurrent execution with a transient lock.
 		$lock_key = 'spamanvil_queue_lock';
-		if ( get_transient( $lock_key ) ) {
+		if ( ! $force && get_transient( $lock_key ) ) {
 			return 0;
 		}
 		set_transient( $lock_key, true, 300 ); // 5-minute lock.

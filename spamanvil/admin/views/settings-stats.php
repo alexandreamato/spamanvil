@@ -125,6 +125,19 @@ if ( $this->stats->get_total( 'comments_checked' ) >= 100 && ! get_option( 'spam
 	);
 }
 
+// Sponsor nudge — 100+ comments checked.
+if ( $this->stats->get_total( 'comments_checked' ) >= 100 ) {
+	$tips[] = array(
+		'type' => 'info',
+		'icon' => 'heart',
+		'text' => sprintf(
+			/* translators: %s: link to sponsor page */
+			__( 'SpamAnvil is 100%% free and always will be. If it\'s saving you time, consider %s.', 'spamanvil' ),
+			'<a href="https://github.com/sponsors/alexandreamato" target="_blank" rel="noopener noreferrer">' . esc_html__( 'sponsoring the project', 'spamanvil' ) . '</a>'
+		),
+	);
+}
+
 // Heuristic catching more than LLM — positive reinforcement.
 if ( $summary['heuristic_blocked'] > 0 && $summary['heuristic_blocked'] > $summary['spam_detected'] ) {
 	$tips[] = array(

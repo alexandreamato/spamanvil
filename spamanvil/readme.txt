@@ -1,11 +1,11 @@
 === SpamAnvil ===
 Contributors: aamato
-Donate link: https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/
+Donate link: https://github.com/sponsors/alexandreamato
 Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.9
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -199,6 +199,10 @@ SpamAnvil was created by [Dr. Alexandre Amato](https://vascular.pro), a vascular
 
 SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 
+= How can I support SpamAnvil? =
+
+SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If it's saving you time and money, you can [sponsor the project on GitHub](https://github.com/sponsors/alexandreamato). What's the next WordPress problem I'll solve and make free? I'm tired of expensive solutions for simple problems.
+
 == Screenshots ==
 
 1. General settings - Enable/disable, processing mode, spam threshold slider, queue status
@@ -209,6 +213,13 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.2.0 =
+* Fix: "Process Queue Now" no longer blocked by concurrent WP-Cron lock — manual processing always works immediately
+* Fix: Progress counter now correctly tracks completed items (previously showed 0 when items failed)
+* Enhancement: Shows clear error message when all items in a batch fail ("check Logs tab for details")
+* Enhancement: GitHub Sponsors links added throughout the plugin for those who want to support development
+* Enhancement: New FAQ entry about supporting the project
 
 = 1.1.9 =
 * Fix: "Process Queue Now" and "Scan Pending Comments" now show an error with a link to configure a provider instead of attempting to process without one

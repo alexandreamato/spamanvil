@@ -427,6 +427,21 @@
 	font-weight: 600;
 }
 
+/* Footer Card */
+.spamanvil-footer-card {
+	text-align: center;
+	padding: 20px;
+	margin-top: 30px;
+	color: #646970;
+	font-size: 13px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.spamanvil-footer-card .spamanvil-sponsor-link {
+	color: #dba617;
+	font-weight: 600;
+}
+
 /* Responsive */
 @media screen and (max-width: 782px) {
 	.spamanvil-hero-banner {

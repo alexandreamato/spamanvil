@@ -349,6 +349,13 @@
                             d.remaining + ' remaining...'
                         );
                         processBatch();
+                    } else if (d.remaining > 0 && d.attempted > 0 && d.processed === 0) {
+                        finish(
+                            totalProcessed + ' processed, ' +
+                            d.remaining + ' remaining. ' +
+                            spamAnvil.strings.batch_all_failed,
+                            true
+                        );
                     } else {
                         finish(
                             spamAnvil.strings.process_done +
