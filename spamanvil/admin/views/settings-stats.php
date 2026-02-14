@@ -8,7 +8,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $summary = $this->stats->get_summary( 30 );
 $daily   = $this->stats->get_daily( 30 );
+
+$alltime_spam      = $this->stats->get_total( 'spam_detected' );
+$alltime_heuristic = $this->stats->get_total( 'heuristic_blocked' );
+$alltime_ip        = $this->stats->get_total( 'ip_blocked' );
+$alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 ?>
+
+<div class="spamanvil-hero-banner">
+	<div class="spamanvil-hero-number"><?php echo esc_html( number_format_i18n( $alltime_blocked ) ); ?></div>
+	<div class="spamanvil-hero-label"><?php esc_html_e( 'Spam Comments Blocked', 'spamanvil' ); ?></div>
+	<div class="spamanvil-hero-breakdown">
+		<?php
+		printf(
+			/* translators: 1: LLM spam count, 2: heuristic count, 3: IP blocked count */
+			esc_html__( '%1$s by AI  |  %2$s by Heuristics  |  %3$s by IP Blocking', 'spamanvil' ),
+			'<strong>' . esc_html( number_format_i18n( $alltime_spam ) ) . '</strong>',
+			'<strong>' . esc_html( number_format_i18n( $alltime_heuristic ) ) . '</strong>',
+			'<strong>' . esc_html( number_format_i18n( $alltime_ip ) ) . '</strong>'
+		);
+		?>
+	</div>
+</div>
+
+<h2><?php esc_html_e( 'Last 30 Days', 'spamanvil' ); ?></h2>
 
 <div class="spamanvil-stats-grid">
 	<div class="spamanvil-stat-card">

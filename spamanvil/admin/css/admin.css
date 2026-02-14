@@ -67,6 +67,42 @@
 	margin-top: 4px;
 }
 
+/* Hero Banner */
+.spamanvil-hero-banner {
+	background: linear-gradient(135deg, #1d2327 0%, #2c3338 100%);
+	border-radius: 8px;
+	padding: 40px 30px;
+	text-align: center;
+	margin-bottom: 30px;
+}
+
+.spamanvil-hero-number {
+	font-size: 72px;
+	font-weight: 800;
+	color: #fff;
+	line-height: 1;
+	letter-spacing: -2px;
+}
+
+.spamanvil-hero-label {
+	font-size: 20px;
+	font-weight: 600;
+	color: #d63638;
+	margin-top: 8px;
+	text-transform: uppercase;
+	letter-spacing: 2px;
+}
+
+.spamanvil-hero-breakdown {
+	font-size: 14px;
+	color: #a7aaad;
+	margin-top: 16px;
+}
+
+.spamanvil-hero-breakdown strong {
+	color: #fff;
+}
+
 /* Stats Grid */
 .spamanvil-stats-grid {
 	display: grid;
@@ -349,6 +385,22 @@
 
 /* Responsive */
 @media screen and (max-width: 782px) {
+	.spamanvil-hero-banner {
+		padding: 30px 20px;
+	}
+
+	.spamanvil-hero-number {
+		font-size: 48px;
+	}
+
+	.spamanvil-hero-label {
+		font-size: 16px;
+	}
+
+	.spamanvil-hero-breakdown {
+		font-size: 12px;
+	}
+
 	.spamanvil-stats-grid {
 		grid-template-columns: repeat(2, 1fr);
 	}
