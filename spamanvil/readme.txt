@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -209,6 +209,10 @@ SpamAnvil requires WordPress 5.8+ and PHP 7.4+.
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.1.3 =
+* Fix: "Process Queue Now" button is now enabled immediately after "Scan Pending Comments" enqueues items (no page reload needed)
+* Enhancement: Queue counter updates in real-time after scanning
 
 = 1.1.2 =
 * Feature: All-time "Spam Comments Blocked" hero banner on Statistics page with AI, heuristic, and IP blocking breakdown

@@ -478,6 +478,14 @@
                             d.auto_spam + ' auto-spam, ' +
                             d.already_queued + ' already queued.'
                         );
+
+                        // Enable "Process Queue Now" and update queued counter.
+                        if (d.enqueued > 0) {
+                            $('.spamanvil-process-queue-btn').prop('disabled', false);
+                            var $queued = $('.spamanvil-status-grid .status-item').eq(0).find('.status-number');
+                            var current = parseInt($queued.text(), 10) || 0;
+                            $queued.text(current + d.enqueued);
+                        }
                     } else {
                         $result.addClass('error').text(response.data);
                     }
