@@ -1,6 +1,9 @@
 .DS_Store
 *.zip
 
+# WordPress.org SVN working copy
+svn-spamanvil/
+
 # Never commit real keys or environment files
 .env
 .env.*
