@@ -10,7 +10,7 @@ Author: Alexandre Amato. Website: https://software.amato.com.br/spamanvil-antisp
 ```
 spamanvil/                          ← Plugin root (this gets zipped for upload)
 ├── spamanvil.php                   # Bootstrap: header, constants, autoloader, activation hooks
-├── uninstall.php                   # Clean removal: drop tables, delete options, clear crons
+├── uninstall.php                   # Conditional removal: only deletes data if user opted in
 ├── readme.txt                      # WordPress.org readme (SEO-optimized)
 ├── LICENSE.txt                     # GPLv2 full text
 ├── includes/
@@ -30,15 +30,15 @@ spamanvil/                          ← Plugin root (this gets zipped for upload
 │       ├── class-spamanvil-anthropic.php          # Claude (unique auth + format)
 │       └── class-spamanvil-gemini.php             # Gemini (unique format)
 ├── admin/
-│   ├── class-spamanvil-admin.php   # 6-tab settings page, AJAX handlers, form save logic
+│   ├── class-spamanvil-admin.php   # 6-tab settings page, AJAX handlers, form save logic, notices
 │   ├── css/admin.css               # WP-consistent styling (.spamanvil- prefix)
-│   ├── js/admin.js                 # Range sliders, Test Connection, Unblock IP, Reset Prompt
+│   ├── js/admin.js                 # Range sliders, Test Connection, Unblock IP, notice dismiss
 │   └── views/
-│       ├── settings-general.php    # Enable, mode, threshold, batch size, privacy
+│       ├── settings-general.php    # Enable, mode, threshold, batch size, delete data, privacy
 │       ├── settings-providers.php  # API keys, models, test connection per provider
 │       ├── settings-prompt.php     # Editable system/user prompts + spam words
 │       ├── settings-ip.php         # Block settings + blocked IP list
-│       ├── settings-stats.php      # Dashboard with summary cards + daily chart
+│       ├── settings-stats.php      # Hero banner (all-time spam blocked) + 30-day stats + tips
 │       └── settings-logs.php       # Evaluation logs with scores, reasons, timing
 └── languages/
     └── spamanvil.pot               # Translation template
@@ -181,7 +181,7 @@ Before publishing, verify ALL of these:
 PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/llm_anti_spam"
 SVN_DIR="$PROJECT_ROOT/svn-spamanvil"
 PLUGIN_DIR="$PROJECT_ROOT/spamanvil"
-VERSION="1.1.0"  # ← Update this each release
+VERSION="1.1.2"  # ← Update this each release
 
 # 1. Update SVN working copy
 cd "$SVN_DIR" && svn up
@@ -252,6 +252,7 @@ python3 create_assets.py
 | `spamanvil_fallback_provider` | `''` | Fallback LLM slug |
 | `spamanvil_log_retention` | `30` | Days to keep logs |
 | `spamanvil_ip_block_threshold` | `3` | Spam attempts before IP block |
+| `spamanvil_delete_data` | `'0'` | Delete all data on uninstall (off by default) |
 
 ## Extensibility Hooks
 
