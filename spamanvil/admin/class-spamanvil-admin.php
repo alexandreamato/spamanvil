@@ -431,6 +431,11 @@ class SpamAnvil_Admin {
 			}
 		}
 
+		// Trigger immediate cron run so the queue starts processing without waiting.
+		if ( $enqueued > 0 ) {
+			spawn_cron();
+		}
+
 		wp_send_json_success( array(
 			'enqueued'       => $enqueued,
 			'auto_spam'      => $auto_spam,

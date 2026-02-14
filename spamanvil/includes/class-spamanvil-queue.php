@@ -66,29 +66,51 @@ class SpamAnvil_Queue {
 		}
 		set_transient( $lock_key, true, 300 ); // 5-minute lock.
 
-		$processed = 0;
+		// Default time limit for cron: 50 seconds (safe for most hosts).
+		if ( 0 === $time_limit && ! $force ) {
+			$time_limit = 50;
+		}
+
+		$processed  = 0;
+		$start_time = microtime( true );
+
 		try {
 			$batch_size = (int) get_option( 'spamanvil_batch_size', 5 );
-			$items      = $this->claim_items( $batch_size, $force );
-			$start_time = microtime( true );
 
-			foreach ( $items as $item ) {
-				$this->process_single( $item );
-				$processed++;
+			// Loop through batches until queue is empty or time runs out.
+			do {
+				$items = $this->claim_items( $batch_size, $force );
 
-				// Time guard: stop if approaching limit.
-				if ( $time_limit > 0 ) {
-					$elapsed = microtime( true ) - $start_time;
-					if ( $elapsed >= $time_limit ) {
-						// Release unclaimed items back to queue.
-						$remaining_ids = array_slice( wp_list_pluck( $items, 'id' ), $processed );
-						if ( ! empty( $remaining_ids ) ) {
-							$this->release_items( $remaining_ids );
+				if ( empty( $items ) ) {
+					break;
+				}
+
+				foreach ( $items as $item ) {
+					$this->process_single( $item );
+					$processed++;
+
+					// Time guard: stop if approaching limit.
+					if ( $time_limit > 0 ) {
+						$elapsed = microtime( true ) - $start_time;
+						if ( $elapsed >= $time_limit ) {
+							// Release unclaimed items back to queue.
+							$current_index = array_search( $item, $items, true );
+							$remaining     = array_slice( $items, $current_index + 1 );
+							$remaining_ids = wp_list_pluck( $remaining, 'id' );
+							if ( ! empty( $remaining_ids ) ) {
+								$this->release_items( $remaining_ids );
+							}
+							return $processed;
 						}
-						break;
 					}
 				}
-			}
+
+				// After force-processing one batch, stop looping (AJAX handles its own loop).
+				if ( $force ) {
+					break;
+				}
+
+			} while ( true );
 		} finally {
 			delete_transient( $lock_key );
 		}
