@@ -68,6 +68,28 @@ $alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 				<span class="status-label"><?php esc_html_e( 'Max Retries', 'spamanvil' ); ?></span>
 			</div>
 		</div>
+		<?php
+		$last_cron_run = get_option( 'spamanvil_last_cron_run', 0 );
+		$cron_stale    = $last_cron_run > 0 && ( time() - $last_cron_run ) > 600;
+		$cron_class    = ( ! $last_cron_run || $cron_stale ) ? ' spamanvil-cron-stale' : '';
+		?>
+		<div class="spamanvil-cron-status<?php echo esc_attr( $cron_class ); ?>">
+			<?php if ( $last_cron_run ) : ?>
+				<?php
+				printf(
+					/* translators: %s: human-readable time difference (e.g. "2 minutes") */
+					esc_html__( 'Last automatic run: %s ago', 'spamanvil' ),
+					'<span title="' . esc_attr( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $last_cron_run ) ) . '">'
+					. esc_html( human_time_diff( $last_cron_run ) ) . '</span>'
+				);
+				?>
+				<?php if ( $cron_stale ) : ?>
+					<br><small><?php esc_html_e( 'WP-Cron may not be running. Check your site\'s cron configuration.', 'spamanvil' ); ?></small>
+				<?php endif; ?>
+			<?php else : ?>
+				<?php esc_html_e( 'Last automatic run: Never', 'spamanvil' ); ?>
+			<?php endif; ?>
+		</div>
 		<?php $total_actionable = $queue_status['queued'] + $queue_status['failed'] + $queue_status['max_retries']; ?>
 		<p>
 			<button type="button" class="button button-secondary spamanvil-process-queue-btn" <?php disabled( $total_actionable, 0 ); ?>>

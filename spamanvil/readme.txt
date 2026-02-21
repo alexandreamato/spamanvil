@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,10 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.2.2 =
+* Feature: "Last automatic run" timestamp in Queue Status card shows when WP-Cron last processed the queue
+* Enhancement: Warning displayed when cron hasn't run in over 10 minutes (helps diagnose stale queues)
 
 = 1.2.1 =
 * Fix: Queue now processes automatically — spawn_cron() called after each comment is enqueued so processing starts immediately instead of waiting for the next site visit

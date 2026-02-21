@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.2.1\n"
+"Project-Id-Version: SpamAnvil 1.2.2\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-"
 "plugin-for-wordpress/\n"
 "POT-Creation-Date: 2026-02-14 18:30-0300\n"
@@ -349,6 +349,16 @@ msgstr "Pontuação LLM"
 
 msgid "Last 30 Days"
 msgstr "Últimos 30 Dias"
+
+#, php-format
+msgid "Last automatic run: %s ago"
+msgstr "Última execução automática: %s atrás"
+
+msgid "Last automatic run: Never"
+msgstr "Última execução automática: Nunca"
+
+msgid "WP-Cron may not be running. Check your site's cron configuration."
+msgstr "O WP-Cron pode não estar funcionando. Verifique a configuração de cron do seu site."
 
 msgid "Last Updated"
 msgstr "Última Atualização"

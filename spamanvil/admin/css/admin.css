@@ -67,6 +67,17 @@
 	margin-top: 4px;
 }
 
+/* Cron Status */
+.spamanvil-cron-status {
+	margin-top: 12px;
+	font-size: 13px;
+	color: #646970;
+}
+
+.spamanvil-cron-status.spamanvil-cron-stale {
+	color: #dba617;
+}
+
 /* Hero Banner */
 .spamanvil-hero-banner {
 	background: linear-gradient(135deg, #1d2327 0%, #2c3338 100%);

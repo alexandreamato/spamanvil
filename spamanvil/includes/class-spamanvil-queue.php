@@ -66,6 +66,8 @@ class SpamAnvil_Queue {
 		}
 		set_transient( $lock_key, true, 300 ); // 5-minute lock.
 
+		update_option( 'spamanvil_last_cron_run', time(), false );
+
 		// Default time limit for cron: 50 seconds (safe for most hosts).
 		if ( 0 === $time_limit && ! $force ) {
 			$time_limit = 50;
