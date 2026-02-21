@@ -137,6 +137,7 @@ class SpamAnvil_Comment_Processor {
 
 		if ( 'async' === $mode ) {
 			$this->queue->enqueue( $comment_id, $analysis['score'] );
+			spawn_cron();
 		} else {
 			// Sync mode: process immediately.
 			$item = (object) array(

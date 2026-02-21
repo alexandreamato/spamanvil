@@ -29,6 +29,7 @@ class SpamAnvil {
 		$this->instantiate_components();
 		$this->check_db_version();
 		$this->define_hooks();
+		$this->ensure_cron_scheduled();
 	}
 
 	private function instantiate_components() {
@@ -129,6 +130,15 @@ class SpamAnvil {
 		);
 
 		return $links;
+	}
+
+	private function ensure_cron_scheduled() {
+		if ( ! wp_next_scheduled( 'spamanvil_process_queue' ) ) {
+			wp_schedule_event( time(), 'every_five_minutes', 'spamanvil_process_queue' );
+		}
+		if ( ! wp_next_scheduled( 'spamanvil_cleanup_logs' ) ) {
+			wp_schedule_event( time(), 'daily', 'spamanvil_cleanup_logs' );
+		}
 	}
 
 	private function check_db_version() {

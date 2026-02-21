@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,10 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.2.1 =
+* Fix: Queue now processes automatically — spawn_cron() called after each comment is enqueued so processing starts immediately instead of waiting for the next site visit
+* Fix: Cron event is verified on every page load and re-scheduled if missing (prevents stale queues after plugin reinstall or cron table cleanup)
 
 = 1.2.0 =
 * Fix: "Process Queue Now" no longer blocked by concurrent WP-Cron lock — manual processing always works immediately
