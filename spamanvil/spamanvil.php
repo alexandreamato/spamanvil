@@ -3,7 +3,7 @@
  * Plugin Name:       SpamAnvil
  * Plugin URI:        https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/
  * Description:       Blocks comment spam using AI/LLM services with support for multiple providers, async processing, and intelligent heuristics.
- * Version:           1.2.6
+ * Version:           1.2.7
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Alexandre Amato
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SPAMANVIL_VERSION', '1.2.6' );
+define( 'SPAMANVIL_VERSION', '1.2.7' );
 define( 'SPAMANVIL_DB_VERSION', '1.0.0' );
 define( 'SPAMANVIL_PLUGIN_FILE', __FILE__ );
 define( 'SPAMANVIL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );

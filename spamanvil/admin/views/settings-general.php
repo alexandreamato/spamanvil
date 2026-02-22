@@ -90,7 +90,7 @@ $alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 				<?php esc_html_e( 'Last automatic run: Never', 'spamanvil' ); ?>
 			<?php endif; ?>
 		</div>
-		<?php if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) : ?>
+		<?php if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON && ( ! $last_cron_run || $cron_stale ) ) : ?>
 			<div class="spamanvil-cron-status spamanvil-cron-stale">
 				<?php esc_html_e( 'DISABLE_WP_CRON is enabled in wp-config.php. Automatic queue processing and pending comment scanning will not work unless you set up a real server cron job.', 'spamanvil' ); ?>
 				<br><small>
