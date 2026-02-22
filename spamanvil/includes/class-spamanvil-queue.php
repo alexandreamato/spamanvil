@@ -166,6 +166,15 @@ class SpamAnvil_Queue {
 			)
 		);
 
+		// Reclaim max_retries items after 1 hour — give them a fresh retry cycle.
+		$retry_cutoff = gmdate( 'Y-m-d H:i:s', time() - 3600 );
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$this->table} SET status = 'queued', attempts = 0 WHERE status = 'max_retries' AND updated_at <= %s",
+				$retry_cutoff
+			)
+		);
+
 		if ( $force ) {
 			// Manual trigger: grab all queued, failed and max_retries items immediately.
 			$items = $wpdb->get_results(
