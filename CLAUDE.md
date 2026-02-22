@@ -133,18 +133,103 @@ WP-Cron (every 5 min):
 - **POT file** must contain ALL translatable strings (regenerate with `wp i18n make-pot`)
 - **Tested up to** must match latest WordPress version at submission time
 
-## Building the Plugin ZIP
+## Release & Publishing
+
+There are **3 distribution channels** for SpamAnvil. A full release publishes to all 3.
+
+| Channel | What it does | When to use |
+|---------|-------------|-------------|
+| **Git (GitHub)** | Source code history + collaboration | Every change |
+| **WordPress.org (SVN)** | Plugin directory — users download from here | Every version bump |
+| **Plugin ZIP** | Manual install file for users without WP.org access | On request / for testing |
+
+### Complete Release Workflow
+
+When the user says "publicar" or "release", follow ALL steps below in order:
+
+#### Step 1 — Version Bump (in code)
+
+Update the version string in **all 4 places** (must match):
+
+| File | Location |
+|------|----------|
+| `spamanvil/spamanvil.php` | Plugin header `Version:` line |
+| `spamanvil/spamanvil.php` | `SPAMANVIL_VERSION` constant |
+| `spamanvil/readme.txt` | `Stable tag:` field |
+| `spamanvil/languages/spamanvil-pt_BR.po` | `Project-Id-Version:` header |
+
+Also add a `= X.Y.Z =` changelog entry in `readme.txt` under `== Changelog ==`.
+
+After any JS/CSS changes, the version bump in `SPAMANVIL_VERSION` also busts browser cache.
+
+#### Step 2 — Translations (if translatable strings changed)
 
 ```bash
-# From the project root (parent of spamanvil/):
+# Add new msgid/msgstr entries to the .po file
+# Then compile to .mo:
+msgfmt -o spamanvil/languages/spamanvil-pt_BR.mo spamanvil/languages/spamanvil-pt_BR.po
+
+# Regenerate POT if wp-cli is available:
+wp i18n make-pot spamanvil/ spamanvil/languages/spamanvil.pot
+```
+
+#### Step 3 — Git Commit & Push
+
+```bash
+git add <changed files>
+git commit -m "SpamAnvil vX.Y.Z: Short description"
+git push
+```
+
+Commit message convention: `SpamAnvil vX.Y.Z: Short description of changes`
+
+#### Step 4 — Publish to WordPress.org (SVN)
+
+The plugin is hosted on WordPress.org via SVN. Local SVN working copy: `svn-spamanvil/` (git-ignored). SVN repo: `https://plugins.svn.wordpress.org/spamanvil`.
+
+```bash
+PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/llm_anti_spam"
+SVN_DIR="$PROJECT_ROOT/svn-spamanvil"
+PLUGIN_DIR="$PROJECT_ROOT/spamanvil"
+VERSION="X.Y.Z"  # ← current release version
+
+# 1. Update SVN working copy
+cd "$SVN_DIR" && svn up
+
+# 2. Sync plugin files to trunk (delete old, copy new)
+rm -rf "$SVN_DIR/trunk/"*
+cp -R "$PLUGIN_DIR/"* "$SVN_DIR/trunk/"
+
+# 3. Create version tag
+svn cp "$SVN_DIR/trunk" "$SVN_DIR/tags/$VERSION"
+
+# 4. Stage all changes (adds new files, removes deleted ones)
+cd "$SVN_DIR" && svn add --force trunk/ tags/$VERSION/ 2>/dev/null
+svn status | grep '^!' | awk '{print $2}' | xargs -I {} svn rm {}
+
+# 5. Review changes, then commit
+svn status
+svn commit -m "Release $VERSION"
+```
+
+**SVN credentials**: WordPress.org username + application password. macOS Keychain caches after first use.
+
+#### Step 5 — Plugin ZIP (optional, on request)
+
+```bash
 cd spamanvil && zip -r ../spamanvil.zip . -x ".*" -x "__MACOSX/*"
 ```
 
-After any JS/CSS changes, bump `SPAMANVIL_VERSION` in `spamanvil.php` to bust browser cache.
+### Pre-Flight Checklist
 
-## Publishing to WordPress.org (SVN)
+Before ANY release, verify:
 
-The plugin is hosted on WordPress.org via SVN. The local SVN working copy is at `svn-spamanvil/` (git-ignored). The SVN repo URL is `https://plugins.svn.wordpress.org/spamanvil`.
+1. **Version consistency** — Same version in all 4 places (see Step 1)
+2. **Changelog** — `readme.txt` has `= X.Y.Z =` entry
+3. **Tested up to** — `readme.txt` `Tested up to:` matches latest stable WordPress
+4. **Translations** — New translatable strings have entries in `.po` and compiled `.mo`
+5. **No secrets** — No API keys, passwords, or debug flags left in code
+6. **ABSPATH check** — Every PHP file starts with `if ( ! defined( 'ABSPATH' ) ) { exit; }`
 
 ### SVN Directory Layout
 
@@ -161,72 +246,24 @@ svn-spamanvil/
     └── X.Y.Z/          # Tagged releases (one directory per version)
 ```
 
-### Pre-Flight Checklist
-
-Before publishing, verify ALL of these:
-
-1. **Version consistency** — The same version string must appear in all 3 places:
-   - `spamanvil/spamanvil.php` → Plugin header `Version:` AND `SPAMANVIL_VERSION` constant
-   - `spamanvil/readme.txt` → `Stable tag:` field
-2. **Changelog** — `readme.txt` has a `= X.Y.Z =` entry under `== Changelog ==`
-3. **Tested up to** — `readme.txt` `Tested up to:` matches the latest stable WordPress version
-4. **POT file** — Regenerate if any translatable strings changed:
-   ```bash
-   wp i18n make-pot spamanvil/ spamanvil/languages/spamanvil.pot
-   ```
-5. **No secrets** — Grep for API keys, passwords, debug flags left in code
-6. **ABSPATH check** — Every PHP file starts with `if ( ! defined( 'ABSPATH' ) ) { exit; }`
-
-### Deployment Commands
-
-```bash
-# All commands from project root:
-PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/llm_anti_spam"
-SVN_DIR="$PROJECT_ROOT/svn-spamanvil"
-PLUGIN_DIR="$PROJECT_ROOT/spamanvil"
-VERSION="1.1.6"  # ← Update this each release
-
-# 1. Update SVN working copy
-cd "$SVN_DIR" && svn up
-
-# 2. Sync plugin files to trunk (delete old, copy new)
-rm -rf "$SVN_DIR/trunk/"*
-cp -R "$PLUGIN_DIR/"* "$SVN_DIR/trunk/"
-
-# 3. Create version tag
-svn cp "$SVN_DIR/trunk" "$SVN_DIR/tags/$VERSION"
-
-# 4. Stage all changes (adds new files, removes deleted ones)
-cd "$SVN_DIR" && svn add --force trunk/ tags/$VERSION/ 2>/dev/null
-svn status | grep '^!' | awk '{print $2}' | xargs -I {} svn rm {}
-
-# 5. Review and commit
-svn status
-svn commit -m "Release $VERSION"
-```
-
-**SVN credentials**: WordPress.org username + application password. SVN will prompt on first commit; macOS Keychain caches it.
-
 ### Updating Only Assets (No New Release)
 
-Assets (icons, banners, screenshots) live in `assets/` and are deployed independently from plugin code:
+Assets (icons, banners, screenshots) live in `assets/` and can be deployed independently:
 
 ```bash
 cd "$SVN_DIR"
-# (regenerate assets if needed)
-python3 "$PROJECT_ROOT/create_assets.py"
+python3 "$PROJECT_ROOT/create_assets.py"  # regenerate if needed
 svn add assets/* 2>/dev/null
 svn commit -m "Update assets" assets/
 ```
 
-Screenshot naming: `screenshot-1.png`, `screenshot-2.png`, etc. Must match descriptions in `readme.txt` `== Screenshots ==` section.
+Screenshot naming: `screenshot-1.png`, `screenshot-2.png`, etc. Must match `== Screenshots ==` in `readme.txt`.
 
 ### Asset Generator
 
 `create_assets.py` (in project root) generates all WordPress.org visual assets using Pillow:
 - Icons: 128x128 and 256x256 PNG (dark background, anvil + sparks + "SA")
-- Banner: 772x250 static PNG + 1544x500 retina PNG
-- Banner: 772x250 animated GIF (3-scene: drop, features, CTA)
+- Banners: 772x250 static PNG + 1544x500 retina PNG + 772x250 animated GIF
 
 ```bash
 pip install Pillow  # if needed

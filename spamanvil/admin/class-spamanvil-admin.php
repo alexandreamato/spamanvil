@@ -396,67 +396,17 @@ class SpamAnvil_Admin {
 			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
 		}
 
-		// Get all comments with 'hold' status.
-		$comments = get_comments( array( 'status' => 'hold', 'number' => 0 ) );
+		// Count pending comments before scanning for the already_queued stat.
+		$pending_count = (int) wp_count_comments()->moderated;
 
-		if ( empty( $comments ) ) {
-			wp_send_json_success( array(
-				'enqueued'       => 0,
-				'auto_spam'      => 0,
-				'already_queued' => 0,
-			) );
-		}
+		// Capture stats before to compute auto_spam count.
+		$heuristic_before = $this->stats->get_total( 'heuristic_blocked' );
 
-		// Get comment IDs already in the queue.
-		global $wpdb;
-		$queue_table       = $wpdb->prefix . 'spamanvil_queue';
-		$already_queued_ids = $wpdb->get_col( "SELECT comment_id FROM {$queue_table} WHERE status IN ('queued', 'processing', 'failed')" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- custom plugin table, table name from $wpdb->prefix.
+		$enqueued = $this->queue->auto_enqueue_pending( 0 ); // 0 = scan all (manual action).
 
-		$enqueued       = 0;
-		$auto_spam      = 0;
-		$already_queued = 0;
-
-		$heuristic_threshold = (int) get_option( 'spamanvil_heuristic_auto_spam', 95 );
-
-		foreach ( $comments as $comment ) {
-			if ( in_array( (string) $comment->comment_ID, $already_queued_ids, true ) ) {
-				$already_queued++;
-				continue;
-			}
-
-			// Run heuristics.
-			$analysis = $this->heuristics->analyze( array(
-				'comment_content'      => $comment->comment_content,
-				'comment_author'       => $comment->comment_author,
-				'comment_author_email' => $comment->comment_author_email,
-				'comment_author_url'   => $comment->comment_author_url,
-			) );
-
-			if ( $analysis['score'] >= $heuristic_threshold ) {
-				wp_spam_comment( $comment->comment_ID );
-				$this->stats->increment( 'heuristic_blocked' );
-				$this->stats->increment( 'comments_checked' );
-				$this->stats->log_evaluation( array(
-					'comment_id'        => $comment->comment_ID,
-					'score'             => $analysis['score'],
-					'provider'          => 'heuristics',
-					'model'             => 'regex',
-					'reason'            => 'Auto-blocked by heuristic analysis (scan pending)',
-					'heuristic_score'   => $analysis['score'],
-					'heuristic_details' => $this->heuristics->format_for_prompt( $analysis ),
-				) );
-
-				$ip = get_comment_author_IP( $comment->comment_ID );
-				if ( ! empty( $ip ) ) {
-					$this->ip_manager->record_spam_attempt( $ip );
-				}
-
-				$auto_spam++;
-			} else {
-				$this->queue->enqueue( $comment->comment_ID, $analysis['score'] );
-				$enqueued++;
-			}
-		}
+		$heuristic_after = $this->stats->get_total( 'heuristic_blocked' );
+		$auto_spam       = $heuristic_after - $heuristic_before;
+		$already_queued  = max( 0, $pending_count - $enqueued - $auto_spam );
 
 		// Trigger immediate cron run so the queue starts processing without waiting.
 		if ( $enqueued > 0 ) {

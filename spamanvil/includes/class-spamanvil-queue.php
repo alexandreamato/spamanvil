@@ -77,13 +77,22 @@ class SpamAnvil_Queue {
 		$start_time = microtime( true );
 
 		try {
-			$batch_size = (int) get_option( 'spamanvil_batch_size', 5 );
+			$batch_size     = (int) get_option( 'spamanvil_batch_size', 5 );
+			$auto_enqueued  = false;
 
 			// Loop through batches until queue is empty or time runs out.
 			do {
 				$items = $this->claim_items( $batch_size, $force );
 
 				if ( empty( $items ) ) {
+					// Queue is empty — try to auto-enqueue pending WordPress comments.
+					if ( ! $auto_enqueued && ! $force ) {
+						$auto_enqueued  = true;
+						$newly_enqueued = $this->auto_enqueue_pending();
+						if ( $newly_enqueued > 0 ) {
+							continue; // Re-enter loop to process newly enqueued items.
+						}
+					}
 					break;
 				}
 
@@ -642,6 +651,80 @@ class SpamAnvil_Queue {
 			null,
 			array( '%d' )
 		);
+	}
+
+	/**
+	 * Auto-enqueue pending WordPress comments that are not already in the queue.
+	 *
+	 * Scans for comments with 'hold' status, runs heuristics on each, and either
+	 * auto-spams (high heuristic score) or enqueues for LLM analysis.
+	 *
+	 * @param int $limit Max comments to scan. 0 = unlimited. Default 100 (safe for cron).
+	 * @return int Number of comments enqueued for LLM analysis.
+	 */
+	public function auto_enqueue_pending( $limit = 100 ) {
+		global $wpdb;
+
+		// Skip if no provider is configured — nothing to process.
+		if ( '' === get_option( 'spamanvil_primary_provider', '' ) ) {
+			return 0;
+		}
+
+		// Get comment IDs already in the queue (active statuses).
+		$already_queued_ids = $wpdb->get_col(
+			"SELECT comment_id FROM {$this->table} WHERE status IN ('queued', 'processing', 'failed', 'max_retries')"
+		);
+
+		$comments = get_comments( array(
+			'status' => 'hold',
+			'number' => $limit,
+		) );
+
+		if ( empty( $comments ) ) {
+			return 0;
+		}
+
+		$enqueued             = 0;
+		$heuristic_threshold  = (int) get_option( 'spamanvil_heuristic_auto_spam', 95 );
+
+		foreach ( $comments as $comment ) {
+			if ( in_array( (string) $comment->comment_ID, $already_queued_ids, true ) ) {
+				continue;
+			}
+
+			// Run heuristics.
+			$analysis = $this->heuristics->analyze( array(
+				'comment_content'      => $comment->comment_content,
+				'comment_author'       => $comment->comment_author,
+				'comment_author_email' => $comment->comment_author_email,
+				'comment_author_url'   => $comment->comment_author_url,
+			) );
+
+			if ( $analysis['score'] >= $heuristic_threshold ) {
+				wp_spam_comment( $comment->comment_ID );
+				$this->stats->increment( 'heuristic_blocked' );
+				$this->stats->increment( 'comments_checked' );
+				$this->stats->log_evaluation( array(
+					'comment_id'        => $comment->comment_ID,
+					'score'             => $analysis['score'],
+					'provider'          => 'heuristics',
+					'model'             => 'regex',
+					'reason'            => 'Auto-blocked by heuristic analysis (auto-enqueue)',
+					'heuristic_score'   => $analysis['score'],
+					'heuristic_details' => $this->heuristics->format_for_prompt( $analysis ),
+				) );
+
+				$ip = get_comment_author_IP( $comment->comment_ID );
+				if ( ! empty( $ip ) ) {
+					$this->ip_manager->record_spam_attempt( $ip );
+				}
+			} else {
+				$this->enqueue( $comment->comment_ID, $analysis['score'] );
+				$enqueued++;
+			}
+		}
+
+		return $enqueued;
 	}
 
 	public function get_queue_status() {
