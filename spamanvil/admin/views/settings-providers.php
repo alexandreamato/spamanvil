@@ -18,6 +18,14 @@ $primary          = get_option( 'spamanvil_primary_provider', '' );
 $fallback         = get_option( 'spamanvil_fallback_provider', '' );
 $fallback2        = get_option( 'spamanvil_fallback2_provider', '' );
 
+// Only providers with a configured API key can be selected in the dropdowns.
+$configured_providers = array();
+foreach ( $providers as $slug => $name ) {
+	if ( $this->get_masked_key( $slug ) ) {
+		$configured_providers[ $slug ] = $name;
+	}
+}
+
 $default_models = array(
 	'openai'      => 'gpt-4o-mini',
 	'openrouter'  => 'openai/gpt-oss-20b:free',
@@ -48,7 +56,7 @@ $signup_urls = array(
 			<td>
 				<select name="spamanvil_primary_provider">
 					<option value=""><?php esc_html_e( '-- Select --', 'spamanvil' ); ?></option>
-					<?php foreach ( $providers as $slug => $name ) : ?>
+					<?php foreach ( $configured_providers as $slug => $name ) : ?>
 						<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $primary, $slug ); ?>>
 							<?php echo esc_html( $name ); ?>
 						</option>
@@ -61,7 +69,7 @@ $signup_urls = array(
 			<td>
 				<select name="spamanvil_fallback_provider">
 					<option value=""><?php esc_html_e( '-- None --', 'spamanvil' ); ?></option>
-					<?php foreach ( $providers as $slug => $name ) : ?>
+					<?php foreach ( $configured_providers as $slug => $name ) : ?>
 						<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $fallback, $slug ); ?>>
 							<?php echo esc_html( $name ); ?>
 						</option>
@@ -77,7 +85,7 @@ $signup_urls = array(
 			<td>
 				<select name="spamanvil_fallback2_provider">
 					<option value=""><?php esc_html_e( '-- None --', 'spamanvil' ); ?></option>
-					<?php foreach ( $providers as $slug => $name ) : ?>
+					<?php foreach ( $configured_providers as $slug => $name ) : ?>
 						<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $fallback2, $slug ); ?>>
 							<?php echo esc_html( $name ); ?>
 						</option>
