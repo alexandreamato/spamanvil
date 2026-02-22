@@ -90,6 +90,20 @@ $alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 				<?php esc_html_e( 'Last automatic run: Never', 'spamanvil' ); ?>
 			<?php endif; ?>
 		</div>
+		<?php if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) : ?>
+			<div class="spamanvil-cron-status spamanvil-cron-stale">
+				<?php esc_html_e( 'DISABLE_WP_CRON is enabled in wp-config.php. Automatic queue processing and pending comment scanning will not work unless you set up a real server cron job.', 'spamanvil' ); ?>
+				<br><small>
+				<?php
+				printf(
+					/* translators: %s: the WP-Cron URL example */
+					esc_html__( 'Add a cron job that calls %s every 5 minutes.', 'spamanvil' ),
+					'<code>wget -q -O /dev/null ' . esc_html( site_url( '/wp-cron.php' ) ) . '</code>'
+				);
+				?>
+				</small>
+			</div>
+		<?php endif; ?>
 		<?php $total_actionable = $queue_status['queued'] + $queue_status['failed'] + $queue_status['max_retries']; ?>
 		<p>
 			<button type="button" class="button button-secondary spamanvil-process-queue-btn" <?php disabled( $total_actionable, 0 ); ?>>

@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -214,8 +214,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Changelog ==
 
-= 1.2.3 =
+= 1.2.4 =
 * Feature: Cron now automatically scans pending WordPress comments when the queue is empty — no manual "Scan Pending" click needed
+* Enhancement: Warning displayed when DISABLE_WP_CRON is active, with instructions to set up a real server cron job
 
 = 1.2.2 =
 * Feature: "Last automatic run" timestamp in Queue Status card shows when WP-Cron last processed the queue
