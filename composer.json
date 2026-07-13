@@ -1,0 +1,35 @@
+{
+	"name": "alexandreamato/spamanvil",
+	"description": "AI-powered anti-spam plugin for WordPress. Dev tooling: PHPUnit tests, WordPress Coding Standards and CI.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"homepage": "https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/",
+	"authors": [
+		{
+			"name": "Alexandre Amato",
+			"homepage": "https://amato.com.br"
+		}
+	],
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^9.6",
+		"yoast/phpunit-polyfills": "^2.0",
+		"squizlabs/php_codesniffer": "^3.9",
+		"wp-coding-standards/wpcs": "^3.1",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+	},
+	"scripts": {
+		"test:unit": "phpunit --configuration phpunit-unit.xml.dist",
+		"test:integration": "phpunit --configuration phpunit.xml.dist",
+		"lint": "phpcs",
+		"lint:fix": "phpcbf"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}
