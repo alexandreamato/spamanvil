@@ -8,7 +8,11 @@ class SpamAnvil_Encryptor {
 	private const METHOD = 'aes-256-cbc';
 
 	private function get_key() {
-		$salt = defined( 'AUTH_SALT' ) ? AUTH_SALT : 'spamanvil-default-salt';
+		// Prefer AUTH_SALT (present on virtually all installs, so keys stay decryptable).
+		// Fall back to wp_salt('auth') — always a strong, per-site value that WordPress
+		// auto-generates and persists — instead of a static string that every misconfigured
+		// site would share, which would let anyone reading the options table derive the key.
+		$salt = defined( 'AUTH_SALT' ) && '' !== AUTH_SALT ? AUTH_SALT : wp_salt( 'auth' );
 		return hash( 'sha256', $salt, true );
 	}
 

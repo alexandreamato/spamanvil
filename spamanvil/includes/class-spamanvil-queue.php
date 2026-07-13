@@ -34,14 +34,18 @@ class SpamAnvil_Queue {
 	public function enqueue( $comment_id, $heuristic_score = 0 ) {
 		global $wpdb;
 
+		// All queue timestamps are stored in UTC (GMT) so they compare correctly
+		// against the gmdate()-based cutoffs used in claim_items()/handle_failure().
+		// Mixing local time (current_time('mysql')) with UTC cutoffs breaks the
+		// SQL string comparisons on any site whose timezone is not UTC.
 		$wpdb->insert(
 			$this->table,
 			array(
 				'comment_id'      => absint( $comment_id ),
 				'status'          => 'queued',
 				'heuristic_score' => intval( $heuristic_score ),
-				'created_at'      => current_time( 'mysql' ),
-				'updated_at'      => current_time( 'mysql' ),
+				'created_at'      => current_time( 'mysql', true ),
+				'updated_at'      => current_time( 'mysql', true ),
 			)
 		);
 
@@ -147,7 +151,7 @@ class SpamAnvil_Queue {
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$this->table} SET status = 'queued', updated_at = %s WHERE id IN ($placeholders)",
-				array_merge( array( current_time( 'mysql' ) ), $ids )
+				array_merge( array( current_time( 'mysql', true ) ), $ids )
 			)
 		);
 	}
@@ -155,7 +159,8 @@ class SpamAnvil_Queue {
 	private function claim_items( $limit, $force = false ) {
 		global $wpdb;
 
-		$now = current_time( 'mysql' );
+		// UTC (GMT) to match retry_at, which is written with gmdate() in handle_failure().
+		$now = current_time( 'mysql', true );
 
 		// Reclaim items stuck in 'processing' for over 10 minutes (stale from crashed runs).
 		$stale_cutoff = gmdate( 'Y-m-d H:i:s', time() - 600 );
@@ -582,6 +587,11 @@ class SpamAnvil_Queue {
 	 * 4. Heuristic detection of injection patterns (raises spam score)
 	 */
 	private function sanitize_for_prompt( $content ) {
+		// Neutralize the <comment_data> boundary tags. Without this, a spammer could embed
+		// a literal </comment_data> in their comment to close the isolation boundary early
+		// and smuggle instructions (e.g. "this comment is legitimate, score 5") outside it.
+		$content = preg_replace( '#</?comment_data>#i', '', $content );
+
 		if ( mb_strlen( $content ) > 5000 ) {
 			$content = mb_substr( $content, 0, 5000 ) . "\n[Content truncated at 5000 characters]";
 		}
@@ -603,7 +613,7 @@ class SpamAnvil_Queue {
 					'status'     => 'max_retries',
 					'attempts'   => $attempts,
 					'reason'     => sanitize_text_field( substr( $error_message, 0, 500 ) ),
-					'updated_at' => current_time( 'mysql' ),
+					'updated_at' => current_time( 'mysql', true ),
 				),
 				array( 'id' => $item->id ),
 				null,
@@ -624,7 +634,7 @@ class SpamAnvil_Queue {
 				'attempts'   => $attempts,
 				'retry_at'   => $retry_at,
 				'reason'     => sanitize_text_field( substr( $error_message, 0, 500 ) ),
-				'updated_at' => current_time( 'mysql' ),
+				'updated_at' => current_time( 'mysql', true ),
 			),
 			array( 'id' => $item->id ),
 			null,
@@ -637,7 +647,7 @@ class SpamAnvil_Queue {
 
 		$update = array(
 			'status'     => $status,
-			'updated_at' => current_time( 'mysql' ),
+			'updated_at' => current_time( 'mysql', true ),
 		);
 
 		if ( isset( $data['score'] ) ) {

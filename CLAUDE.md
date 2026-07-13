@@ -67,6 +67,8 @@ spamanvil/                          ← Plugin root (this gets zipped for upload
 3. **spamanvil_stats** — Daily counters with UNIQUE(stat_date, stat_key), atomic upserts
 4. **spamanvil_logs** — Per-comment evaluation logs (score, provider, model, reason, heuristic_details, processing_time_ms)
 
+**Timestamp convention (critical):** The `spamanvil_queue` columns `created_at`, `updated_at`, and `retry_at` are stored in **UTC** — always write them with `current_time( 'mysql', true )` (or `gmdate()`), never `current_time( 'mysql' )`. `claim_items()`/`handle_failure()` compare these against `gmdate()`-based cutoffs via naive SQL string comparison, so a single local-time write silently breaks retry/backoff and stale-reclaim on any non-UTC site (fixed in 1.2.8). These queue columns are internal-only and never displayed; the local-time timestamps shown in the Logs and IP tabs live in other tables and are intentionally left in site-local time.
+
 ## Comment Processing Flow
 
 ```
@@ -188,7 +190,7 @@ Commit message convention: `SpamAnvil vX.Y.Z: Short description of changes`
 The plugin is hosted on WordPress.org via SVN. Local SVN working copy: `svn-spamanvil/` (git-ignored). SVN repo: `https://plugins.svn.wordpress.org/spamanvil`.
 
 ```bash
-PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/llm_anti_spam"
+PROJECT_ROOT="/Users/alexandreamato/Amato Dropbox/Alexandre Amato/Projects/Informatica/Software/spamanvil"
 SVN_DIR="$PROJECT_ROOT/svn-spamanvil"
 PLUGIN_DIR="$PROJECT_ROOT/spamanvil"
 VERSION="X.Y.Z"  # ← current release version

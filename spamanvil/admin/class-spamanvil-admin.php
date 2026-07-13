@@ -145,6 +145,12 @@ class SpamAnvil_Admin {
 			'logs'       => __( 'Logs', 'spamanvil' ),
 		);
 
+		// Whitelist the tab: $active_tab is used to build the view include path below,
+		// so never let an unknown value through even though file_exists() already gates it.
+		if ( ! isset( $tabs[ $active_tab ] ) ) {
+			$active_tab = 'general';
+		}
+
 		$is_welcome    = isset( $_GET['welcome'] ) && '1' === $_GET['welcome']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display flag.
 		$show_welcome  = $is_welcome && ! get_option( 'spamanvil_dismiss_welcome' );
 		$show_setup    = get_option( 'spamanvil_enabled', '1' ) === '1'
@@ -235,6 +241,10 @@ class SpamAnvil_Admin {
 	private function handle_save_settings() {
 		$tab = isset( $_POST['spamanvil_tab'] ) ? sanitize_text_field( wp_unslash( $_POST['spamanvil_tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified per-tab inside each save method.
 
+		if ( ! in_array( $tab, array( 'general', 'providers', 'prompt', 'ip' ), true ) ) {
+			return;
+		}
+
 		switch ( $tab ) {
 			case 'general':
 				$this->save_general_settings();
@@ -253,7 +263,12 @@ class SpamAnvil_Admin {
 				break;
 		}
 
-		add_settings_error( 'spamanvil', 'settings_saved', __( 'Settings saved.', 'spamanvil' ), 'success' );
+		// Only report success to a user who could actually save. The per-tab save methods
+		// no-op (return early) when the capability check fails, so showing an unconditional
+		// "Settings saved." would be misleading for a user lacking manage_options.
+		if ( current_user_can( 'manage_options' ) ) {
+			add_settings_error( 'spamanvil', 'settings_saved', __( 'Settings saved.', 'spamanvil' ), 'success' );
+		}
 	}
 
 	private function save_general_settings() {

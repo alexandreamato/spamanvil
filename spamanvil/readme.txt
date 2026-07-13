@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,12 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.2.8 =
+* Fix: The async queue now stores all timestamps in UTC. On sites set to a non-UTC timezone, comments whose LLM check failed once were retried hours late and the "stale processing" window could collapse, leaving obvious spam sitting unreviewed in the pending queue. Retry, backoff and stale-reclaim now fire on schedule regardless of the site's timezone.
+* Security: API key encryption no longer falls back to a static built-in salt when AUTH_SALT is not defined — it uses a strong, per-site salt instead, so misconfigured installs don't share the same encryption key.
+* Security: Comment text can no longer break out of the prompt's comment-data boundary to smuggle instructions to the AI (prompt-injection hardening).
+* Hardening: The settings tab parameter is validated against a whitelist, and the "Settings saved" notice is no longer shown to users who lack permission to save.
 
 = 1.2.7 =
 * Feature: Cron now automatically scans pending WordPress comments when the queue is empty — no manual "Scan Pending" click needed
