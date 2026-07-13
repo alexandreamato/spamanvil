@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,10 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.2.9 =
+* Performance: Identical comment content now reuses a recent AI verdict instead of calling the LLM again — cuts API cost and latency during repeated spam floods (cache is on by default; keyed on comment content + author link, applied per current threshold).
+* Reliability: The processing queue now claims each item atomically, so WP-Cron and a manual "Process Queue Now" running at the same time can no longer grab the same comment and pay for a duplicate AI call.
 
 = 1.2.8 =
 * Fix: The async queue now stores all timestamps in UTC. On sites set to a non-UTC timezone, comments whose LLM check failed once were retried hours late and the "stale processing" window could collapse, leaving obvious spam sitting unreviewed in the pending queue. Retry, backoff and stale-reclaim now fire on schedule regardless of the site's timezone.
