@@ -281,6 +281,29 @@ python3 create_assets.py
 - WordPress.org caches aggressively; asset changes can take up to 24h to appear
 - Never commit `.svn/`, `.git/`, `.DS_Store`, or IDE files to SVN
 
+## Testing & Continuous Integration
+
+Dev tooling lives at the **repo root** (never shipped in the plugin ZIP — the plugin is only the `spamanvil/` subfolder): `composer.json`, `phpunit.xml.dist` (integration), `phpunit-unit.xml.dist` (unit), `.phpcs.xml.dist`, `bin/`, `tests/`, `.github/workflows/`. Setup: `composer install` (PHP 7.4+).
+
+**Two suites:**
+- **Unit** (`tests/unit/`) — no WordPress/DB; `tests/unit/bootstrap.php` stubs the few WP functions used. Covers `SpamAnvil_Encryptor` and `SpamAnvil_Heuristics`. Run: `composer test:unit`. Fast, runs anywhere.
+- **Integration** (`tests/integration/`) — real WordPress + MySQL. Covers the `SpamAnvil_Queue` state machine and the **UTC timestamp invariant** (retry eligibility, stale/max_retries reclaim — the 1.2.8 regression). Locally: `bin/install-wp-tests.sh <db> <user> <pass> [host] [wp-version]` then `composer test:integration`. Runs in CI automatically (no local MySQL needed).
+
+**Coding standards:** `composer lint` (WPCS + PHPCompatibility). **Advisory** in CI for now — the shipped code predates WPCS (~300 mostly auto-fixable findings); clean incrementally with `composer lint:fix`, don't gate merges on it yet.
+
+**Version gate:** `php bin/check-version.php [X.Y.Z]` asserts the version matches across all 4 places + has a changelog entry. Runs in CI and (with the tag) during deploy.
+
+**CI** (`.github/workflows/ci.yml`, on push/PR to `main`): unit + version check (PHP 7.4/8.3), advisory phpcs, integration matrix (PHP 7.4–8.3, WP latest, MariaDB).
+
+### Automated release (preferred over the manual SVN steps above)
+
+`.github/workflows/deploy.yml` deploys to WordPress.org when a version tag is pushed:
+
+1. Bump version in the 4 places (Step 1) + changelog + commit + push to `main`.
+2. `git tag X.Y.Z && git push origin X.Y.Z`
+
+It re-checks version consistency, then deploys trunk + tag to WordPress.org and builds a ZIP artifact. Requires repo secrets `WPORG_SVN_USERNAME` / `WPORG_SVN_PASSWORD`. The manual SVN workflow above remains a valid fallback.
+
 ## Key Options
 
 | Option | Default | Purpose |

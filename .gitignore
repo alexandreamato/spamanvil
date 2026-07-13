@@ -4,6 +4,11 @@
 # WordPress.org SVN working copy
 svn-spamanvil/
 
+# Composer / PHP test tooling
+/vendor/
+composer.lock
+.phpunit.result.cache
+
 # Never commit real keys or environment files
 .env
 .env.*
