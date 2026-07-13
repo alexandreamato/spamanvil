@@ -35,9 +35,6 @@ jobs:
   phpcs:
     name: Coding standards (advisory)
     runs-on: ubuntu-latest
-    # Advisory for now: the shipped code predates WPCS adoption. Drive to zero over
-    # time with `composer lint:fix`; do not block merges on it yet.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -52,6 +49,9 @@ jobs:
         run: composer update --prefer-dist --no-progress --no-interaction
 
       - name: Run phpcs
+        # Advisory for now: the shipped code predates WPCS adoption. Drive to zero
+        # over time with `composer lint:fix`; do not block merges on it yet.
+        continue-on-error: true
         run: composer lint
 
   integration:
@@ -90,6 +90,11 @@ jobs:
 
       - name: Install dependencies
         run: composer update --prefer-dist --no-progress --no-interaction
+
+      - name: Install Subversion
+        # The WordPress test-suite installer fetches core test files via svn,
+        # which is not preinstalled on ubuntu-24.04 runners.
+        run: sudo apt-get update && sudo apt-get install -y subversion
 
       - name: Install WordPress test suite
         run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1:3306 ${{ matrix.wp }} true
