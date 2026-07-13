@@ -183,4 +183,105 @@ class QueueTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsStringIgnoringCase( 'comment_data>', $out2 );
 		$this->assertStringContainsString( 'real text', $out2 );
 	}
+
+	// --- Tier 2: atomic claim -------------------------------------------------
+
+	public function test_batch_processes_each_item_exactly_once() {
+		// No provider → each claimed item fails exactly once. If a row were claimed
+		// twice within a single run it would be processed twice and attempts > 1.
+		for ( $i = 0; $i < 3; $i++ ) {
+			$this->queue->enqueue( $this->new_comment(), 0 );
+		}
+
+		$this->queue->process_batch();
+
+		global $wpdb;
+		$rows = $wpdb->get_results( "SELECT attempts FROM {$this->table}" );
+		$this->assertCount( 3, $rows );
+		foreach ( $rows as $row ) {
+			$this->assertSame( 1, (int) $row->attempts, 'Each item must be processed exactly once per run.' );
+		}
+	}
+
+	// --- Tier 2: verdict cache ------------------------------------------------
+
+	private function seed_verdict_cache( $comment, array $verdict ) {
+		$key = new ReflectionMethod( SpamAnvil_Queue::class, 'verdict_cache_key' );
+		$key->setAccessible( true );
+		set_transient( $key->invoke( $this->queue, $comment ), $verdict, HOUR_IN_SECONDS );
+	}
+
+	public function test_cached_spam_verdict_short_circuits_the_llm() {
+		update_option( 'spamanvil_threshold', 70 );
+
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved' => '0',
+			'comment_content'  => 'Buy cheap watches at my store!!!',
+		) );
+
+		$this->seed_verdict_cache( get_comment( $comment_id ), array(
+			'score'    => 92,
+			'reason'   => 'cached spam verdict',
+			'provider' => 'openai',
+			'model'    => 'gpt-4o-mini',
+		) );
+
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+
+		// No provider is configured, yet the item completes (not fails) and the comment
+		// is marked spam — proving the cached verdict replaced the LLM call.
+		global $wpdb;
+		$row = $this->get_item( (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$this->table} WHERE comment_id = %d", $comment_id ) ) );
+		$this->assertSame( 'completed', $row->status );
+		$this->assertSame( 92, (int) $row->score );
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ) );
+		$this->assertSame( 1, (int) ( new SpamAnvil_Stats() )->get_total( 'cache_hits' ) );
+	}
+
+	public function test_cached_verdict_below_threshold_is_approved() {
+		update_option( 'spamanvil_threshold', 70 );
+
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved' => '0',
+			'comment_content'  => 'Thanks, this tutorial helped me fix the entitlement issue on macOS.',
+		) );
+
+		$this->seed_verdict_cache( get_comment( $comment_id ), array(
+			'score'    => 10,
+			'reason'   => 'cached ham verdict',
+			'provider' => 'openai',
+			'model'    => 'gpt-4o-mini',
+		) );
+
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+
+		$this->assertSame( 'approved', wp_get_comment_status( $comment_id ) );
+	}
+
+	public function test_caching_disabled_falls_through_to_the_provider() {
+		update_option( 'spamanvil_cache_enabled', '0' );
+
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved' => '0',
+			'comment_content'  => 'Some content that has a seeded verdict.',
+		) );
+
+		$this->seed_verdict_cache( get_comment( $comment_id ), array(
+			'score'    => 92,
+			'reason'   => 'cached spam verdict',
+			'provider' => 'openai',
+			'model'    => 'gpt-4o-mini',
+		) );
+
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+
+		// With caching off the seeded verdict is ignored, so the (absent) provider is
+		// consulted and the item fails instead of completing from cache.
+		global $wpdb;
+		$row = $this->get_item( (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$this->table} WHERE comment_id = %d", $comment_id ) ) );
+		$this->assertSame( 'failed', $row->status );
+	}
 }
