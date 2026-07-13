@@ -318,6 +318,12 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_log_retention` | `30` | Days to keep logs |
 | `spamanvil_ip_block_threshold` | `3` | Spam attempts before IP block |
 | `spamanvil_delete_data` | `'0'` | Delete all data on uninstall (off by default) |
+| `spamanvil_cache_enabled` | `'1'` | Reuse recent LLM verdicts for identical comment content (verdict cache) |
+| `spamanvil_cache_ttl_days` | `7` | How long a cached verdict is reused |
+
+**Verdict cache (1.2.9):** `process_single()` reuses a recent LLM verdict for identical comment content (transient keyed on normalized content + author URL via `verdict_cache_key()`), skipping the API call. Only raw `score`/`reason`/`provider`/`model` are cached; the threshold is applied per-read. Anvil Mode never uses the cache. Cache hits increment the `cache_hits` stat and are marked `provider (cached)` in the logs.
+
+**Atomic claim (1.2.9):** `claim_items()` claims each row with a compare-and-swap `UPDATE ... WHERE id = ? AND status = 'queued'` (checking affected-rows), so concurrent cron + manual runs can never double-claim a row and pay for a duplicate LLM call.
 
 ## Dashboard Widget
 

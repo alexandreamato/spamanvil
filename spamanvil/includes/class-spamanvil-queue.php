@@ -180,57 +180,81 @@ class SpamAnvil_Queue {
 			)
 		);
 
-		if ( $force ) {
-			// Manual trigger: grab all queued, failed and max_retries items immediately.
-			$items = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT * FROM {$this->table}
+		// Atomically claim up to $limit eligible items. Each row is taken with a
+		// compare-and-swap UPDATE guarded by its current status, so two concurrent
+		// runs (e.g. WP-Cron and a manual "Process Queue Now") can never claim the
+		// same row and double-call the LLM. The previous SELECT-then-UPDATE was racy.
+		$claimed = array();
+		$budget  = $limit * 3; // Bound the work even under heavy contention.
+
+		while ( count( $claimed ) < $limit && $budget-- > 0 ) {
+			if ( $force ) {
+				// Manual trigger: queued, failed and max_retries items are all eligible.
+				$id = $wpdb->get_var(
+					"SELECT id FROM {$this->table}
 					WHERE status IN ('queued', 'failed', 'max_retries')
 					ORDER BY created_at ASC
-					LIMIT %d",
-					$limit
-				)
-			);
-		} else {
-			// Cron: only grab failed items whose retry_at has passed.
-			$items = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT * FROM {$this->table}
-					WHERE (status = 'queued')
-					   OR (status = 'failed' AND retry_at IS NOT NULL AND retry_at <= %s)
-					ORDER BY created_at ASC
-					LIMIT %d",
-					$now,
-					$limit
-				)
-			);
+					LIMIT 1"
+				);
+			} else {
+				// Cron: queued items, plus failed items whose retry_at has passed.
+				$id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM {$this->table}
+						WHERE (status = 'queued')
+						   OR (status = 'failed' AND retry_at IS NOT NULL AND retry_at <= %s)
+						ORDER BY created_at ASC
+						LIMIT 1",
+						$now
+					)
+				);
+			}
+
+			if ( ! $id ) {
+				break; // No more eligible items.
+			}
+
+			if ( $force ) {
+				$affected = $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$this->table} SET status = 'processing', updated_at = %s, attempts = 0
+						WHERE id = %d AND status IN ('queued', 'failed', 'max_retries')",
+						$now,
+						$id
+					)
+				);
+			} else {
+				$affected = $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$this->table} SET status = 'processing', updated_at = %s
+						WHERE id = %d
+						  AND ( status = 'queued'
+						        OR ( status = 'failed' AND retry_at IS NOT NULL AND retry_at <= %s ) )",
+						$now,
+						$id,
+						$now
+					)
+				);
+			}
+
+			if ( $affected ) {
+				$claimed[] = (int) $id;
+			}
+			// $affected === 0 means another worker claimed this row between our SELECT
+			// and UPDATE; loop again — the next SELECT will skip it.
 		}
 
-		if ( empty( $items ) ) {
+		if ( empty( $claimed ) ) {
 			return array();
 		}
 
-		$ids = wp_list_pluck( $items, 'id' );
-		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-
-		if ( $force ) {
-			// Reset attempts so max_retries items get a fresh retry cycle.
-			$wpdb->query(
-				$wpdb->prepare(
-					"UPDATE {$this->table} SET status = 'processing', updated_at = %s, attempts = 0 WHERE id IN ($placeholders)",
-					array_merge( array( $now ), $ids )
-				)
-			);
-		} else {
-			$wpdb->query(
-				$wpdb->prepare(
-					"UPDATE {$this->table} SET status = 'processing', updated_at = %s WHERE id IN ($placeholders)",
-					array_merge( array( $now ), $ids )
-				)
-			);
-		}
-
-		return $items;
+		$placeholders = implode( ',', array_fill( 0, count( $claimed ), '%d' ) );
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table} WHERE id IN ($placeholders) ORDER BY created_at ASC",
+				$claimed
+			)
+		);
 	}
 
 	public function process_single( $item ) {
@@ -241,29 +265,52 @@ class SpamAnvil_Queue {
 			return;
 		}
 
-		// Build prompts.
-		$system_prompt = get_option( 'spamanvil_system_prompt', SpamAnvil_Activator::get_default_system_prompt() );
-		$user_prompt   = $this->build_user_prompt( $comment, $item );
-
-		$system_prompt = apply_filters( 'spamanvil_prompt', $system_prompt, 'system', $comment );
-		$user_prompt   = apply_filters( 'spamanvil_prompt', $user_prompt, 'user', $comment );
-
 		do_action( 'spamanvil_before_analysis', $comment, $item );
 
-		// Choose strategy: Anvil Mode (all providers) or normal chain (first success).
 		$anvil_mode = get_option( 'spamanvil_anvil_mode', '0' ) === '1';
 
-		if ( $anvil_mode ) {
-			$result = $this->try_anvil_mode( $item, $comment, $system_prompt, $user_prompt );
-		} else {
-			$result = $this->try_provider_chain( $item, $comment, $system_prompt, $user_prompt );
+		// Reuse a recent verdict for identical comment content to avoid paying for
+		// repeated LLM calls on the same spam. Anvil Mode logs per-provider results,
+		// so it always evaluates fresh and never uses the cache.
+		$cache_key  = $anvil_mode ? '' : $this->verdict_cache_key( $comment );
+		$result     = null;
+		$from_cache = false;
+
+		if ( $cache_key ) {
+			$cached = get_transient( $cache_key );
+			if ( is_array( $cached ) && isset( $cached['score'], $cached['reason'] ) ) {
+				$result     = $cached;
+				$from_cache = true;
+			}
 		}
 
-		if ( is_wp_error( $result ) ) {
-			// All providers failed.
-			$error_msg = $result->get_error_message();
-			$this->handle_failure( $item, $error_msg );
-			return;
+		if ( ! $from_cache ) {
+			// Build prompts.
+			$system_prompt = get_option( 'spamanvil_system_prompt', SpamAnvil_Activator::get_default_system_prompt() );
+			$user_prompt   = $this->build_user_prompt( $comment, $item );
+
+			$system_prompt = apply_filters( 'spamanvil_prompt', $system_prompt, 'system', $comment );
+			$user_prompt   = apply_filters( 'spamanvil_prompt', $user_prompt, 'user', $comment );
+
+			// Choose strategy: Anvil Mode (all providers) or normal chain (first success).
+			if ( $anvil_mode ) {
+				$result = $this->try_anvil_mode( $item, $comment, $system_prompt, $user_prompt );
+			} else {
+				$result = $this->try_provider_chain( $item, $comment, $system_prompt, $user_prompt );
+			}
+
+			if ( is_wp_error( $result ) ) {
+				// All providers failed.
+				$this->handle_failure( $item, $result->get_error_message() );
+				return;
+			}
+
+			// Cache the fresh verdict (raw score/reason; the threshold is applied per-read).
+			if ( $cache_key ) {
+				$this->store_verdict_cache( $cache_key, $result );
+			}
+		} else {
+			$this->stats->increment( 'cache_hits' );
 		}
 
 		// Apply threshold.
@@ -284,12 +331,12 @@ class SpamAnvil_Queue {
 			$this->stats->log_evaluation( array(
 				'comment_id'         => $item->comment_id,
 				'score'              => $result['score'],
-				'provider'           => $result['provider'],
+				'provider'           => $from_cache ? $result['provider'] . ' (cached)' : $result['provider'],
 				'model'              => $result['model'],
 				'reason'             => $result['reason'],
 				'heuristic_score'    => $item->heuristic_score,
 				'heuristic_details'  => '',
-				'processing_time_ms' => $result['processing_time_ms'],
+				'processing_time_ms' => $from_cache ? 0 : ( isset( $result['processing_time_ms'] ) ? $result['processing_time_ms'] : 0 ),
 			) );
 		}
 
@@ -313,6 +360,57 @@ class SpamAnvil_Queue {
 		$this->stats->increment( 'comments_checked' );
 
 		do_action( 'spamanvil_after_analysis', $comment, $result, $is_spam );
+	}
+
+	/**
+	 * Build the verdict-cache key for a comment, or '' when caching is disabled/empty.
+	 *
+	 * Keyed on normalized content + author URL so trivially-different reposts of the
+	 * same spam (whitespace/case) share a verdict, while a different link does not.
+	 * The verdict is content-level ("is this text spam"), independent of the post.
+	 *
+	 * @param WP_Comment $comment Comment being evaluated.
+	 * @return string Transient key, or '' to skip caching.
+	 */
+	private function verdict_cache_key( $comment ) {
+		if ( '1' !== get_option( 'spamanvil_cache_enabled', '1' ) ) {
+			return '';
+		}
+
+		$content = trim( (string) $comment->comment_content );
+		if ( '' === $content ) {
+			return '';
+		}
+
+		$normalized = preg_replace( '/\s+/u', ' ', mb_strtolower( $content ) );
+		$signature  = $normalized . '|' . mb_strtolower( trim( (string) $comment->comment_author_url ) );
+
+		return 'spamanvil_v_' . hash( 'sha256', $signature );
+	}
+
+	/**
+	 * Store a fresh LLM verdict for later reuse. Only score/reason/provider/model are
+	 * cached; the spam threshold is applied at read time so threshold changes take effect.
+	 *
+	 * @param string $cache_key Key from verdict_cache_key().
+	 * @param array  $result    LLM result array.
+	 */
+	private function store_verdict_cache( $cache_key, $result ) {
+		$days = (int) get_option( 'spamanvil_cache_ttl_days', 7 );
+		if ( $days < 1 ) {
+			$days = 7;
+		}
+
+		set_transient(
+			$cache_key,
+			array(
+				'score'    => (int) $result['score'],
+				'reason'   => $result['reason'],
+				'provider' => $result['provider'],
+				'model'    => $result['model'],
+			),
+			$days * DAY_IN_SECONDS
+		);
 	}
 
 	/**
