@@ -281,6 +281,16 @@ $alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 		</tr>
 
 		<tr>
+			<th scope="row"><?php esc_html_e( 'Honeypot', 'spamanvil' ); ?></th>
+			<td>
+				<label>
+					<input type="checkbox" name="spamanvil_honeypot_enabled" value="1" <?php checked( get_option( 'spamanvil_honeypot_enabled', '1' ), '1' ); ?>>
+					<?php esc_html_e( 'Add a hidden field to comment forms and instantly mark submissions that fill it as spam (blocks bots for free, before any AI call)', 'spamanvil' ); ?>
+				</label>
+			</td>
+		</tr>
+
+		<tr>
 			<th scope="row"><?php esc_html_e( 'Delete Data on Uninstall', 'spamanvil' ); ?></th>
 			<td>
 				<label>

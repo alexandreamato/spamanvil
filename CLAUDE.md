@@ -333,6 +333,9 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_delete_data` | `'0'` | Delete all data on uninstall (off by default) |
 | `spamanvil_cache_enabled` | `'1'` | Reuse recent LLM verdicts for identical comment content (verdict cache) |
 | `spamanvil_cache_ttl_days` | `7` | How long a cached verdict is reused |
+| `spamanvil_honeypot_enabled` | `'1'` | Hidden honeypot field on comment forms; bots that fill it are auto-spammed |
+
+**Honeypot (1.5.0):** `SpamAnvil_Comment_Processor::render_honeypot()` (hooked to `comment_form`) outputs an off-screen `spamanvil_hp` field; `process_new_comment()` checks it first (before heuristics/LLM) and, if filled, marks the comment spam, increments the `honeypot_blocked` stat, records the IP, and logs it (`provider = honeypot`). This is the plugin's only intentional frontend output — invisible and functional, not promotional. Cache-safe (static field); a future time-trap layer would need page-cache care.
 
 **Verdict cache (1.2.9):** `process_single()` reuses a recent LLM verdict for identical comment content (transient keyed on normalized content + author URL via `verdict_cache_key()`), skipping the API call. Only raw `score`/`reason`/`provider`/`model` are cached; the threshold is applied per-read. Anvil Mode never uses the cache. Cache hits increment the `cache_hits` stat and are marked `provider (cached)` in the logs.
 

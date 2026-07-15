@@ -100,6 +100,31 @@ class SpamAnvil_Comment_Processor {
 			return;
 		}
 
+		// Honeypot: a hidden field only an automated bot would fill. Catch it here,
+		// before any heuristic or LLM work, at zero cost. Marked as spam (recoverable
+		// from the Spam folder) rather than hard-blocked, in case of a rare false positive.
+		if ( $this->honeypot_triggered() ) {
+			wp_spam_comment( $comment_id );
+			$this->stats->increment( 'honeypot_blocked' );
+			$this->stats->increment( 'comments_checked' );
+			$this->stats->log_evaluation( array(
+				'comment_id'        => $comment_id,
+				'score'             => 100,
+				'provider'          => 'honeypot',
+				'model'             => 'form-trap',
+				'reason'            => 'Hidden honeypot field was filled (bot submission)',
+				'heuristic_score'   => 100,
+				'heuristic_details' => '',
+			) );
+
+			$ip = get_comment_author_IP( $comment_id );
+			if ( ! empty( $ip ) ) {
+				$this->ip_manager->record_spam_attempt( $ip );
+			}
+
+			return;
+		}
+
 		// Run heuristics.
 		$analysis = $this->heuristics->analyze( array(
 			'comment_content'      => $comment->comment_content,
@@ -166,5 +191,38 @@ class SpamAnvil_Comment_Processor {
 		}
 
 		return is_user_logged_in() && current_user_can( 'moderate_comments' );
+	}
+
+	/**
+	 * Hook: comment_form — output a hidden honeypot field.
+	 *
+	 * Positioned off-screen and marked aria-hidden with tabindex -1 and autocomplete off,
+	 * so real users (and screen readers) never fill it, but form-filling bots do.
+	 */
+	public function render_honeypot() {
+		if ( ! $this->is_enabled() || '1' !== get_option( 'spamanvil_honeypot_enabled', '1' ) ) {
+			return;
+		}
+
+		echo '<div class="spamanvil-hp" style="position:absolute!important;left:-9999px!important;top:-9999px!important;height:0;width:0;overflow:hidden;" aria-hidden="true">';
+		echo '<label for="spamanvil_hp">' . esc_html__( 'Leave this field empty', 'spamanvil' ) . '</label>';
+		echo '<input type="text" name="spamanvil_hp" id="spamanvil_hp" value="" tabindex="-1" autocomplete="off">';
+		echo '</div>';
+	}
+
+	/**
+	 * Whether the honeypot field was filled on the current submission.
+	 *
+	 * @return bool
+	 */
+	private function honeypot_triggered() {
+		if ( '1' !== get_option( 'spamanvil_honeypot_enabled', '1' ) ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- reading the comment payload during comment submission; no nonce is available here.
+		$value = isset( $_POST['spamanvil_hp'] ) ? trim( (string) wp_unslash( $_POST['spamanvil_hp'] ) ) : '';
+
+		return '' !== $value;
 	}
 }
