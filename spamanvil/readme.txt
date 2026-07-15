@@ -1,7 +1,7 @@
 === SpamAnvil ===
 Contributors: aamato
 Donate link: https://github.com/sponsors/alexandreamato
-Tags: anti-spam, spam, comments, ai, artificial-intelligence
+Tags: antispam, spam, comment spam, spam protection, ai
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
@@ -9,7 +9,7 @@ Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Stop comment spam with AI. Uses ChatGPT, Claude, Gemini and other LLMs to catch spam that traditional filters miss. 100% free.
+Free AI anti-spam & Akismet alternative. Uses ChatGPT, Claude, Gemini & other LLMs to block comment spam that traditional filters miss.
 
 == Description ==
 
