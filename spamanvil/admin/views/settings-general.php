@@ -173,6 +173,19 @@ $alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 		</tr>
 
 		<tr>
+			<th scope="row"><?php esc_html_e( 'Open Mode', 'spamanvil' ); ?></th>
+			<td>
+				<label>
+					<input type="checkbox" name="spamanvil_open_mode" value="1" <?php checked( get_option( 'spamanvil_open_mode', '0' ), '1' ); ?>>
+					<?php esc_html_e( 'Maximum openness — make leaving a real comment effortless', 'spamanvil' ); ?>
+				</label>
+				<p class="description">
+					<?php esc_html_e( 'Removes WordPress comment friction: no required name/email (anonymous allowed), no login, no first-comment moderation hold. Comments appear instantly and SpamAnvil removes spam in the background. The anti-spam layers (honeypot, time trap, rate limit, heuristics, AI) do the filtering invisibly. Trade-off: on low-traffic sites, subtle spam may be visible for a few minutes until it is evaluated — enable Sync mode above for zero delay.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
+
+		<tr>
 			<th scope="row"><?php esc_html_e( 'Anvil Mode', 'spamanvil' ); ?></th>
 			<td>
 				<label>

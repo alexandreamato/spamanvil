@@ -338,6 +338,9 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_timetrap_seconds` | `3` | Time-trap minimum seconds before submit |
 | `spamanvil_ratelimit_enabled` | `'1'` | Throttle rapid repeat comments per IP |
 | `spamanvil_ratelimit_max` / `_window` | `5` / `60` | Max comments per window (seconds) per IP |
+| `spamanvil_open_mode` | `'0'` | "Crazy Open" — strip WP comment friction + optimistic publish |
+
+**Open Mode (1.8.0):** opt-in preset for maximum openness. `SpamAnvil::define_hooks()` adds `pre_option_*` filters (`require_name_email`, `comment_registration`, `comment_moderation`, `comment_previously_approved` → 0) so WP requires no name/email/login and holds nothing — reversible, never overwrites stored options. `hold_for_review()` returns `1` (approve now) instead of `0` (hold) in async mode: comments publish instantly and the async LLM removes spam later. The invisible pre-LLM layers still block obvious bots at `comment_post`. Trade-off: subtle spam can be briefly visible until evaluated (use Sync mode for zero delay).
 
 **Form traps (1.5.0 honeypot, 1.6.0 time-trap):** free, pre-LLM bot filters in `SpamAnvil_Comment_Processor`, both hooked to `comment_form` and checked at the top of `process_new_comment()` (before heuristics/LLM) via the shared `mark_trap_spam()` helper (marks spam — recoverable — + stat + IP + log with `provider = honeypot|timetrap`).
 - **Honeypot** — `render_honeypot()` outputs an off-screen `spamanvil_hp` field; a filled value = bot. Cache-safe.

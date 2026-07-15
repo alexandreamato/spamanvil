@@ -200,4 +200,28 @@ class CommentProcessorTest extends WP_UnitTestCase {
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.8';
 		$this->assertIsArray( $this->processor->check_rate_limit( array() ) );
 	}
+
+	// --- Crazy Open mode ------------------------------------------------------
+
+	public function test_open_mode_publishes_optimistically() {
+		update_option( 'spamanvil_mode', 'async' );
+		update_option( 'spamanvil_open_mode', '1' );
+
+		// Optimistic: approve now (1), let async evaluation remove spam later.
+		$this->assertSame( 1, $this->processor->hold_for_review( 1, array() ) );
+	}
+
+	public function test_default_async_holds_comment_as_pending() {
+		update_option( 'spamanvil_mode', 'async' );
+		update_option( 'spamanvil_open_mode', '0' );
+
+		$this->assertSame( 0, $this->processor->hold_for_review( 1, array() ) );
+	}
+
+	public function test_open_mode_does_not_override_spam_verdict() {
+		update_option( 'spamanvil_mode', 'async' );
+		update_option( 'spamanvil_open_mode', '1' );
+
+		$this->assertSame( 'spam', $this->processor->hold_for_review( 'spam', array() ) );
+	}
 }

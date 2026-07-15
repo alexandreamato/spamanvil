@@ -75,6 +75,17 @@ class SpamAnvil {
 		add_action( 'comment_form', array( $this->comment_processor, 'render_honeypot' ) );
 		add_action( 'comment_form', array( $this->comment_processor, 'render_time_trap' ) );
 
+		// "Crazy Open" mode: strip WordPress' comment friction (required name/email, login,
+		// moderation holds) — the invisible anti-spam layers do the filtering instead, so
+		// leaving a real (even anonymous) comment is effortless. Applied via pre_option
+		// filters so it's fully reversible and never overwrites the site's stored settings.
+		if ( '1' === get_option( 'spamanvil_open_mode', '0' ) ) {
+			add_filter( 'pre_option_require_name_email', '__return_zero' );
+			add_filter( 'pre_option_comment_registration', '__return_zero' );
+			add_filter( 'pre_option_comment_moderation', '__return_zero' );
+			add_filter( 'pre_option_comment_previously_approved', '__return_zero' );
+		}
+
 		// Cron hooks.
 		add_action( 'spamanvil_process_queue', array( $this->queue, 'process_batch' ) );
 		add_action( 'spamanvil_cleanup_logs', array( $this->stats, 'cleanup_old_logs' ) );
