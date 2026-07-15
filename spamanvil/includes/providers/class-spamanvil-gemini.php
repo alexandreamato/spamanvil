@@ -37,7 +37,7 @@ class SpamAnvil_Gemini extends SpamAnvil_Provider {
 			),
 			'generationConfig'  => array(
 				'temperature'      => 0,
-				'maxOutputTokens'  => 200,
+				'maxOutputTokens'  => 400,
 				'responseMimeType' => 'application/json',
 			),
 		);

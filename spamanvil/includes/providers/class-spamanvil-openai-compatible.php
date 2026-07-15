@@ -56,7 +56,7 @@ class SpamAnvil_OpenAI_Compatible extends SpamAnvil_Provider {
 		return array(
 			'model'       => $this->model,
 			'temperature' => 0,
-			'max_tokens'  => 200,
+			'max_tokens'  => 400,
 			'messages'    => array(
 				array(
 					'role'    => 'system',

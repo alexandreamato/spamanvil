@@ -284,4 +284,34 @@ class QueueTest extends WP_UnitTestCase {
 		$row = $this->get_item( (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$this->table} WHERE comment_id = %d", $comment_id ) ) );
 		$this->assertSame( 'failed', $row->status );
 	}
+
+	// --- v1.3.0: failure visibility -------------------------------------------
+
+	public function test_provider_creation_failure_is_logged() {
+		// A provider is configured but has no API key → create() fails. Before 1.3.0 this
+		// left the Logs tab empty while every item failed.
+		update_option( 'spamanvil_primary_provider', 'openai' );
+
+		$this->queue->enqueue( $this->new_comment(), 0 );
+		$this->queue->process_batch();
+
+		global $wpdb;
+		$logs = $wpdb->prefix . 'spamanvil_logs';
+		$row  = $wpdb->get_row( "SELECT * FROM {$logs} ORDER BY id DESC LIMIT 1" );
+		$this->assertNotNull( $row, 'Provider-creation failure must be logged.' );
+		$this->assertSame( 'openai', $row->provider );
+		$this->assertStringContainsStringIgnoringCase( 'unavailable', $row->reason );
+	}
+
+	public function test_undecryptable_stored_key_gives_distinct_error() {
+		// A key IS stored but can't be decrypted (salt/env changed) → a specific error,
+		// not the misleading "no API key configured".
+		update_option( 'spamanvil_openai_api_key', 'not-a-valid-ciphertext-blob' );
+
+		$factory = new SpamAnvil_Provider_Factory( new SpamAnvil_Encryptor() );
+		$result  = $factory->create( 'openai' );
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertSame( 'spamanvil_key_decrypt_failed', $result->get_error_code() );
+	}
 }

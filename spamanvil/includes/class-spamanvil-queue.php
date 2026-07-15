@@ -445,7 +445,20 @@ class SpamAnvil_Queue {
 			$provider = $this->provider_factory->create( $slug );
 
 			if ( is_wp_error( $provider ) ) {
-				$errors[] = $slug . ': ' . $provider->get_error_message();
+				// Log provider-creation failures too (missing/undecryptable key, bad
+				// config). Without this the Logs tab stayed empty while every item failed.
+				$error_msg = $provider->get_error_message();
+				$errors[]  = $slug . ': ' . $error_msg;
+				$this->stats->increment( 'llm_errors' );
+				$this->stats->log_evaluation( array(
+					'comment_id'        => $item->comment_id,
+					'score'             => null,
+					'provider'          => $slug,
+					'model'             => '',
+					'reason'            => 'Provider unavailable (' . $provider->get_error_code() . '): ' . $error_msg,
+					'heuristic_score'   => $item->heuristic_score,
+					'heuristic_details' => '',
+				) );
 				continue;
 			}
 
@@ -516,7 +529,18 @@ class SpamAnvil_Queue {
 			$provider = $this->provider_factory->create( $slug );
 
 			if ( is_wp_error( $provider ) ) {
-				$errors[] = $slug . ': ' . $provider->get_error_message();
+				$error_msg = $provider->get_error_message();
+				$errors[]  = $slug . ': ' . $error_msg;
+				$this->stats->increment( 'llm_errors' );
+				$this->stats->log_evaluation( array(
+					'comment_id'        => $item->comment_id,
+					'score'             => null,
+					'provider'          => $slug,
+					'model'             => '',
+					'reason'            => 'Anvil Mode — provider unavailable (' . $provider->get_error_code() . '): ' . $error_msg,
+					'heuristic_score'   => $item->heuristic_score,
+					'heuristic_details' => '',
+				) );
 				continue;
 			}
 
