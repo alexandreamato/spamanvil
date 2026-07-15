@@ -79,7 +79,14 @@ class SpamAnvil_Provider_Factory {
 		$config = self::$provider_configs[ $provider_slug ];
 
 		// Use override API key if provided, otherwise resolve from constants/DB.
-		$api_key = ! empty( $overrides['api_key'] ) ? $overrides['api_key'] : $this->resolve_api_key( $config );
+		if ( ! empty( $overrides['api_key'] ) ) {
+			$api_key = $overrides['api_key'];
+		} else {
+			$api_key = $this->resolve_api_key( $config );
+			if ( is_wp_error( $api_key ) ) {
+				return $api_key; // Decryption failure — distinct, actionable error.
+			}
+		}
 
 		if ( empty( $api_key ) ) {
 			return new WP_Error(
@@ -186,11 +193,23 @@ class SpamAnvil_Provider_Factory {
 		// Fall back to encrypted DB value.
 		$encrypted = get_option( $config['option_key'], '' );
 
-		if ( ! empty( $encrypted ) ) {
-			return $this->encryptor->decrypt( $encrypted );
+		if ( empty( $encrypted ) ) {
+			return ''; // Genuinely not configured.
 		}
 
-		return '';
+		$decrypted = $this->encryptor->decrypt( $encrypted );
+
+		if ( '' === $decrypted ) {
+			// A key IS stored but can't be decrypted — the site's AUTH_SALT (or hosting
+			// environment) changed since it was saved. Surface this distinctly instead of
+			// the misleading "no API key configured", so the admin knows to re-enter it.
+			return new WP_Error(
+				'spamanvil_key_decrypt_failed',
+				__( 'A stored API key could not be decrypted — the site security keys (AUTH_SALT) likely changed. Re-enter the API key on the Providers tab, or define it in wp-config.php.', 'spamanvil' )
+			);
+		}
+
+		return $decrypted;
 	}
 
 	public static function get_available_providers() {

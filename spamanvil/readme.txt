@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.9
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,14 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.3.0 =
+* Fix (major): Comment verdicts from reasoning/chatty AI models are now parsed correctly. The response reader strips `<think>...</think>` blocks, extracts the JSON verdict from surrounding prose, and falls back to reading the score directly — previously these models caused every comment to fail classification.
+* Fix: "Test Connection" now runs a real spam-classification round-trip and validates the reply, so a provider that returns unparseable output fails the test instead of showing a false success.
+* Fix: Provider failures (missing or undecryptable API key, bad config) are now written to the Logs tab. Previously the log stayed empty while comments silently failed.
+* Fix: When a stored API key can't be decrypted (usually because the site's security keys changed after a migration), the plugin now says so and asks you to re-enter the key, instead of the misleading "no API key configured".
+* Enhancement: An admin warning appears when no provider is configured or comments are piling up unclassified, so silent failures are visible.
+* Enhancement: Larger response token budget so reasoning models have room to return the JSON verdict.
 
 = 1.2.9 =
 * Performance: Identical comment content now reuses a recent AI verdict instead of calling the LLM again — cuts API cost and latency during repeated spam floods (cache is on by default; keyed on comment content + author link, applied per current threshold).

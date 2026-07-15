@@ -44,6 +44,45 @@ class SpamAnvil_Admin {
 		exit;
 	}
 
+	/**
+	 * Show an admin warning when SpamAnvil is silently failing — no provider configured,
+	 * or a backlog of comments stuck in failed/max_retries (broken key, unparseable model).
+	 * The result is cached for 5 minutes so this doesn't query on every admin page load.
+	 */
+	public function maybe_show_health_notice() {
+		if ( ! current_user_can( 'manage_options' ) || '1' !== get_option( 'spamanvil_enabled', '1' ) ) {
+			return;
+		}
+
+		$health = get_transient( 'spamanvil_health_check' );
+		if ( false === $health ) {
+			$status = $this->queue->get_queue_status();
+			$health = array(
+				'stuck'   => (int) $status['failed'] + (int) $status['max_retries'],
+				'no_prov' => ( '' === get_option( 'spamanvil_primary_provider', '' ) ) ? 1 : 0,
+			);
+			set_transient( 'spamanvil_health_check', $health, 5 * MINUTE_IN_SECONDS );
+		}
+
+		if ( $health['stuck'] < 5 && empty( $health['no_prov'] ) ) {
+			return; // Healthy enough — stay quiet.
+		}
+
+		$logs_url = admin_url( 'options-general.php?page=spamanvil&tab=logs' );
+
+		echo '<div class="notice notice-error"><p><strong>SpamAnvil:</strong> ';
+		if ( ! empty( $health['no_prov'] ) ) {
+			esc_html_e( 'no AI provider is configured, so comments are not being classified.', 'spamanvil' );
+		} else {
+			printf(
+				/* translators: %d: number of comments stuck in failed/max-retries */
+				esc_html__( '%d comment(s) could not be classified (failed or max retries) — check the provider configuration and API key.', 'spamanvil' ),
+				(int) $health['stuck']
+			);
+		}
+		printf( ' <a href="%s">%s</a></p></div>', esc_url( $logs_url ), esc_html__( 'View SpamAnvil logs', 'spamanvil' ) );
+	}
+
 	public function add_menu_page() {
 		add_options_page(
 			__( 'SpamAnvil', 'spamanvil' ),

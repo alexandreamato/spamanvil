@@ -61,7 +61,45 @@ if ( ! function_exists( 'wp_salt' ) ) {
 	}
 }
 
+if ( ! function_exists( '__' ) ) {
+	function __( $text, $domain = 'default' ) {
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	function sanitize_text_field( $str ) {
+		$str = preg_replace( '/<[^>]*>/', '', (string) $str );
+		$str = preg_replace( '/[\r\n\t]+/', ' ', $str );
+		return trim( preg_replace( '/\s{2,}/', ' ', $str ) );
+	}
+}
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		public $code;
+		public $message;
+		public function __construct( $code = '', $message = '' ) {
+			$this->code    = $code;
+			$this->message = $message;
+		}
+		public function get_error_code() {
+			return $this->code;
+		}
+		public function get_error_message() {
+			return $this->message;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+
 // Load the classes under test directly (no autoloader needed).
 $plugin_includes = dirname( __DIR__, 2 ) . '/spamanvil/includes';
 require_once $plugin_includes . '/class-spamanvil-encryptor.php';
 require_once $plugin_includes . '/class-spamanvil-heuristics.php';
+require_once $plugin_includes . '/providers/class-spamanvil-provider.php';
