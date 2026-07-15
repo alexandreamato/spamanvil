@@ -100,6 +100,8 @@ class SpamAnvil_Activator {
 			'spamanvil_privacy_notice'       => '1',
 			'spamanvil_skip_moderators'      => '1',
 			'spamanvil_honeypot_enabled'     => '1',
+			'spamanvil_timetrap_enabled'     => '1',
+			'spamanvil_timetrap_seconds'     => 3,
 			'spamanvil_delete_data'          => '0',
 			'spamanvil_system_prompt'        => self::get_default_system_prompt(),
 			'spamanvil_user_prompt'          => self::get_default_user_prompt(),

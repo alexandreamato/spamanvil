@@ -100,28 +100,16 @@ class SpamAnvil_Comment_Processor {
 			return;
 		}
 
-		// Honeypot: a hidden field only an automated bot would fill. Catch it here,
-		// before any heuristic or LLM work, at zero cost. Marked as spam (recoverable
-		// from the Spam folder) rather than hard-blocked, in case of a rare false positive.
+		// Form traps (honeypot + time-trap): catch obvious bots here, before any heuristic
+		// or LLM work, at zero cost. Marked as spam (recoverable from the Spam folder)
+		// rather than hard-blocked, in case of a rare false positive.
 		if ( $this->honeypot_triggered() ) {
-			wp_spam_comment( $comment_id );
-			$this->stats->increment( 'honeypot_blocked' );
-			$this->stats->increment( 'comments_checked' );
-			$this->stats->log_evaluation( array(
-				'comment_id'        => $comment_id,
-				'score'             => 100,
-				'provider'          => 'honeypot',
-				'model'             => 'form-trap',
-				'reason'            => 'Hidden honeypot field was filled (bot submission)',
-				'heuristic_score'   => 100,
-				'heuristic_details' => '',
-			) );
+			$this->mark_trap_spam( $comment_id, 'honeypot_blocked', 'honeypot', 'Hidden honeypot field was filled (bot submission)' );
+			return;
+		}
 
-			$ip = get_comment_author_IP( $comment_id );
-			if ( ! empty( $ip ) ) {
-				$this->ip_manager->record_spam_attempt( $ip );
-			}
-
+		if ( $this->time_trap_triggered() ) {
+			$this->mark_trap_spam( $comment_id, 'timetrap_blocked', 'timetrap', 'Comment submitted implausibly fast (bot submission)' );
 			return;
 		}
 
@@ -224,5 +212,101 @@ class SpamAnvil_Comment_Processor {
 		$value = isset( $_POST['spamanvil_hp'] ) ? trim( (string) wp_unslash( $_POST['spamanvil_hp'] ) ) : '';
 
 		return '' !== $value;
+	}
+
+	/**
+	 * Mark a comment as spam via a zero-cost form trap (honeypot / time-trap).
+	 *
+	 * @param int    $comment_id Comment to flag.
+	 * @param string $stat_key   Stat counter to increment.
+	 * @param string $provider   Log provider label.
+	 * @param string $reason     Log reason.
+	 */
+	private function mark_trap_spam( $comment_id, $stat_key, $provider, $reason ) {
+		wp_spam_comment( $comment_id );
+		$this->stats->increment( $stat_key );
+		$this->stats->increment( 'comments_checked' );
+		$this->stats->log_evaluation( array(
+			'comment_id'        => $comment_id,
+			'score'             => 100,
+			'provider'          => $provider,
+			'model'             => 'form-trap',
+			'reason'            => $reason,
+			'heuristic_score'   => 100,
+			'heuristic_details' => '',
+		) );
+
+		$ip = get_comment_author_IP( $comment_id );
+		if ( ! empty( $ip ) ) {
+			$this->ip_manager->record_spam_attempt( $ip );
+		}
+	}
+
+	/**
+	 * Hook: comment_form — output a signed timestamp for the time-trap.
+	 *
+	 * NOTE: full-page caching freezes this timestamp, which makes the time-trap inert
+	 * (elapsed always looks large) — it fails open, never producing a false positive.
+	 */
+	public function render_time_trap() {
+		if ( ! $this->is_enabled() || '1' !== get_option( 'spamanvil_timetrap_enabled', '1' ) ) {
+			return;
+		}
+
+		printf(
+			'<input type="hidden" name="spamanvil_ts" value="%s">',
+			esc_attr( $this->time_trap_value() )
+		);
+	}
+
+	/**
+	 * Build the signed "timestamp.hmac" value for the time-trap field.
+	 *
+	 * @return string
+	 */
+	private function time_trap_value() {
+		$ts = (string) time();
+		return $ts . '.' . hash_hmac( 'sha256', $ts, wp_salt( 'nonce' ) );
+	}
+
+	/**
+	 * Whether the comment was submitted implausibly fast (a bot).
+	 *
+	 * Fails open (returns false) if the field is missing, malformed, or has an invalid
+	 * signature — those can be caching/proxy artifacts, and a real user must never be flagged.
+	 *
+	 * @return bool
+	 */
+	private function time_trap_triggered() {
+		if ( '1' !== get_option( 'spamanvil_timetrap_enabled', '1' ) ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- reading the comment payload during comment submission; no nonce is available here.
+		$raw = isset( $_POST['spamanvil_ts'] ) ? sanitize_text_field( wp_unslash( $_POST['spamanvil_ts'] ) ) : '';
+
+		if ( '' === $raw || false === strpos( $raw, '.' ) ) {
+			return false;
+		}
+
+		list( $ts, $sig ) = explode( '.', $raw, 2 );
+
+		if ( ! ctype_digit( $ts ) ) {
+			return false;
+		}
+
+		$expected = hash_hmac( 'sha256', $ts, wp_salt( 'nonce' ) );
+		if ( ! hash_equals( $expected, $sig ) ) {
+			return false; // Forged/tampered — could also be a proxy artifact; fail open.
+		}
+
+		$min = (int) get_option( 'spamanvil_timetrap_seconds', 3 );
+		if ( $min < 1 ) {
+			$min = 3;
+		}
+
+		$elapsed = time() - (int) $ts;
+
+		return ( $elapsed >= 0 && $elapsed < $min );
 	}
 }

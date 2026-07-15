@@ -72,6 +72,7 @@ class SpamAnvil {
 		add_filter( 'pre_comment_approved', array( $this->comment_processor, 'hold_for_review' ), 99, 2 );
 		add_action( 'comment_post', array( $this->comment_processor, 'process_new_comment' ), 10, 2 );
 		add_action( 'comment_form', array( $this->comment_processor, 'render_honeypot' ) );
+		add_action( 'comment_form', array( $this->comment_processor, 'render_time_trap' ) );
 
 		// Cron hooks.
 		add_action( 'spamanvil_process_queue', array( $this->queue, 'process_batch' ) );

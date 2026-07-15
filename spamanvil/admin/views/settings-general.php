@@ -291,6 +291,23 @@ $alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 		</tr>
 
 		<tr>
+			<th scope="row"><?php esc_html_e( 'Time Trap', 'spamanvil' ); ?></th>
+			<td>
+				<label>
+					<input type="checkbox" name="spamanvil_timetrap_enabled" value="1" <?php checked( get_option( 'spamanvil_timetrap_enabled', '1' ), '1' ); ?>>
+					<?php esc_html_e( 'Mark comments submitted faster than a human could plausibly write them as spam', 'spamanvil' ); ?>
+				</label>
+				<p class="description">
+					<label>
+						<?php esc_html_e( 'Minimum seconds before submit:', 'spamanvil' ); ?>
+						<input type="number" name="spamanvil_timetrap_seconds" min="1" max="60" value="<?php echo esc_attr( get_option( 'spamanvil_timetrap_seconds', 3 ) ); ?>" style="width:70px;">
+					</label>
+					&nbsp;<?php esc_html_e( 'Inactive on sites with full-page caching.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
+
+		<tr>
 			<th scope="row"><?php esc_html_e( 'Delete Data on Uninstall', 'spamanvil' ); ?></th>
 			<td>
 				<label>
