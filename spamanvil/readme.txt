@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.4.0 =
+* Feature: Model picker on the Providers tab. Click "Browse models" next to OpenAI, OpenRouter or Featherless to search the provider's live model list and pick one — no need to remember model IDs. OpenRouter models show a "free" badge and context size, with free models listed first and a "free only" filter.
 
 = 1.3.0 =
 * Fix (major): Comment verdicts from reasoning/chatty AI models are now parsed correctly. The response reader strips `<think>...</think>` blocks, extracts the JSON verdict from surrounding prose, and falls back to reading the score directly — previously these models caused every comment to fail classification.

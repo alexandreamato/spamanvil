@@ -87,6 +87,7 @@ class SpamAnvil {
 
 			// AJAX handlers.
 			add_action( 'wp_ajax_spamanvil_test_connection', array( $this->admin, 'ajax_test_connection' ) );
+			add_action( 'wp_ajax_spamanvil_list_models', array( $this->admin, 'ajax_list_models' ) );
 			add_action( 'wp_ajax_spamanvil_unblock_ip', array( $this->admin, 'ajax_unblock_ip' ) );
 			add_action( 'wp_ajax_spamanvil_scan_pending', array( $this->admin, 'ajax_scan_pending' ) );
 			add_action( 'wp_ajax_spamanvil_process_queue', array( $this->admin, 'ajax_process_queue' ) );

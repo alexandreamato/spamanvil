@@ -160,8 +160,25 @@ $signup_urls = array(
 						<input type="text"
 							   name="<?php echo esc_attr( $model_key ); ?>"
 							   value="<?php echo esc_attr( $model_value ); ?>"
-							   class="regular-text"
+							   class="regular-text spamanvil-model-input"
+							   data-provider="<?php echo esc_attr( $slug ); ?>"
 							   placeholder="<?php echo esc_attr( $default_models[ $slug ] ?? '' ); ?>">
+						<?php if ( in_array( $slug, array( 'openai', 'openrouter', 'featherless', 'generic' ), true ) ) : ?>
+							<button type="button"
+									class="button button-small spamanvil-browse-models-btn"
+									data-provider="<?php echo esc_attr( $slug ); ?>"
+									style="margin-left: 4px;">
+								<?php esc_html_e( '🔍 Browse models', 'spamanvil' ); ?>
+							</button>
+							<div class="spamanvil-model-picker" data-provider="<?php echo esc_attr( $slug ); ?>" style="display:none;">
+								<div class="spamanvil-model-picker-controls">
+									<input type="search" class="spamanvil-model-search regular-text" placeholder="<?php esc_attr_e( 'Search models…', 'spamanvil' ); ?>" autocomplete="off">
+									<label class="spamanvil-free-only"><input type="checkbox" class="spamanvil-free-only-cb"> <?php esc_html_e( 'Free only', 'spamanvil' ); ?></label>
+									<span class="spamanvil-model-count"></span>
+								</div>
+								<div class="spamanvil-model-list"></div>
+							</div>
+						<?php endif; ?>
 					</td>
 				</tr>
 

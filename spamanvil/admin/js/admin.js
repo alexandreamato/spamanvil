@@ -5,6 +5,7 @@
     $(document).ready(function() {
         initRangeSliders();
         initTestConnection();
+        initModelPicker();
         initClearKey();
         initUnblockIP();
         initResetPrompt();
@@ -70,6 +71,107 @@
                 $result.addClass('error').text(spamAnvil.strings.error + ' Network error');
             });
         });
+    }
+
+    /**
+     * Model picker: fetch a provider's models and let the user search/select one.
+     */
+    function initModelPicker() {
+        $('.spamanvil-browse-models-btn').on('click', function() {
+            var provider = $(this).data('provider');
+            var $card = $(this).closest('.spamanvil-card');
+            var $picker = $card.find('.spamanvil-model-picker[data-provider="' + provider + '"]');
+
+            if ($picker.is(':visible')) {
+                $picker.hide();
+                return;
+            }
+            $picker.show();
+
+            if ($picker.data('loaded')) {
+                return; // Already fetched this session.
+            }
+
+            var $list = $picker.find('.spamanvil-model-list');
+            $list.text(spamAnvil.strings.loading_models);
+
+            var apiKey = $card.find('input[name="spamanvil_' + provider + '_api_key"]').val() || '';
+            var apiUrl = $card.find('input[name="spamanvil_generic_api_url"]').val() || '';
+
+            $.post(spamAnvil.ajax_url, {
+                action: 'spamanvil_list_models',
+                nonce: spamAnvil.nonce,
+                provider: provider,
+                api_key: apiKey,
+                api_url: apiUrl
+            }, function(response) {
+                if (!response.success) {
+                    $list.text(spamAnvil.strings.models_error + ' ' + response.data);
+                    return;
+                }
+                $picker.data('models', response.data.models || []);
+                $picker.data('loaded', true);
+                renderModelList($picker);
+            }).fail(function() {
+                $list.text(spamAnvil.strings.models_error);
+            });
+        });
+
+        $('.spamanvil-model-search').on('input', function() {
+            renderModelList($(this).closest('.spamanvil-model-picker'));
+        });
+
+        $('.spamanvil-free-only-cb').on('change', function() {
+            renderModelList($(this).closest('.spamanvil-model-picker'));
+        });
+
+        // Select a model → fill the text field.
+        $('.spamanvil-model-list').on('click', '.spamanvil-model-item', function() {
+            var $picker = $(this).closest('.spamanvil-model-picker');
+            var provider = $picker.data('provider');
+            var id = $(this).attr('data-id');
+            $picker.closest('.spamanvil-card')
+                .find('input.spamanvil-model-input[data-provider="' + provider + '"]')
+                .val(id);
+            $picker.hide();
+        });
+    }
+
+    /**
+     * Render (and filter) the model list. Uses .text() for all model-supplied strings.
+     */
+    function renderModelList($picker) {
+        var models = $picker.data('models') || [];
+        var q = ($picker.find('.spamanvil-model-search').val() || '').toLowerCase();
+        var freeOnly = $picker.find('.spamanvil-free-only-cb').is(':checked');
+        var $list = $picker.find('.spamanvil-model-list').empty();
+        var shown = 0;
+
+        models.forEach(function(m) {
+            if (freeOnly && !m.free) {
+                return;
+            }
+            var hay = (m.id + ' ' + (m.name || '')).toLowerCase();
+            if (q && hay.indexOf(q) === -1) {
+                return;
+            }
+            shown++;
+
+            var $item = $('<div class="spamanvil-model-item"></div>').attr('data-id', m.id);
+            $('<span class="spamanvil-model-id"></span>').text(m.id).appendTo($item);
+            if (m.free) {
+                $('<span class="spamanvil-badge spamanvil-badge-free"></span>').text('free').appendTo($item);
+            }
+            if (m.context) {
+                $('<span class="spamanvil-model-context"></span>').text(Math.round(m.context / 1000) + 'k ctx').appendTo($item);
+            }
+            $item.appendTo($list);
+        });
+
+        if (shown === 0) {
+            $list.text(spamAnvil.strings.no_models_match);
+        }
+        $picker.find('.spamanvil-model-count').text(shown + ' / ' + models.length);
     }
 
     /**
