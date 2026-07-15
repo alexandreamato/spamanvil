@@ -96,6 +96,18 @@ $signup_urls = array(
 				</p>
 			</td>
 		</tr>
+		<tr>
+			<th scope="row"><?php esc_html_e( 'Auto Free-Model Fallback', 'spamanvil' ); ?></th>
+			<td>
+				<label>
+					<input type="checkbox" name="spamanvil_auto_free_fallback" value="1" <?php checked( get_option( 'spamanvil_auto_free_fallback', '1' ), '1' ); ?>>
+					<?php esc_html_e( 'If the configured model becomes unavailable, automatically switch to another free model from the provider', 'spamanvil' ); ?>
+				</label>
+				<p class="description">
+					<?php esc_html_e( 'Free models (especially on OpenRouter) are frequently deprecated. When one stops working, SpamAnvil finds a working free model, switches to it, and saves the change — so spam checking keeps running without manual intervention.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
 	</table>
 
 	<hr>

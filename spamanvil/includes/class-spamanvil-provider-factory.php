@@ -226,4 +226,64 @@ class SpamAnvil_Provider_Factory {
 	public static function get_provider_config( $slug ) {
 		return isset( self::$provider_configs[ $slug ] ) ? self::$provider_configs[ $slug ] : null;
 	}
+
+	/**
+	 * Whether a provider WP_Error indicates the *model* is unavailable (deprecated,
+	 * removed, no endpoints) as opposed to auth, rate-limit or network problems.
+	 * Free models — especially on OpenRouter — churn often, so this is common.
+	 *
+	 * @param mixed $error Result from a provider call.
+	 * @return bool
+	 */
+	public function is_model_unavailable_error( $error ) {
+		if ( ! is_wp_error( $error ) ) {
+			return false;
+		}
+
+		$msg = strtolower( $error->get_error_message() );
+
+		// Deliberately does NOT match auth (401/403), rate-limit (429) or credit errors.
+		return (bool) preg_match(
+			'/http 404|\b404\b|no endpoints|not a valid model|model not found|model does not exist|unknown model|no such model|invalid model|model[^.]{0,30}unavailable/i',
+			$msg
+		);
+	}
+
+	/**
+	 * Pick the first free model from a model list, excluding a given id.
+	 *
+	 * @param array  $models  Normalized list from parse_models_response().
+	 * @param string $exclude Model id to skip (the one that just failed).
+	 * @return string A free model id, or '' if none.
+	 */
+	public function pick_free_model( array $models, $exclude = '' ) {
+		foreach ( $models as $m ) {
+			if ( ! empty( $m['free'] ) && ! empty( $m['id'] ) && $m['id'] !== $exclude ) {
+				return (string) $m['id'];
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Fetch the provider's live model list and return a free alternative to $exclude_model.
+	 *
+	 * @param string $slug          Provider slug.
+	 * @param string $exclude_model The model that failed.
+	 * @return string A free model id, or '' if none is available.
+	 */
+	public function find_free_alternative( $slug, $exclude_model ) {
+		$provider = $this->create( $slug );
+
+		if ( is_wp_error( $provider ) || ! method_exists( $provider, 'list_models' ) ) {
+			return '';
+		}
+
+		$models = $provider->list_models();
+		if ( is_wp_error( $models ) ) {
+			return '';
+		}
+
+		return $this->pick_free_model( $models, $exclude_model );
+	}
 }

@@ -472,6 +472,12 @@ class SpamAnvil_Queue {
 				return $result;
 			}
 
+			// If the configured model is unavailable, auto-switch to a free one and retry.
+			$switched = $this->try_free_model_fallback( $item, $slug, $result, $system_prompt, $user_prompt );
+			if ( ! is_wp_error( $switched ) ) {
+				return $switched;
+			}
+
 			// This provider failed — log the error and try next.
 			$error_msg = $result->get_error_message();
 			$errors[]  = $slug . ': ' . $error_msg;
@@ -491,6 +497,62 @@ class SpamAnvil_Queue {
 		// All providers failed.
 		$combined = implode( ' | ', $errors );
 		return new WP_Error( 'spamanvil_all_providers_failed', $combined );
+	}
+
+	/**
+	 * When a provider's configured model is unavailable, find a free alternative from the
+	 * provider's live model list, retry with it, and (on success) persist it so the plugin
+	 * self-heals. Free models — especially OpenRouter's — are deprecated/removed frequently.
+	 *
+	 * @param object     $item           Queue item.
+	 * @param string     $slug           Provider slug.
+	 * @param WP_Error   $original_error The model-unavailable error.
+	 * @param string     $system_prompt  System prompt.
+	 * @param string     $user_prompt    User prompt.
+	 * @return array|WP_Error Result array on a successful switch, or the original error.
+	 */
+	private function try_free_model_fallback( $item, $slug, $original_error, $system_prompt, $user_prompt ) {
+		if ( '1' !== get_option( 'spamanvil_auto_free_fallback', '1' ) ) {
+			return $original_error;
+		}
+
+		if ( ! $this->provider_factory->is_model_unavailable_error( $original_error ) ) {
+			return $original_error;
+		}
+
+		$current_model = get_option( 'spamanvil_' . $slug . '_model', '' );
+		$alt           = $this->provider_factory->find_free_alternative( $slug, $current_model );
+
+		if ( '' === $alt ) {
+			return $original_error;
+		}
+
+		$provider = $this->provider_factory->create( $slug, array( 'model' => $alt ) );
+		if ( is_wp_error( $provider ) ) {
+			return $original_error;
+		}
+
+		$result = $provider->analyze( $system_prompt, $user_prompt );
+		$this->stats->increment( 'llm_calls' );
+
+		if ( is_wp_error( $result ) ) {
+			return $original_error;
+		}
+
+		// The substitute works — persist it, count it, and record the switch in the logs.
+		update_option( 'spamanvil_' . $slug . '_model', $alt );
+		$this->stats->increment( 'model_auto_switched' );
+		$this->stats->log_evaluation( array(
+			'comment_id'        => $item->comment_id,
+			'score'             => null,
+			'provider'          => $slug,
+			'model'             => $alt,
+			'reason'            => sprintf( 'Model "%s" was unavailable — auto-switched to free model "%s".', $current_model, $alt ),
+			'heuristic_score'   => $item->heuristic_score,
+			'heuristic_details' => '',
+		) );
+
+		return $result;
 	}
 
 	/**
