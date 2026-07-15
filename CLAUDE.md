@@ -339,6 +339,9 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_ratelimit_enabled` | `'1'` | Throttle rapid repeat comments per IP |
 | `spamanvil_ratelimit_max` / `_window` | `5` / `60` | Max comments per window (seconds) per IP |
 | `spamanvil_open_mode` | `'0'` | "Crazy Open" — strip WP comment friction + optimistic publish |
+| `spamanvil_auto_free_fallback` | `'1'` | Auto-switch to another free model when the configured one is unavailable |
+
+**Auto free-model fallback (1.9.0):** in `try_provider_chain()`, when a provider's `analyze()` fails and `SpamAnvil_Provider_Factory::is_model_unavailable_error()` matches (404 / "no endpoints" / "not a valid model" — never auth/rate-limit), `try_free_model_fallback()` calls `find_free_alternative()` (list_models → `pick_free_model()` picks a free id ≠ the failed one), retries, and on success **persists** the new model (`update_option`), increments `model_auto_switched`, and logs the switch. Detection + selection are pure and unit-tested (`tests/unit/ModelFallbackTest.php`).
 
 **Open Mode (1.8.0):** opt-in preset for maximum openness. `SpamAnvil::define_hooks()` adds `pre_option_*` filters (`require_name_email`, `comment_registration`, `comment_moderation`, `comment_previously_approved` → 0) so WP requires no name/email/login and holds nothing — reversible, never overwrites stored options. `hold_for_review()` returns `1` (approve now) instead of `0` (hold) in async mode: comments publish instantly and the async LLM removes spam later. The invisible pre-LLM layers still block obvious bots at `comment_post`. Trade-off: subtle spam can be briefly visible until evaluated (use Sync mode for zero delay).
 

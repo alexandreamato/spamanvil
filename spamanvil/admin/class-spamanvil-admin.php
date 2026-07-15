@@ -346,6 +346,7 @@ class SpamAnvil_Admin {
 		update_option( 'spamanvil_primary_provider', sanitize_text_field( wp_unslash( $_POST['spamanvil_primary_provider'] ?? '' ) ) );
 		update_option( 'spamanvil_fallback_provider', sanitize_text_field( wp_unslash( $_POST['spamanvil_fallback_provider'] ?? '' ) ) );
 		update_option( 'spamanvil_fallback2_provider', sanitize_text_field( wp_unslash( $_POST['spamanvil_fallback2_provider'] ?? '' ) ) );
+		update_option( 'spamanvil_auto_free_fallback', isset( $_POST['spamanvil_auto_free_fallback'] ) ? '1' : '0' );
 
 		$providers = array( 'openai', 'openrouter', 'featherless', 'anthropic', 'gemini', 'generic' );
 

@@ -95,6 +95,7 @@ class SpamAnvil_Activator {
 			'spamanvil_batch_size'           => 5,
 			'spamanvil_primary_provider'     => '',
 			'spamanvil_fallback_provider'    => '',
+			'spamanvil_auto_free_fallback'   => '1',
 			'spamanvil_log_retention'        => 30,
 			'spamanvil_ip_blocking_enabled'  => '1',
 			'spamanvil_ip_block_threshold'   => 3,

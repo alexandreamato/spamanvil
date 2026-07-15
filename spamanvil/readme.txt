@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -238,6 +238,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.9.0 =
+* Feature: Automatic free-model fallback. When the configured model becomes unavailable (free models — especially on OpenRouter — are deprecated or removed often), SpamAnvil automatically finds another free model from the provider, switches to it, and saves the change — so spam checking keeps running with no manual intervention. Only triggers on "model unavailable" errors (never on auth or rate-limit issues), and the switch is recorded in the Logs. Toggle under Settings → Providers.
 
 = 1.8.0 =
 * Feature: "Open Mode" — maximum openness for real comments. One toggle removes WordPress comment friction (no required name/email, no login, no first-comment moderation hold) so leaving a genuine, even anonymous, comment is effortless. Comments appear instantly and SpamAnvil removes spam in the background; the invisible anti-spam layers (honeypot, time trap, rate limit, heuristics, AI) do the filtering. Applied via filters, so it never overwrites your stored settings and turning it off restores them. Tip: pair with Sync mode for zero delay on low-traffic sites.
