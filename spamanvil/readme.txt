@@ -3,7 +3,7 @@ Contributors: aamato
 Donate link: https://github.com/sponsors/alexandreamato
 Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.8.0
 License: GPLv2 or later
