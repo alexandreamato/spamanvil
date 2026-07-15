@@ -33,8 +33,13 @@ class CommentProcessorTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down() {
-		unset( $_POST['spamanvil_hp'] );
+		unset( $_POST['spamanvil_hp'], $_POST['spamanvil_ts'] );
 		parent::tear_down();
+	}
+
+	private function signed_ts( $seconds_ago = 0 ) {
+		$ts = time() - (int) $seconds_ago;
+		return $ts . '.' . hash_hmac( 'sha256', (string) $ts, wp_salt( 'nonce' ) );
 	}
 
 	private function new_comment() {
@@ -100,5 +105,57 @@ class CommentProcessorTest extends WP_UnitTestCase {
 		ob_start();
 		$this->processor->render_honeypot();
 		$this->assertSame( '', ob_get_clean() );
+	}
+
+	// --- Time trap ------------------------------------------------------------
+
+	public function test_time_trap_flags_too_fast_submission() {
+		$_POST['spamanvil_ts'] = $this->signed_ts( 0 ); // submitted "now" → elapsed ~0s.
+		$comment_id = $this->new_comment();
+
+		$this->processor->process_new_comment( $comment_id, '0' );
+
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ) );
+		$this->assertSame( 1, (int) ( new SpamAnvil_Stats() )->get_total( 'timetrap_blocked' ) );
+		$this->assertSame( 0, $this->queued_count( $comment_id ) );
+	}
+
+	public function test_time_trap_allows_slow_enough_submission() {
+		$_POST['spamanvil_ts'] = $this->signed_ts( 10 ); // 10s elapsed → human-plausible.
+		$comment_id = $this->new_comment();
+
+		$this->processor->process_new_comment( $comment_id, '0' );
+
+		$this->assertNotSame( 'spam', wp_get_comment_status( $comment_id ) );
+		$this->assertSame( 1, $this->queued_count( $comment_id ) );
+	}
+
+	public function test_time_trap_fails_open_on_invalid_signature() {
+		$_POST['spamanvil_ts'] = time() . '.forged-signature'; // fast but tampered.
+		$comment_id = $this->new_comment();
+
+		$this->processor->process_new_comment( $comment_id, '0' );
+
+		$this->assertNotSame( 'spam', wp_get_comment_status( $comment_id ) );
+		$this->assertSame( 1, $this->queued_count( $comment_id ) );
+	}
+
+	public function test_time_trap_disabled_ignores_fast_submission() {
+		update_option( 'spamanvil_timetrap_enabled', '0' );
+		$_POST['spamanvil_ts'] = $this->signed_ts( 0 );
+		$comment_id = $this->new_comment();
+
+		$this->processor->process_new_comment( $comment_id, '0' );
+
+		$this->assertNotSame( 'spam', wp_get_comment_status( $comment_id ) );
+	}
+
+	public function test_render_time_trap_outputs_signed_field() {
+		ob_start();
+		$this->processor->render_time_trap();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'name="spamanvil_ts"', $html );
+		$this->assertMatchesRegularExpression( '/value="\d+\.[a-f0-9]{64}"/', $html );
 	}
 }

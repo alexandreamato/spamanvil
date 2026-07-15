@@ -329,6 +329,8 @@ class SpamAnvil_Admin {
 		update_option( 'spamanvil_log_retention', absint( $_POST['spamanvil_log_retention'] ?? 30 ) );
 		update_option( 'spamanvil_skip_moderators', isset( $_POST['spamanvil_skip_moderators'] ) ? '1' : '0' );
 		update_option( 'spamanvil_honeypot_enabled', isset( $_POST['spamanvil_honeypot_enabled'] ) ? '1' : '0' );
+		update_option( 'spamanvil_timetrap_enabled', isset( $_POST['spamanvil_timetrap_enabled'] ) ? '1' : '0' );
+		update_option( 'spamanvil_timetrap_seconds', max( 1, min( 60, absint( $_POST['spamanvil_timetrap_seconds'] ?? 3 ) ) ) );
 		update_option( 'spamanvil_delete_data', isset( $_POST['spamanvil_delete_data'] ) ? '1' : '0' );
 		update_option( 'spamanvil_privacy_notice', isset( $_POST['spamanvil_privacy_notice'] ) ? '1' : '0' );
 	}
