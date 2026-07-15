@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.7.0 =
+* Feature: Per-IP rate limiting. Rapid repeat comments from the same IP are throttled (HTTP 429) before the comment is even created — stopping floods with no database, queue or AI cost. Configurable under Settings → IP Management (default: 5 comments per 60 seconds). Logged-in moderators are exempt.
 
 = 1.6.0 =
 * Feature: Time trap — a second free, pre-AI defense layer. Comments submitted faster than a human could plausibly write them are marked as spam. The timestamp is signed (tamper-proof) and the check fails open, so it never flags a real commenter. Configurable threshold under Settings → General (default 3s). Note: inactive on sites with full-page caching.

@@ -50,6 +50,48 @@ class SpamAnvil_Comment_Processor {
 	}
 
 	/**
+	 * Hook: preprocess_comment — throttle rapid repeat submissions from one IP.
+	 *
+	 * A sliding transient counter per IP; over the limit within the window → HTTP 429.
+	 * Blocks floods before the comment is even created (no DB / queue / LLM cost).
+	 */
+	public function check_rate_limit( $commentdata ) {
+		if ( ! $this->is_enabled() || '1' !== get_option( 'spamanvil_ratelimit_enabled', '1' ) ) {
+			return $commentdata;
+		}
+
+		if ( $this->should_skip_user() ) {
+			return $commentdata;
+		}
+
+		$ip = $this->ip_manager->get_client_ip();
+		if ( empty( $ip ) ) {
+			return $commentdata;
+		}
+
+		$max    = max( 1, (int) get_option( 'spamanvil_ratelimit_max', 5 ) );
+		$window = max( 5, (int) get_option( 'spamanvil_ratelimit_window', 60 ) );
+		$key    = 'spamanvil_rl_' . $this->ip_manager->hash_ip( $ip );
+
+		$count = (int) get_transient( $key ) + 1;
+		set_transient( $key, $count, $window );
+
+		if ( $count > $max ) {
+			$this->stats->increment( 'ratelimit_blocked' );
+			wp_die(
+				esc_html__( 'You are commenting too quickly. Please wait a moment and try again.', 'spamanvil' ),
+				esc_html__( 'Slow down', 'spamanvil' ),
+				array(
+					'response'  => 429,
+					'back_link' => true,
+				)
+			);
+		}
+
+		return $commentdata;
+	}
+
+	/**
 	 * Hook: pre_comment_approved (priority 99)
 	 * Hold comment as pending if in async mode.
 	 */
