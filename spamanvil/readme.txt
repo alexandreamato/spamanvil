@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.6.0 =
+* Feature: Time trap — a second free, pre-AI defense layer. Comments submitted faster than a human could plausibly write them are marked as spam. The timestamp is signed (tamper-proof) and the check fails open, so it never flags a real commenter. Configurable threshold under Settings → General (default 3s). Note: inactive on sites with full-page caching.
 
 = 1.5.0 =
 * Feature: Honeypot spam trap. A hidden field is added to comment forms; automated bots that fill it are marked as spam instantly — before any heuristic or AI check, at zero cost. Enabled by default; toggle under Settings → General. Blocked bots are counted and appear in the Logs tab.
