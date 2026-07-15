@@ -24,7 +24,7 @@ class SpamAnvil_Anthropic extends SpamAnvil_Provider {
 	protected function build_request_body( $system_prompt, $user_prompt ) {
 		return array(
 			'model'       => $this->model,
-			'max_tokens'  => 200,
+			'max_tokens'  => 400,
 			'temperature' => 0,
 			'system'      => $system_prompt,
 			'messages'    => array(

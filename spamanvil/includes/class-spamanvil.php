@@ -83,6 +83,7 @@ class SpamAnvil {
 			add_action( 'admin_init', array( $this->admin, 'maybe_redirect_after_activation' ) );
 			add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
 			add_action( 'wp_dashboard_setup', array( $this->admin, 'register_dashboard_widget' ) );
+			add_action( 'admin_notices', array( $this->admin, 'maybe_show_health_notice' ) );
 
 			// AJAX handlers.
 			add_action( 'wp_ajax_spamanvil_test_connection', array( $this->admin, 'ajax_test_connection' ) );

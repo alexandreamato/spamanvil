@@ -121,6 +121,13 @@ WP-Cron (every 5 min):
 5. Temperature = 0 for deterministic output
 6. Content truncated at 5,000 characters
 
+## Response Parsing & Failure Visibility (1.3.0)
+
+- **Robust JSON extraction** — `SpamAnvil_Provider::validate_response()` strips `<think>…</think>` reasoning blocks and markdown fences, then extracts the first *balanced* `{…}` object (via `extract_json_object()`) from surrounding prose, with a regex fallback for a bare `"score": N`. Reasoning/chatty models (Qwen3, DeepSeek-R1, Llama prose) previously failed 100%. Covered by `tests/unit/ResponseParsingTest.php`.
+- **`max_tokens` = 400** in all providers — reasoning models need room to "think" before emitting JSON.
+- **Real Test Connection** — `test_connection()` runs an actual `analyze()` through `validate_response()`, so a model that returns unparseable output fails the test instead of a false green.
+- **Failure visibility** — provider-creation failures (missing/undecryptable key) are now logged via `log_evaluation()` in `try_provider_chain()`/`try_anvil_mode()`; a decryption failure returns a distinct `spamanvil_key_decrypt_failed` error (not "no API key"); and `SpamAnvil_Admin::maybe_show_health_notice()` (hooked to `admin_notices`, 5-min transient cache) warns when no provider is set or items pile up in failed/max_retries.
+
 ## WordPress.org Compliance Rules
 
 - **NO affiliate/referral links** in readme.txt or admin UI (WordPress.org Guideline 12)
