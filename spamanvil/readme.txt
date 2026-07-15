@@ -13,7 +13,7 @@ Free AI anti-spam & Akismet alternative. Uses ChatGPT, Claude, Gemini & other LL
 
 == Description ==
 
-**SpamAnvil is a free, open-source WordPress anti-spam plugin that uses artificial intelligence to block comment spam.** Unlike Akismet (which requires a paid plan for commercial sites) or simple keyword-based filters, SpamAnvil leverages large language models (LLMs) to actually *understand* your comments and detect even the most sophisticated spam.
+**SpamAnvil is a free, open-source WordPress anti-spam plugin — and a genuine Akismet alternative — that uses artificial intelligence to block comment spam.** Unlike Akismet (which requires a paid plan for commercial sites) or simple keyword-based filters, SpamAnvil leverages large language models (LLMs) to actually *understand* your comments and detect even the most sophisticated spam. It layers a honeypot, a time trap and per-IP rate limiting in front of the AI, so obvious bots are blocked for free.
 
 Traditional spam filters rely on static word lists and link counting. Spammers have evolved. **SpamAnvil fights back with AI that understands context, intent, and language patterns** - catching spam that looks legitimate and approving real comments that others would flag.
 
