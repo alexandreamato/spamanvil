@@ -96,4 +96,132 @@ class SpamAnvil_OpenAI_Compatible extends SpamAnvil_Provider {
 
 		return $data['choices'][0]['message']['content'];
 	}
+
+	/**
+	 * Fetch the provider's available models for the settings-page picker.
+	 *
+	 * @return array|WP_Error List of models (each: id, name, and optionally context/free),
+	 *                        or WP_Error on failure.
+	 */
+	public function list_models() {
+		$url = $this->get_models_url();
+
+		if ( '' === $url ) {
+			return new WP_Error(
+				'spamanvil_no_models_endpoint',
+				__( 'This provider does not support listing models.', 'spamanvil' )
+			);
+		}
+
+		$response = wp_safe_remote_get(
+			$url,
+			array(
+				'headers' => $this->get_headers(),
+				'timeout' => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		if ( $code < 200 || $code >= 300 ) {
+			return new WP_Error(
+				'spamanvil_models_http',
+				sprintf(
+					/* translators: %d: HTTP status code */
+					__( 'Model list request failed (HTTP %d). Check the API key.', 'spamanvil' ),
+					$code
+				)
+			);
+		}
+
+		return $this->parse_models_response( wp_remote_retrieve_body( $response ) );
+	}
+
+	/**
+	 * Resolve the /models endpoint for this provider.
+	 *
+	 * @return string URL, or '' if unknown.
+	 */
+	protected function get_models_url() {
+		$map = array(
+			'openai'      => 'https://api.openai.com/v1/models',
+			'openrouter'  => 'https://openrouter.ai/api/v1/models',
+			'featherless' => 'https://api.featherless.ai/v1/models',
+		);
+
+		if ( isset( $map[ $this->provider_slug ] ) ) {
+			return $map[ $this->provider_slug ];
+		}
+
+		// Generic: derive from the configured chat URL (…/chat/completions → …/models).
+		if ( 'generic' === $this->provider_slug && ! empty( $this->api_url ) ) {
+			return preg_replace( '#/chat/completions/?$#', '/models', $this->api_url );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Parse a /models JSON body into a normalized, sorted list.
+	 *
+	 * Pure (no I/O) so it can be unit tested. Handles the OpenAI-style {"data":[{id}]}
+	 * shape and OpenRouter's richer entries (name, context_length, pricing → free flag).
+	 *
+	 * @param string $body Raw JSON response body.
+	 * @return array|WP_Error Normalized model list, or WP_Error on an unexpected shape.
+	 */
+	public function parse_models_response( $body ) {
+		$data = json_decode( (string) $body, true );
+
+		if ( ! is_array( $data ) || empty( $data['data'] ) || ! is_array( $data['data'] ) ) {
+			return new WP_Error(
+				'spamanvil_models_parse',
+				__( 'Unexpected model list format from the provider.', 'spamanvil' )
+			);
+		}
+
+		$models = array();
+
+		foreach ( $data['data'] as $m ) {
+			if ( ! is_array( $m ) || empty( $m['id'] ) ) {
+				continue;
+			}
+
+			$id    = (string) $m['id'];
+			$entry = array(
+				'id'   => $id,
+				'name' => isset( $m['name'] ) && '' !== $m['name'] ? (string) $m['name'] : $id,
+			);
+
+			if ( isset( $m['context_length'] ) ) {
+				$entry['context'] = (int) $m['context_length'];
+			}
+
+			if ( isset( $m['pricing'] ) && is_array( $m['pricing'] ) ) {
+				$prompt     = isset( $m['pricing']['prompt'] ) ? (float) $m['pricing']['prompt'] : null;
+				$completion = isset( $m['pricing']['completion'] ) ? (float) $m['pricing']['completion'] : null;
+				$entry['free'] = ( 0.0 === $prompt && 0.0 === $completion );
+			}
+
+			$models[] = $entry;
+		}
+
+		// Free models first, then alphabetical by id.
+		usort(
+			$models,
+			function ( $a, $b ) {
+				$af = ! empty( $a['free'] );
+				$bf = ! empty( $b['free'] );
+				if ( $af !== $bf ) {
+					return $af ? -1 : 1;
+				}
+				return strcasecmp( $a['id'], $b['id'] );
+			}
+		);
+
+		return $models;
+	}
 }

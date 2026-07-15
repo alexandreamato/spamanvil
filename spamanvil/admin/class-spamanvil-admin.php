@@ -165,6 +165,9 @@ class SpamAnvil_Admin {
 				'no_provider'       => __( 'No provider configured.', 'spamanvil' ),
 				'configure_provider' => __( 'Configure a Provider', 'spamanvil' ),
 				'batch_all_failed'  => __( 'Batch failed — check Logs tab for details.', 'spamanvil' ),
+				'loading_models'    => __( 'Loading models…', 'spamanvil' ),
+				'models_error'      => __( 'Could not load models:', 'spamanvil' ),
+				'no_models_match'   => __( 'No models match your search.', 'spamanvil' ),
 			),
 		) );
 	}
@@ -418,7 +421,9 @@ class SpamAnvil_Admin {
 		$inline_url = isset( $_POST['api_url'] ) ? esc_url_raw( wp_unslash( $_POST['api_url'] ) ) : '';
 
 		$overrides = array();
-		if ( ! empty( $inline_key ) ) {
+		// Ignore a masked key (the "****" placeholder for an unchanged field) so the
+		// test uses the real stored key instead of testing the mask.
+		if ( ! empty( $inline_key ) && false === strpos( $inline_key, '****' ) ) {
 			$overrides['api_key'] = $inline_key;
 		}
 		if ( ! empty( $inline_model ) ) {
@@ -441,6 +446,51 @@ class SpamAnvil_Admin {
 		}
 
 		wp_send_json_success( $result );
+	}
+
+	/**
+	 * AJAX: list a provider's available models for the settings-page picker.
+	 */
+	public function ajax_list_models() {
+		check_ajax_referer( 'spamanvil_ajax', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		$provider_slug = isset( $_POST['provider'] ) ? sanitize_text_field( wp_unslash( $_POST['provider'] ) ) : '';
+		if ( empty( $provider_slug ) ) {
+			wp_send_json_error( __( 'No provider specified.', 'spamanvil' ) );
+		}
+
+		$inline_key = isset( $_POST['api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) : '';
+		$inline_url = isset( $_POST['api_url'] ) ? esc_url_raw( wp_unslash( $_POST['api_url'] ) ) : '';
+
+		// No model is chosen yet — pass a placeholder so create() doesn't reject an empty
+		// model. Ignore a masked key so the stored key is resolved instead.
+		$overrides = array( 'model' => 'model-listing' );
+		if ( ! empty( $inline_key ) && false === strpos( $inline_key, '****' ) ) {
+			$overrides['api_key'] = $inline_key;
+		}
+		if ( ! empty( $inline_url ) ) {
+			$overrides['api_url'] = $inline_url;
+		}
+
+		$provider = $this->provider_factory->create( $provider_slug, $overrides );
+		if ( is_wp_error( $provider ) ) {
+			wp_send_json_error( $provider->get_error_message() );
+		}
+
+		if ( ! method_exists( $provider, 'list_models' ) ) {
+			wp_send_json_error( __( 'This provider does not support listing models.', 'spamanvil' ) );
+		}
+
+		$models = $provider->list_models();
+		if ( is_wp_error( $models ) ) {
+			wp_send_json_error( $models->get_error_message() );
+		}
+
+		wp_send_json_success( array( 'models' => $models ) );
 	}
 
 	public function ajax_scan_pending() {

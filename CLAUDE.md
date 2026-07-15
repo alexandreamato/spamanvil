@@ -128,6 +128,12 @@ WP-Cron (every 5 min):
 - **Real Test Connection** — `test_connection()` runs an actual `analyze()` through `validate_response()`, so a model that returns unparseable output fails the test instead of a false green.
 - **Failure visibility** — provider-creation failures (missing/undecryptable key) are now logged via `log_evaluation()` in `try_provider_chain()`/`try_anvil_mode()`; a decryption failure returns a distinct `spamanvil_key_decrypt_failed` error (not "no API key"); and `SpamAnvil_Admin::maybe_show_health_notice()` (hooked to `admin_notices`, 5-min transient cache) warns when no provider is set or items pile up in failed/max_retries.
 
+## Model Picker (1.4.0)
+
+- `SpamAnvil_OpenAI_Compatible::list_models()` GETs the provider's `/models` endpoint (openai / openrouter / featherless / generic-derived) and returns a normalized list via `parse_models_response()` (pure — unit-tested in `tests/unit/ModelListTest.php`). OpenRouter entries carry `context` and a `free` flag (pricing = 0); the list sorts free-first.
+- AJAX action `spamanvil_list_models` (`ajax_list_models`, nonce + `manage_options`) creates the provider with the typed-or-stored key (masked `****` ignored) and returns the list.
+- UI: `settings-providers.php` renders a "Browse models" button + search/free-only panel per OpenAI-compatible provider; `admin/js/admin.js` `initModelPicker()` fetches, filters, and fills the model field (model-supplied strings rendered via `.text()`).
+
 ## WordPress.org Compliance Rules
 
 - **NO affiliate/referral links** in readme.txt or admin UI (WordPress.org Guideline 12)
