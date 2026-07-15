@@ -112,7 +112,12 @@ class SpamAnvil_Comment_Processor {
 		$mode = get_option( 'spamanvil_mode', 'async' );
 
 		if ( 'async' === $mode ) {
-			return 0; // Hold as pending.
+			// "Crazy Open" mode: publish optimistically (the comment appears instantly) and
+			// let the async LLM remove it later if it turns out to be spam. The invisible
+			// pre-LLM layers (honeypot, time-trap, rate-limit, heuristics) still block obvious
+			// bots at comment_post, so only subtle spam can briefly appear. Otherwise hold
+			// the comment as pending until it has been evaluated.
+			return '1' === get_option( 'spamanvil_open_mode', '0' ) ? 1 : 0;
 		}
 
 		return $approved;

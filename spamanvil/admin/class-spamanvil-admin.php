@@ -322,6 +322,7 @@ class SpamAnvil_Admin {
 
 		update_option( 'spamanvil_enabled', isset( $_POST['spamanvil_enabled'] ) ? '1' : '0' );
 		update_option( 'spamanvil_mode', sanitize_text_field( wp_unslash( $_POST['spamanvil_mode'] ?? 'async' ) ) );
+		update_option( 'spamanvil_open_mode', isset( $_POST['spamanvil_open_mode'] ) ? '1' : '0' );
 		update_option( 'spamanvil_anvil_mode', isset( $_POST['spamanvil_anvil_mode'] ) ? '1' : '0' );
 		update_option( 'spamanvil_threshold', absint( $_POST['spamanvil_threshold'] ?? 70 ) );
 		update_option( 'spamanvil_heuristic_auto_spam', absint( $_POST['spamanvil_heuristic_auto_spam'] ?? 95 ) );

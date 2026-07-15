@@ -5,7 +5,7 @@ Tags: anti-spam, spam, comments, ai, artificial-intelligence
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -213,6 +213,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.8.0 =
+* Feature: "Open Mode" — maximum openness for real comments. One toggle removes WordPress comment friction (no required name/email, no login, no first-comment moderation hold) so leaving a genuine, even anonymous, comment is effortless. Comments appear instantly and SpamAnvil removes spam in the background; the invisible anti-spam layers (honeypot, time trap, rate limit, heuristics, AI) do the filtering. Applied via filters, so it never overwrites your stored settings and turning it off restores them. Tip: pair with Sync mode for zero delay on low-traffic sites.
 
 = 1.7.0 =
 * Feature: Per-IP rate limiting. Rapid repeat comments from the same IP are throttled (HTTP 429) before the comment is even created — stopping floods with no database, queue or AI cost. Configurable under Settings → IP Management (default: 5 comments per 60 seconds). Logged-in moderators are exempt.

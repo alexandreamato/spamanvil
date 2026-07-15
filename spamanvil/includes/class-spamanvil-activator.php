@@ -89,6 +89,7 @@ class SpamAnvil_Activator {
 			'spamanvil_activated_at'         => time(),
 			'spamanvil_enabled'              => '1',
 			'spamanvil_mode'                 => 'async',
+			'spamanvil_open_mode'            => '0',
 			'spamanvil_threshold'            => 70,
 			'spamanvil_heuristic_auto_spam'  => 95,
 			'spamanvil_batch_size'           => 5,
