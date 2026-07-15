@@ -403,6 +403,9 @@ class SpamAnvil_Admin {
 
 		update_option( 'spamanvil_ip_blocking_enabled', isset( $_POST['spamanvil_ip_blocking_enabled'] ) ? '1' : '0' );
 		update_option( 'spamanvil_ip_block_threshold', absint( $_POST['spamanvil_ip_block_threshold'] ?? 3 ) );
+		update_option( 'spamanvil_ratelimit_enabled', isset( $_POST['spamanvil_ratelimit_enabled'] ) ? '1' : '0' );
+		update_option( 'spamanvil_ratelimit_max', max( 1, min( 100, absint( $_POST['spamanvil_ratelimit_max'] ?? 5 ) ) ) );
+		update_option( 'spamanvil_ratelimit_window', max( 5, min( 3600, absint( $_POST['spamanvil_ratelimit_window'] ?? 60 ) ) ) );
 	}
 
 	public function ajax_test_connection() {

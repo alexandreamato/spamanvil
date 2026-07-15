@@ -34,6 +34,7 @@ class CommentProcessorTest extends WP_UnitTestCase {
 
 	public function tear_down() {
 		unset( $_POST['spamanvil_hp'], $_POST['spamanvil_ts'] );
+		$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 		parent::tear_down();
 	}
 
@@ -157,5 +158,46 @@ class CommentProcessorTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'name="spamanvil_ts"', $html );
 		$this->assertMatchesRegularExpression( '/value="\d+\.[a-f0-9]{64}"/', $html );
+	}
+
+	// --- Rate limit -----------------------------------------------------------
+
+	public function test_rate_limit_blocks_after_threshold() {
+		update_option( 'spamanvil_ratelimit_enabled', '1' );
+		update_option( 'spamanvil_ratelimit_max', 3 );
+		update_option( 'spamanvil_ratelimit_window', 60 );
+		$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
+
+		// The first 3 within the window pass through.
+		for ( $i = 0; $i < 3; $i++ ) {
+			$this->assertIsArray( $this->processor->check_rate_limit( array( 'comment_content' => 'hi' ) ) );
+		}
+
+		// The 4th trips a 429 (wp_die → WPDieException in the test harness).
+		$this->expectException( 'WPDieException' );
+		$this->processor->check_rate_limit( array( 'comment_content' => 'hi' ) );
+	}
+
+	public function test_rate_limit_disabled_never_blocks() {
+		update_option( 'spamanvil_ratelimit_enabled', '0' );
+		update_option( 'spamanvil_ratelimit_max', 1 );
+		$_SERVER['REMOTE_ADDR'] = '203.0.113.6';
+
+		for ( $i = 0; $i < 5; $i++ ) {
+			$this->assertIsArray( $this->processor->check_rate_limit( array( 'comment_content' => 'hi' ) ) );
+		}
+	}
+
+	public function test_rate_limit_is_per_ip() {
+		update_option( 'spamanvil_ratelimit_enabled', '1' );
+		update_option( 'spamanvil_ratelimit_max', 2 );
+
+		$_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+		$this->processor->check_rate_limit( array() );
+		$this->processor->check_rate_limit( array() );
+
+		// A different IP starts its own counter — not blocked.
+		$_SERVER['REMOTE_ADDR'] = '203.0.113.8';
+		$this->assertIsArray( $this->processor->check_rate_limit( array() ) );
 	}
 }

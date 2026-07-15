@@ -40,6 +40,25 @@ $blocked_list = $this->ip_manager->get_blocked_list( $page_num );
 				</p>
 			</td>
 		</tr>
+
+		<tr>
+			<th scope="row"><?php esc_html_e( 'Rate Limit', 'spamanvil' ); ?></th>
+			<td>
+				<label>
+					<input type="checkbox" name="spamanvil_ratelimit_enabled" value="1" <?php checked( get_option( 'spamanvil_ratelimit_enabled', '1' ), '1' ); ?>>
+					<?php esc_html_e( 'Throttle rapid repeat comments from the same IP (blocks floods before any AI call)', 'spamanvil' ); ?>
+				</label>
+				<p class="description">
+					<label>
+						<?php esc_html_e( 'Max', 'spamanvil' ); ?>
+						<input type="number" name="spamanvil_ratelimit_max" min="1" max="100" value="<?php echo esc_attr( (int) get_option( 'spamanvil_ratelimit_max', 5 ) ); ?>" class="small-text">
+						<?php esc_html_e( 'comments per', 'spamanvil' ); ?>
+						<input type="number" name="spamanvil_ratelimit_window" min="5" max="3600" value="<?php echo esc_attr( (int) get_option( 'spamanvil_ratelimit_window', 60 ) ); ?>" class="small-text">
+						<?php esc_html_e( 'seconds, per IP.', 'spamanvil' ); ?>
+					</label>
+				</p>
+			</td>
+		</tr>
 	</table>
 
 	<?php submit_button(); ?>

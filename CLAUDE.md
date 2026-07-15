@@ -336,6 +336,8 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_honeypot_enabled` | `'1'` | Hidden honeypot field on comment forms; bots that fill it are auto-spammed |
 | `spamanvil_timetrap_enabled` | `'1'` | Flag comments submitted faster than a human plausibly could |
 | `spamanvil_timetrap_seconds` | `3` | Time-trap minimum seconds before submit |
+| `spamanvil_ratelimit_enabled` | `'1'` | Throttle rapid repeat comments per IP |
+| `spamanvil_ratelimit_max` / `_window` | `5` / `60` | Max comments per window (seconds) per IP |
 
 **Form traps (1.5.0 honeypot, 1.6.0 time-trap):** free, pre-LLM bot filters in `SpamAnvil_Comment_Processor`, both hooked to `comment_form` and checked at the top of `process_new_comment()` (before heuristics/LLM) via the shared `mark_trap_spam()` helper (marks spam — recoverable — + stat + IP + log with `provider = honeypot|timetrap`).
 - **Honeypot** — `render_honeypot()` outputs an off-screen `spamanvil_hp` field; a filled value = bot. Cache-safe.

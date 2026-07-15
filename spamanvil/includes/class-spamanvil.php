@@ -68,6 +68,7 @@ class SpamAnvil {
 		add_filter( 'cron_schedules', array( $this, 'add_cron_interval' ) );
 
 		// Comment processing hooks.
+		add_filter( 'preprocess_comment', array( $this->comment_processor, 'check_rate_limit' ), 8 );
 		add_filter( 'preprocess_comment', array( $this->comment_processor, 'check_blocked_ip' ), 10 );
 		add_filter( 'pre_comment_approved', array( $this->comment_processor, 'hold_for_review' ), 99, 2 );
 		add_action( 'comment_post', array( $this->comment_processor, 'process_new_comment' ), 10, 2 );
