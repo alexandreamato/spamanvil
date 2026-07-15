@@ -21,7 +21,9 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 
 * **100% Free** - No premium tier, no subscription, no hidden costs. Bring your own API key (free options available).
 * **Smarter Than Rules** - AI understands context. A comment about "buying a new home" won't be flagged just because it contains "buy".
-* **Works With Free AI Models** - Use OpenRouter's free Llama models for $0 cost, or connect premium models for maximum accuracy.
+* **Defense in Depth** - Honeypot, time trap, per-IP rate limit and heuristics block obvious bots for free, so the AI is only spent on the subtle cases.
+* **Open Mode** - Because the filtering is invisible and automatic, you can drop the usual barriers (name/email, login, moderation) and get more real comments - even anonymous ones - without opening the door to spam.
+* **Works With Free AI Models** - Use OpenRouter's free models for $0 cost, or connect premium models for maximum accuracy.
 * **Privacy-First** - Your data stays between you and your chosen AI provider. IP addresses are stored as irreversible SHA-256 hashes. GDPR/LGPD compliant by design.
 * **No Cloud Lock-in** - Choose from 6+ AI providers. Switch anytime. Your anti-spam, your rules.
 
@@ -34,32 +36,43 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 * **Featherless.ai** (Open-source models)
 * **Any OpenAI-compatible API** (LM Studio, Ollama via proxy, vLLM, etc.)
 
+= A Swiss-Army-Knife of Defenses =
+
+SpamAnvil layers several spam defenses so cheap, invisible filters catch obvious bots for free and the AI only handles the subtle cases. Every layer is optional and runs before any paid API call:
+
+* **Honeypot** - A hidden field bots fill but humans never see. Instant, free block.
+* **Time trap** - Comments submitted faster than a human could type are flagged. Tamper-proof (signed) and fails open, so it never blocks a real visitor.
+* **Per-IP rate limit** - Throttles comment floods from a single IP before they even reach the database.
+* **Heuristics engine** - Regex/statistical pre-analysis (URLs, spam words, gambling/SEO author names, language mismatch, prompt-injection patterns) that auto-spams the obvious cases with no API call.
+* **AI verdict** - An LLM scores the rest 0-100 in context.
+
 = Key Features =
 
-* **AI-Powered Spam Detection** - Each comment is analyzed by an LLM that scores it 0-100 for spam probability
-* **Intelligent Heuristics Engine** - Pre-analyzes comments with regex patterns, spam word detection, URL counting, and prompt injection detection to catch obvious spam without API calls
-* **Async Background Processing** - Comments are queued and processed via WP-Cron so your site stays fast
-* **Smart IP Blocking** - Automatically blocks repeat offenders with escalating ban durations (24h, 48h, 96h...)
-* **Automatic Retry with Backoff** - Failed API calls retry up to 3 times with exponential delays
-* **Encrypted API Key Storage** - AES-256-CBC encryption for all stored API keys. Optional wp-config.php constants for maximum security
-* **Statistics Dashboard** - Track how many comments were checked, how much spam was caught, API usage and errors
-* **Full Evaluation Logs** - See the AI's reasoning for every comment scored, with provider, model, response time, and score
-* **Customizable AI Prompts** - Full control over what the AI is instructed to do
-* **Fallback Provider** - Configure a backup AI so spam checking never stops
-* **Prompt Injection Defense** - Multi-layered protection prevents attackers from manipulating the AI through crafted comments
-* **Configurable Spam Threshold** - Slide between aggressive (catch more spam) and permissive (fewer false positives)
-* **Moderator Bypass** - Trusted users skip spam checking entirely
+* **AI-Powered Spam Detection** - Each comment is analyzed by an LLM that scores it 0-100 for spam probability. Works with reasoning models (their thinking is parsed correctly).
+* **Layered Bot Defense** - Honeypot, time trap and per-IP rate limiting block obvious bots for free, before any AI call.
+* **Model Picker** - Browse and search each provider's live model list right from the settings page (OpenAI, OpenRouter, Featherless). OpenRouter shows a "free" badge and context size.
+* **"Open Mode"** - One toggle removes WordPress comment friction (no required name/email, no login, no moderation hold) so leaving a real, even anonymous, comment is effortless. Comments appear instantly and spam is removed in the background.
+* **Verdict Cache** - Identical repeated spam reuses a recent AI verdict instead of calling the API again, cutting cost during floods.
+* **Intelligent Heuristics Engine** - Pre-analyzes comments to catch obvious spam without API calls.
+* **Async Background Processing** - Comments are queued and processed via WP-Cron so your site stays fast.
+* **Smart IP Blocking** - Automatically blocks repeat offenders with escalating ban durations (24h, 48h, 96h...).
+* **Automatic Retry with Backoff** - Failed API calls retry with exponential delays; a real "Test Connection" verifies actual classification, not just the HTTP status.
+* **Encrypted API Key Storage** - AES-256-CBC encryption, or wp-config.php constants for maximum security.
+* **Statistics Dashboard & Logs** - Track spam caught by each layer, API usage and errors, with the AI's reasoning for every comment. An admin warning surfaces silent failures (no provider, or a backlog of failed items).
+* **Customizable AI Prompts, Fallback Providers, Prompt-Injection Defense, Configurable Threshold, Moderator Bypass.**
 
 = How It Works =
 
-1. A visitor submits a comment
-2. SpamAnvil checks if the IP is blocked from previous spam attempts
-3. The heuristic engine runs a quick pre-analysis (URL count, spam words, suspicious patterns)
-4. If the heuristic score is very high, the comment is instantly marked as spam - no API call needed
-5. Otherwise, the comment is queued for AI analysis (or processed immediately in sync mode)
-6. The AI analyzes the comment in context (post title, author info, heuristic data) and returns a spam score
-7. Comments scoring above your threshold are marked as spam; clean comments are auto-approved
-8. Repeat offender IPs are automatically blocked with escalating durations
+1. A visitor submits a comment.
+2. **Rate limit** - too many comments from this IP too fast? Throttled with an HTTP 429 (before anything is stored).
+3. **IP block** - is the IP already banned for repeat spam? Blocked.
+4. **Form traps** - was the hidden honeypot filled, or the comment submitted implausibly fast? Marked as spam instantly, no API call.
+5. **Heuristics** - a quick regex/statistical pre-analysis; obvious spam is auto-marked with no API call.
+6. Otherwise the comment is queued for AI analysis (or processed immediately in sync mode). Identical repeated content reuses a cached verdict.
+7. The AI analyzes the comment in context (post title, author info, heuristic data) and returns a spam score.
+8. Comments above your threshold are marked spam; clean comments are auto-approved. Repeat-offender IPs are escalated.
+
+With **Open Mode** on, comments publish instantly and any spam is removed in the background instead of being held for moderation.
 
 = Use Cases =
 
@@ -186,6 +199,18 @@ Yes! AI language models understand comments in virtually any language. This is a
 = Can spammers trick the AI with prompt injection? =
 
 SpamAnvil uses 6 layers of prompt injection defense: (1) comment content is wrapped in `<comment_data>` boundary tags, (2) the system prompt explicitly instructs the AI to ignore instructions within comments, (3) heuristic patterns detect common injection phrases and raise the spam score, (4) responses are validated as strict JSON, (5) LLM temperature is set to 0 for deterministic behavior, (6) content is truncated at 5,000 characters.
+
+= What is Open Mode? =
+
+Open Mode is an optional toggle (Settings → General) that makes leaving a real comment effortless. It removes WordPress's usual friction - no required name/email (anonymous comments allowed), no login, no first-comment moderation hold - and publishes comments instantly, letting SpamAnvil quietly remove any spam in the background. It's safe to enable because the invisible defense layers (honeypot, time trap, rate limit, heuristics, AI) still filter spam automatically. It's applied via filters, so turning it off restores your original settings. Tip: pair it with Sync mode if you want zero delay on very low-traffic sites.
+
+= Will the honeypot or time trap block real visitors? =
+
+No. The honeypot is a hidden field only bots fill, and the time trap uses a signed timestamp and "fails open" - if anything is missing or looks off, it never flags the comment. Both are invisible to real visitors and, when in doubt, mark a comment as spam (recoverable from the Spam folder) rather than hard-blocking it.
+
+= Can I browse a provider's models? =
+
+Yes. On the Providers tab, click "Browse models" next to the model field for OpenAI, OpenRouter or Featherless to search that provider's live model list and pick one. OpenRouter models show a "free" badge and context size.
 
 = Can I use a local/self-hosted AI model? =
 
