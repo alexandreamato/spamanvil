@@ -858,3 +858,19 @@ msgstr ""
 #: admin/class-spamanvil-admin.php
 msgid "Open the Providers tab"
 msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free. 🙏"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Leave a review ★★★★★"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Maybe later"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "I already did / don't ask again"
+msgstr ""

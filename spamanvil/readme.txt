@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.10.0
+Stable tag: 1.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -239,6 +239,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.11.0 =
+* Improvement: The "leave a review" request is now a gentle, dismissible admin notice that appears on any admin screen (previously it only showed on the SpamAnvil settings page, where most users never returned). It only appears after the plugin has proven itself — 50+ comments checked and at least 7 days installed — and offers "Leave a review", "Maybe later" (snoozes for two weeks), and "I already did / don't ask again". No nagging, fully dismissible, no incentives.
 
 = 1.10.0 =
 * Security: Configurable visitor-IP source. Previously the plugin trusted the left-most X-Forwarded-For header, which the client sends and can forge — letting a bot rotate a fake IP on every request to bypass IP blocking and rate limiting. The trusted header is now a setting under Settings → IP Management (Direct connection / Cloudflare CF-Connecting-IP / X-Real-IP / X-Forwarded-For right-most / Auto), defaulting to the un-spoofable REMOTE_ADDR. Sites behind a proxy or CDN should select the header their edge sets (Cloudflare → CF-Connecting-IP). The IP tab shows which proxy headers your current request arrived with, to guide the choice.

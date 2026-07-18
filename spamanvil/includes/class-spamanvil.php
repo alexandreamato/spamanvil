@@ -95,9 +95,11 @@ class SpamAnvil {
 			add_action( 'admin_menu', array( $this->admin, 'add_menu_page' ) );
 			add_action( 'admin_init', array( $this->admin, 'register_settings' ) );
 			add_action( 'admin_init', array( $this->admin, 'maybe_redirect_after_activation' ) );
+			add_action( 'admin_init', array( $this->admin, 'maybe_handle_review_action' ) );
 			add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
 			add_action( 'wp_dashboard_setup', array( $this->admin, 'register_dashboard_widget' ) );
 			add_action( 'admin_notices', array( $this->admin, 'maybe_show_health_notice' ) );
+			add_action( 'admin_notices', array( $this->admin, 'maybe_show_review_notice' ) );
 
 			// AJAX handlers.
 			add_action( 'wp_ajax_spamanvil_test_connection', array( $this->admin, 'ajax_test_connection' ) );

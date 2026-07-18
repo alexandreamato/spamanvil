@@ -109,6 +109,7 @@ $plugin_includes = dirname( __DIR__, 2 ) . '/spamanvil/includes';
 require_once $plugin_includes . '/class-spamanvil-encryptor.php';
 require_once $plugin_includes . '/class-spamanvil-heuristics.php';
 require_once $plugin_includes . '/class-spamanvil-ip-manager.php';
+require_once dirname( __DIR__, 2 ) . '/spamanvil/admin/class-spamanvil-admin.php';
 require_once $plugin_includes . '/providers/class-spamanvil-provider.php';
 require_once $plugin_includes . '/providers/class-spamanvil-openai-compatible.php';
 require_once $plugin_includes . '/class-spamanvil-provider-factory.php';

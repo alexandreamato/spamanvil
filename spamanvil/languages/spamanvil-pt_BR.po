@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.10.0\n"
+"Project-Id-Version: SpamAnvil 1.11.0\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-"
 "plugin-for-wordpress/\n"
 "POT-Creation-Date: 2026-02-14 18:30-0300\n"
@@ -770,3 +770,15 @@ msgstr "uma chave de API salva não pode mais ser descriptografada — as chaves
 
 msgid "Open the Providers tab"
 msgstr "Abrir a aba Provedores"
+
+msgid "SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free. 🙏"
+msgstr "O SpamAnvil já verificou %s comentários no seu site. Se ele foi útil, uma avaliação honesta ajuda outras pessoas a encontrá-lo — e mantém o plugin gratuito. 🙏"
+
+msgid "Leave a review ★★★★★"
+msgstr "Avaliar ★★★★★"
+
+msgid "Maybe later"
+msgstr "Mais tarde"
+
+msgid "I already did / don't ask again"
+msgstr "Já avaliei / não perguntar de novo"

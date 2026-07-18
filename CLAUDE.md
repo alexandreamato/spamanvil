@@ -363,6 +363,10 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 
 A WordPress admin dashboard widget (`spamanvil_dashboard_widget`) shows the total spam blocked count with AI/Heuristic/IP breakdown. Links to Settings and Statistics pages. A "Rate ★★★★★" link appears when `alltime_blocked >= 20` and the review notice hasn't been dismissed.
 
+## Review Request (1.11.0)
+
+`SpamAnvil_Admin::maybe_show_review_notice()` (hooked to `admin_notices`) is a **global**, dismissible "leave a review" ask shown on any admin screen — not just the plugin's settings page. The pure gate `review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now )` (static, unit-tested in `tests/unit/ReviewNoticeTest.php`) only returns true after value is delivered (`comments_checked >= 50`) AND the plugin has been installed `>= 7 days`, and never when dismissed (`spamanvil_dismiss_review`) or snoozed (`spamanvil_review_snooze_until`). The three buttons are nonce'd links handled by `maybe_handle_review_action()` (`admin_init`): **Leave a review** (marks dismissed, redirects to WordPress.org), **Maybe later** (snoozes 14 days), **don't ask again** (permanent dismiss). Nonce'd links (not JS) so it works on admin screens where the plugin's JS isn't enqueued.
+
 ## Extensibility Hooks
 
 **Filters:** `spamanvil_prompt`, `spamanvil_threshold`, `spamanvil_heuristic_score`

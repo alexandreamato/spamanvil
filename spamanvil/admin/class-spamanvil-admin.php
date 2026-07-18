@@ -5,6 +5,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class SpamAnvil_Admin {
 
+	// Review-request gating: only ask once the plugin has clearly delivered value
+	// (>= this many comments checked) AND has been installed long enough.
+	private const REVIEW_MIN_CHECKED     = 50;
+	private const REVIEW_MIN_AGE_SECONDS = 604800;  // 7 days.
+	private const REVIEW_SNOOZE_SECONDS  = 1209600; // 14 days ("Maybe later").
+
 	private $encryptor;
 	private $provider_factory;
 	private $stats;
@@ -91,6 +97,110 @@ class SpamAnvil_Admin {
 			);
 		}
 		printf( ' <a href="%s">%s</a></p></div>', esc_url( $logs_url ), esc_html__( 'View SpamAnvil logs', 'spamanvil' ) );
+	}
+
+	/**
+	 * Pure decision: is the review request due? Side-effect-free so it can be
+	 * unit-tested without a WordPress bootstrap.
+	 *
+	 * @param bool $dismissed        Whether the user permanently dismissed the ask.
+	 * @param int  $snooze_until     Unix time until which the ask is snoozed.
+	 * @param int  $comments_checked Total comments the plugin has classified.
+	 * @param int  $activated_at     Unix time the plugin was activated (0 if unknown).
+	 * @param int  $now              Current Unix time.
+	 * @return bool
+	 */
+	public static function review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now ) {
+		if ( $dismissed ) {
+			return false;
+		}
+		if ( (int) $snooze_until > (int) $now ) {
+			return false;
+		}
+		if ( (int) $comments_checked < self::REVIEW_MIN_CHECKED ) {
+			return false;
+		}
+		// Give the plugin time to prove itself first (avoids day-one asks on high-traffic sites).
+		if ( (int) $activated_at > 0 && ( (int) $now - (int) $activated_at ) < self::REVIEW_MIN_AGE_SECONDS ) {
+			return false;
+		}
+		return true;
+	}
+
+	private function should_show_review_notice() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+		return self::review_notice_due(
+			(bool) get_option( 'spamanvil_dismiss_review' ),
+			(int) get_option( 'spamanvil_review_snooze_until', 0 ),
+			(int) $this->stats->get_total( 'comments_checked' ),
+			(int) get_option( 'spamanvil_activated_at', 0 ),
+			time()
+		);
+	}
+
+	/**
+	 * Global admin notice asking for a review once the plugin has earned it.
+	 * Uses nonce'd links (handled in maybe_handle_review_action) so it works on
+	 * any admin screen without depending on the plugin's JS being enqueued there.
+	 */
+	public function maybe_show_review_notice() {
+		if ( ! $this->should_show_review_notice() ) {
+			return;
+		}
+
+		$checked    = number_format_i18n( (int) $this->stats->get_total( 'comments_checked' ) );
+		$snooze_url  = wp_nonce_url( add_query_arg( 'spamanvil_review', 'snooze' ), 'spamanvil_review_action' );
+		$dismiss_url = wp_nonce_url( add_query_arg( 'spamanvil_review', 'dismiss' ), 'spamanvil_review_action' );
+		$review_url  = wp_nonce_url( add_query_arg( 'spamanvil_review', 'review' ), 'spamanvil_review_action' );
+		?>
+		<div class="notice notice-info">
+			<p>
+				<?php
+				printf(
+					/* translators: %s: number of comments checked */
+					esc_html__( 'SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free. 🙏', 'spamanvil' ),
+					'<strong>' . esc_html( $checked ) . '</strong>'
+				);
+				?>
+			</p>
+			<p>
+				<a href="<?php echo esc_url( $review_url ); ?>" class="button button-primary"><?php esc_html_e( 'Leave a review ★★★★★', 'spamanvil' ); ?></a>
+				<a href="<?php echo esc_url( $snooze_url ); ?>" class="button"><?php esc_html_e( 'Maybe later', 'spamanvil' ); ?></a>
+				<a href="<?php echo esc_url( $dismiss_url ); ?>" class="button-link"><?php esc_html_e( 'I already did / don\'t ask again', 'spamanvil' ); ?></a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Handle the review-notice buttons (snooze / dismiss / review) on admin_init.
+	 */
+	public function maybe_handle_review_action() {
+		if ( empty( $_GET['spamanvil_review'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce checked below.
+			return;
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		check_admin_referer( 'spamanvil_review_action' );
+
+		$action = sanitize_key( wp_unslash( $_GET['spamanvil_review'] ) );
+
+		if ( 'snooze' === $action ) {
+			update_option( 'spamanvil_review_snooze_until', time() + self::REVIEW_SNOOZE_SECONDS );
+		} elseif ( 'dismiss' === $action ) {
+			update_option( 'spamanvil_dismiss_review', '1' );
+		} elseif ( 'review' === $action ) {
+			// Assume they're about to review — stop asking, then send them to WordPress.org.
+			update_option( 'spamanvil_dismiss_review', '1' );
+			wp_redirect( 'https://wordpress.org/support/plugin/spamanvil/reviews/#new-post' );
+			exit;
+		}
+
+		wp_safe_redirect( remove_query_arg( array( 'spamanvil_review', '_wpnonce' ) ) );
+		exit;
 	}
 
 	public function add_menu_page() {
@@ -208,8 +318,8 @@ class SpamAnvil_Admin {
 		$show_setup    = get_option( 'spamanvil_enabled', '1' ) === '1'
 			&& empty( get_option( 'spamanvil_primary_provider', '' ) )
 			&& ! get_option( 'spamanvil_dismiss_setup' );
-		$show_review   = ! get_option( 'spamanvil_dismiss_review' )
-			&& $this->stats->get_total( 'comments_checked' ) >= 50;
+		// The review request is now a global admin notice (maybe_show_review_notice),
+		// so it reaches users on any admin screen — not only this settings page.
 
 		?>
 		<div class="wrap spamanvil-wrap">
@@ -236,25 +346,6 @@ class SpamAnvil_Admin {
 					</p>
 					<p>
 						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=providers' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Configure a Provider', 'spamanvil' ); ?></a>
-					</p>
-				</div>
-			<?php endif; ?>
-
-			<?php if ( $show_review ) : ?>
-				<div class="notice notice-info is-dismissible spamanvil-dismissible" data-notice="spamanvil_dismiss_review">
-					<p>
-						<?php
-						printf(
-							/* translators: %s: number of comments checked */
-							esc_html__( 'SpamAnvil has checked %s comments for you! If it\'s helping keep your site clean, would you mind leaving a quick review? It really helps!', 'spamanvil' ),
-							'<strong>' . esc_html( number_format_i18n( $this->stats->get_total( 'comments_checked' ) ) ) . '</strong>'
-						);
-						?>
-					</p>
-					<p>
-						<a href="https://wordpress.org/support/plugin/spamanvil/reviews/#new-post" target="_blank" rel="noopener noreferrer" class="button button-primary"><?php esc_html_e( 'Leave a Review', 'spamanvil' ); ?></a>
-						<a href="https://github.com/sponsors/alexandreamato" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'or buy me a beer ☕', 'spamanvil' ); ?></a>
-						<button type="button" class="button spamanvil-dismiss-btn" data-notice="spamanvil_dismiss_review"><?php esc_html_e( 'No thanks, don\'t ask again', 'spamanvil' ); ?></button>
 					</p>
 				</div>
 			<?php endif; ?>
