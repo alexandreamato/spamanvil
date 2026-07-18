@@ -36,7 +36,7 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 - **Async Background Processing** — Comments are queued and processed via WP-Cron so your site stays fast
 - **Smart IP Blocking** — Automatically blocks repeat offenders with escalating ban durations (24h, 48h, 96h...)
 - **Automatic Retry with Backoff** — Failed API calls retry up to 3 times with exponential delays
-- **Encrypted API Key Storage** — AES-256-CBC encryption for all stored API keys. Optional wp-config.php constants for maximum security
+- **Encrypted API Key Storage** — Authenticated AES-256-GCM encryption for all stored API keys. Optional wp-config.php constants for maximum security
 - **Statistics Dashboard** — Track how many comments were checked, how much spam was caught, API usage and errors
 - **Full Evaluation Logs** — See the AI's reasoning for every comment scored, with provider, model, response time, and score
 - **Customizable AI Prompts** — Full control over what the AI is instructed to do
@@ -96,7 +96,8 @@ Want to use SpamAnvil for completely free? Here's how:
 
 SpamAnvil follows WordPress security best practices throughout:
 
-- AES-256-CBC encrypted API key storage
+- Authenticated AES-256-GCM encrypted API key storage
+- Configurable trusted IP header (default REMOTE_ADDR) so a forged X-Forwarded-For can't bypass IP blocking or rate limiting
 - wp-config.php constant support for API keys (never touch the database)
 - Nonce verification on all forms and AJAX requests
 - Capability checks on all admin actions

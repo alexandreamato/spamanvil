@@ -87,7 +87,7 @@ With **Open Mode** on, comments publish instantly (no name/email/login/moderatio
 - **Atomic Queue** -- Concurrent cron/manual runs never double-process (no duplicate paid calls)
 - **Smart IP Blocking** -- Escalating bans for repeat offenders (24h, 48h, 96h...)
 - **Real "Test Connection"** -- Verifies actual spam classification, not just an HTTP 200
-- **Encrypted Keys** -- AES-256-CBC (per-site salt), or wp-config.php constants
+- **Encrypted Keys** -- AES-256-GCM (per-site salt), or wp-config.php constants
 - **Fallback Provider** -- Backup AI so spam checking never stops
 - **Prompt Injection Defense** -- 6-layer protection against adversarial comments
 - **Statistics, Logs & Health Alerts** -- Per-layer counts, AI reasoning per comment, and an admin warning when spam checking is silently failing
@@ -145,13 +145,14 @@ It's applied via filters, so it never overwrites your stored settings — turnin
 
 SpamAnvil follows WordPress security best practices throughout:
 
-- **API Keys**: AES-256-CBC encrypted in DB, or define in `wp-config.php` (never touches DB)
+- **API Keys**: AES-256-GCM (AEAD) encrypted in DB — legacy CBC values still read — or define in `wp-config.php` (never touches DB)
 - **All forms**: Nonce verification + capability checks (`manage_options`)
 - **All queries**: `$wpdb->prepare()` prepared statements
 - **All output**: Escaped with `esc_html()`, `esc_attr()`, `esc_url()`
 - **All input**: Sanitized with `sanitize_text_field()`, `absint()`, `wp_kses_post()`
 - **HTTP**: `wp_safe_remote_post()` (blocks internal/metadata IPs) with a 60s timeout
 - **IPs**: SHA-256 hashed storage, masked display
+- **Client IP source**: Configurable trusted header (default `REMOTE_ADDR`) so a forged `X-Forwarded-For` can't bypass IP blocking/rate limiting; sites behind a proxy/CDN select their edge's header (e.g. Cloudflare)
 
 ### Prompt Injection Defense (6 layers)
 
@@ -191,7 +192,7 @@ spamanvil/
 │   ├── class-spamanvil-heuristics.php # Regex pre-analysis
 │   ├── class-spamanvil-ip-manager.php # Smart IP blocking
 │   ├── class-spamanvil-stats.php     # Metrics + threshold suggestion
-│   ├── class-spamanvil-encryptor.php # AES-256-CBC encryption
+│   ├── class-spamanvil-encryptor.php # AES-256-GCM encryption (reads legacy CBC)
 │   ├── class-spamanvil-provider-factory.php
 │   └── providers/
 │       ├── class-spamanvil-provider.php          # Abstract base

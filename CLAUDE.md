@@ -17,9 +17,9 @@ spamanvil/                          ← Plugin root (this gets zipped for upload
 │   ├── class-spamanvil.php                    # Singleton orchestrator, wires all WP hooks
 │   ├── class-spamanvil-activator.php          # DB tables (dbDelta), default options, cron scheduling
 │   ├── class-spamanvil-deactivator.php        # Clear cron hooks
-│   ├── class-spamanvil-encryptor.php          # AES-256-CBC for API keys (AUTH_SALT-derived key)
+│   ├── class-spamanvil-encryptor.php          # AES-256-GCM for API keys (AUTH_SALT-derived key); reads legacy CBC
 │   ├── class-spamanvil-heuristics.php         # Regex pre-analysis: URLs, spam words, prompt injection
-│   ├── class-spamanvil-ip-manager.php         # IP blocking with SHA-256 hashing + escalation
+│   ├── class-spamanvil-ip-manager.php         # IP blocking with SHA-256 hashing + escalation; configurable trusted IP header
 │   ├── class-spamanvil-stats.php              # Atomic upsert counters + evaluation logs
 │   ├── class-spamanvil-queue.php              # Async processing: batch, retry, backoff, prompt building
 │   ├── class-spamanvil-comment-processor.php  # WP comment hooks (preprocess, pre_approved, comment_post)
@@ -108,8 +108,9 @@ WP-Cron (every 5 min):
 - **All AJAX** must use `check_ajax_referer('spamanvil_ajax', 'nonce')` + `current_user_can('manage_options')`
 - **All output** must be escaped: `esc_html()`, `esc_attr()`, `esc_url()`, `esc_textarea()`
 - **All input** must be sanitized: `sanitize_text_field()`, `absint()`, `wp_kses_post()`, `esc_url_raw()`
-- **API keys** are AES-256-CBC encrypted in DB or defined via wp-config.php constants
+- **API keys** are AES-256-GCM (AEAD) encrypted in DB — legacy AES-256-CBC values are still read — or defined via wp-config.php constants
 - **IPs** are stored as SHA-256 hashes, displayed masked (last octet hidden)
+- **Client IP resolution** trusts only the admin-configured header (`spamanvil_trusted_ip_header`, default `remote_addr`) — never a raw client-supplied `X-Forwarded-For`
 - **HTTP requests** use `wp_safe_remote_post()` with 30s timeout
 
 ## Prompt Injection Defense (6 layers)
@@ -299,7 +300,7 @@ python3 create_assets.py
 Dev tooling lives at the **repo root** (never shipped in the plugin ZIP — the plugin is only the `spamanvil/` subfolder): `composer.json`, `phpunit.xml.dist` (integration), `phpunit-unit.xml.dist` (unit), `.phpcs.xml.dist`, `bin/`, `tests/`, `.github/workflows/`. Setup: `composer install` (PHP 7.4+).
 
 **Two suites:**
-- **Unit** (`tests/unit/`) — no WordPress/DB; `tests/unit/bootstrap.php` stubs the few WP functions used. Covers `SpamAnvil_Encryptor` and `SpamAnvil_Heuristics`. Run: `composer test:unit`. Fast, runs anywhere.
+- **Unit** (`tests/unit/`) — no WordPress/DB; `tests/unit/bootstrap.php` stubs the few WP functions used. Covers `SpamAnvil_Encryptor` (GCM round-trip + legacy CBC read), `SpamAnvil_Heuristics`, and `SpamAnvil_IP_Manager::resolve_client_ip()` (trusted-header selection). Run: `composer test:unit`. Fast, runs anywhere.
 - **Integration** (`tests/integration/`) — real WordPress + MySQL. Covers the `SpamAnvil_Queue` state machine and the **UTC timestamp invariant** (retry eligibility, stale/max_retries reclaim — the 1.2.8 regression). Locally: `bin/install-wp-tests.sh <db> <user> <pass> [host] [wp-version]` then `composer test:integration`. Runs in CI automatically (no local MySQL needed).
 
 **Coding standards:** `composer lint` (WPCS + PHPCompatibility). **Advisory** in CI for now — the shipped code predates WPCS (~300 mostly auto-fixable findings); clean incrementally with `composer lint:fix`, don't gate merges on it yet.
@@ -330,6 +331,7 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_fallback_provider` | `''` | Fallback LLM slug |
 | `spamanvil_log_retention` | `30` | Days to keep logs |
 | `spamanvil_ip_block_threshold` | `3` | Spam attempts before IP block |
+| `spamanvil_trusted_ip_header` | `'remote_addr'` | Which header identifies the visitor IP: `remote_addr` / `cf` / `x_real_ip` / `xff_last` / `auto` |
 | `spamanvil_delete_data` | `'0'` | Delete all data on uninstall (off by default) |
 | `spamanvil_cache_enabled` | `'1'` | Reuse recent LLM verdicts for identical comment content (verdict cache) |
 | `spamanvil_cache_ttl_days` | `7` | How long a cached verdict is reused |
@@ -340,6 +342,10 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_ratelimit_max` / `_window` | `5` / `60` | Max comments per window (seconds) per IP |
 | `spamanvil_open_mode` | `'0'` | "Crazy Open" — strip WP comment friction + optimistic publish |
 | `spamanvil_auto_free_fallback` | `'1'` | Auto-switch to another free model when the configured one is unavailable |
+
+**Trusted IP header + AES-256-GCM keys (1.10.0):** two security fixes from a production review.
+- **Configurable client IP source.** `SpamAnvil_IP_Manager::get_client_ip()` previously trusted the left-most `X-Forwarded-For` value — client-supplied and forgeable, so a bot could rotate a fake IP per request to evade IP blocking and rate limiting. The trusted header is now the `spamanvil_trusted_ip_header` option (`remote_addr` default / `cf` / `x_real_ip` / `xff_last` / `auto`), resolved by the **pure, unit-tested** static `resolve_client_ip( $source, $server )` (`tests/unit/IpManagerTest.php`). REMOTE_ADDR is always the final fallback; `auto` prefers proxy-set headers but never the left-most XFF. UI: a "Visitor IP source" selector on the IP tab that also lists the proxy headers seen on the current request. Sites behind a proxy/CDN must pick their edge's header (Cloudflare → `cf`).
+- **Authenticated key storage.** `SpamAnvil_Encryptor` now writes API keys with AES-256-GCM (AEAD), tagged with a `g:` format marker; `decrypt()` still reads legacy unprefixed CBC values, so upgrading never invalidates a stored key and re-saving migrates it. When a stored key no longer decrypts (rotated AUTH_SALT), `SpamAnvil_Provider_Factory::has_undecryptable_key()` drives an explicit `admin_notice` pointing to the Providers tab instead of a silent `provider='none'`.
 
 **Auto free-model fallback (1.9.0):** in `try_provider_chain()`, when a provider's `analyze()` fails and `SpamAnvil_Provider_Factory::is_model_unavailable_error()` matches (404 / "no endpoints" / "not a valid model" — never auth/rate-limit), `try_free_model_fallback()` calls `find_free_alternative()` (list_models → `pick_free_model()` picks a free id ≠ the failed one), retries, and on success **persists** the new model (`update_option`), increments `model_auto_switched`, and logs the switch. Detection + selection are pure and unit-tested (`tests/unit/ModelFallbackTest.php`).
 

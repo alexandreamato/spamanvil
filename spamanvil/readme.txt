@@ -57,7 +57,7 @@ SpamAnvil layers several spam defenses so cheap, invisible filters catch obvious
 * **Async Background Processing** - Comments are queued and processed via WP-Cron so your site stays fast.
 * **Smart IP Blocking** - Automatically blocks repeat offenders with escalating ban durations (24h, 48h, 96h...).
 * **Automatic Retry with Backoff** - Failed API calls retry with exponential delays; a real "Test Connection" verifies actual classification, not just the HTTP status.
-* **Encrypted API Key Storage** - AES-256-CBC encryption, or wp-config.php constants for maximum security.
+* **Encrypted API Key Storage** - Authenticated AES-256-GCM encryption, or wp-config.php constants for maximum security.
 * **Statistics Dashboard & Logs** - Track spam caught by each layer, API usage and errors, with the AI's reasoning for every comment. An admin warning surfaces silent failures (no provider, or a backlog of failed items).
 * **Customizable AI Prompts, Fallback Providers, Prompt-Injection Defense, Configurable Threshold, Moderator Bypass.**
 
@@ -87,8 +87,9 @@ With **Open Mode** on, comments publish instantly and any spam is removed in the
 
 SpamAnvil follows WordPress security best practices throughout:
 
-* AES-256-CBC encrypted API key storage
+* Authenticated AES-256-GCM encrypted API key storage
 * wp-config.php constant support for API keys (never touch the database)
+* Configurable trusted IP header (default REMOTE_ADDR) so a forged X-Forwarded-For cannot bypass IP blocking or rate limiting
 * Nonce verification on all forms and AJAX requests
 * Capability checks on all admin actions
 * Prepared SQL statements on every database query
@@ -186,7 +187,7 @@ SpamAnvil has built-in resilience: failed requests are retried up to 3 times wit
 
 = Is my data safe? =
 
-Comment content is sent to your chosen AI provider for analysis - this is the only external data transmission. API keys are encrypted with AES-256-CBC in the database (or can be defined in wp-config.php to never touch the database). IP addresses are stored as SHA-256 hashes and displayed masked in the admin panel.
+Comment content is sent to your chosen AI provider for analysis - this is the only external data transmission. API keys are encrypted with authenticated AES-256-GCM in the database (or can be defined in wp-config.php to never touch the database). IP addresses are stored as SHA-256 hashes and displayed masked in the admin panel.
 
 = Does SpamAnvil work with WooCommerce? =
 
