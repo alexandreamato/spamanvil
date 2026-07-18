@@ -9,6 +9,9 @@ svn-spamanvil/
 composer.lock
 .phpunit.result.cache
 
+# Internal marketing/growth assets — keep local, never publish to the public repo
+marketing/
+
 # Never commit real keys or environment files
 .env
 .env.*
