@@ -53,4 +53,19 @@ class ReviewNoticeTest extends TestCase {
 		$exactly_7d = self::NOW - 7 * self::DAY;
 		$this->assertTrue( $this->due( false, 0, 50, $exactly_7d ), 'At exactly the threshold it should show.' );
 	}
+
+	public function test_filterable_min_checked_lets_low_traffic_sites_ask_earlier() {
+		// 10 comments is below the default (50), so nothing shows...
+		$this->assertFalse( SpamAnvil_Admin::review_notice_due( false, 0, 10, self::OLD, self::NOW ) );
+		// ...but a filtered-down threshold of 10 makes it show.
+		$this->assertTrue( SpamAnvil_Admin::review_notice_due( false, 0, 10, self::OLD, self::NOW, 10, 7 * self::DAY ) );
+	}
+
+	public function test_filterable_min_age_can_delay_the_ask() {
+		$installed_10d = self::NOW - 10 * self::DAY;
+		// Default 7-day gate: 10 days installed → shows.
+		$this->assertTrue( SpamAnvil_Admin::review_notice_due( false, 0, 100, $installed_10d, self::NOW ) );
+		// Raise the age gate to 30 days → hidden.
+		$this->assertFalse( SpamAnvil_Admin::review_notice_due( false, 0, 100, $installed_10d, self::NOW, 50, 30 * self::DAY ) );
+	}
 }

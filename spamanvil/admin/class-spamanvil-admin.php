@@ -108,20 +108,22 @@ class SpamAnvil_Admin {
 	 * @param int  $comments_checked Total comments the plugin has classified.
 	 * @param int  $activated_at     Unix time the plugin was activated (0 if unknown).
 	 * @param int  $now              Current Unix time.
+	 * @param int  $min_checked      Min comments checked before asking (filterable; default 50).
+	 * @param int  $min_age_seconds  Min seconds installed before asking (filterable; default 7 days).
 	 * @return bool
 	 */
-	public static function review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now ) {
+	public static function review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now, $min_checked = self::REVIEW_MIN_CHECKED, $min_age_seconds = self::REVIEW_MIN_AGE_SECONDS ) {
 		if ( $dismissed ) {
 			return false;
 		}
 		if ( (int) $snooze_until > (int) $now ) {
 			return false;
 		}
-		if ( (int) $comments_checked < self::REVIEW_MIN_CHECKED ) {
+		if ( (int) $comments_checked < (int) $min_checked ) {
 			return false;
 		}
 		// Give the plugin time to prove itself first (avoids day-one asks on high-traffic sites).
-		if ( (int) $activated_at > 0 && ( (int) $now - (int) $activated_at ) < self::REVIEW_MIN_AGE_SECONDS ) {
+		if ( (int) $activated_at > 0 && ( (int) $now - (int) $activated_at ) < (int) $min_age_seconds ) {
 			return false;
 		}
 		return true;
@@ -131,12 +133,32 @@ class SpamAnvil_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return false;
 		}
+
+		/**
+		 * Filters the minimum number of comments SpamAnvil must have classified
+		 * before it asks for a review. Lower it on low-traffic sites; raise it to
+		 * ask later.
+		 *
+		 * @param int $min_checked Default 50.
+		 */
+		$min_checked = (int) apply_filters( 'spamanvil_review_min_checked', self::REVIEW_MIN_CHECKED );
+
+		/**
+		 * Filters the minimum time (in seconds) the plugin must have been installed
+		 * before it asks for a review.
+		 *
+		 * @param int $min_age_seconds Default 604800 (7 days).
+		 */
+		$min_age = (int) apply_filters( 'spamanvil_review_min_age_seconds', self::REVIEW_MIN_AGE_SECONDS );
+
 		return self::review_notice_due(
 			(bool) get_option( 'spamanvil_dismiss_review' ),
 			(int) get_option( 'spamanvil_review_snooze_until', 0 ),
 			(int) $this->stats->get_total( 'comments_checked' ),
 			(int) get_option( 'spamanvil_activated_at', 0 ),
-			time()
+			time(),
+			$min_checked,
+			$min_age
 		);
 	}
 

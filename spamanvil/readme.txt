@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.11.0
+Stable tag: 1.11.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -239,6 +239,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.11.1 =
+* Developer: The review-request thresholds are now filterable. `spamanvil_review_min_checked` (default 50) and `spamanvil_review_min_age_seconds` (default 604800 = 7 days) let low-traffic sites ask sooner, or others ask later. No change to default behavior.
 
 = 1.11.0 =
 * Improvement: The "leave a review" request is now a gentle, dismissible admin notice that appears on any admin screen (previously it only showed on the SpamAnvil settings page, where most users never returned). It only appears after the plugin has proven itself — 50+ comments checked and at least 7 days installed — and offers "Leave a review", "Maybe later" (snoozes for two weeks), and "I already did / don't ask again". No nagging, fully dismissible, no incentives.

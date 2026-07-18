@@ -365,11 +365,11 @@ A WordPress admin dashboard widget (`spamanvil_dashboard_widget`) shows the tota
 
 ## Review Request (1.11.0)
 
-`SpamAnvil_Admin::maybe_show_review_notice()` (hooked to `admin_notices`) is a **global**, dismissible "leave a review" ask shown on any admin screen — not just the plugin's settings page. The pure gate `review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now )` (static, unit-tested in `tests/unit/ReviewNoticeTest.php`) only returns true after value is delivered (`comments_checked >= 50`) AND the plugin has been installed `>= 7 days`, and never when dismissed (`spamanvil_dismiss_review`) or snoozed (`spamanvil_review_snooze_until`). The three buttons are nonce'd links handled by `maybe_handle_review_action()` (`admin_init`): **Leave a review** (marks dismissed, redirects to WordPress.org), **Maybe later** (snoozes 14 days), **don't ask again** (permanent dismiss). Nonce'd links (not JS) so it works on admin screens where the plugin's JS isn't enqueued.
+`SpamAnvil_Admin::maybe_show_review_notice()` (hooked to `admin_notices`) is a **global**, dismissible "leave a review" ask shown on any admin screen — not just the plugin's settings page. The pure gate `review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now, $min_checked = 50, $min_age_seconds = 604800 )` (static, unit-tested in `tests/unit/ReviewNoticeTest.php`) only returns true after value is delivered (`comments_checked >= $min_checked`) AND the plugin has been installed `>= $min_age_seconds`, where both thresholds are filterable (`spamanvil_review_min_checked` / `spamanvil_review_min_age_seconds`, applied in `should_show_review_notice()`), and never when dismissed (`spamanvil_dismiss_review`) or snoozed (`spamanvil_review_snooze_until`). The three buttons are nonce'd links handled by `maybe_handle_review_action()` (`admin_init`): **Leave a review** (marks dismissed, redirects to WordPress.org), **Maybe later** (snoozes 14 days), **don't ask again** (permanent dismiss). Nonce'd links (not JS) so it works on admin screens where the plugin's JS isn't enqueued.
 
 ## Extensibility Hooks
 
-**Filters:** `spamanvil_prompt`, `spamanvil_threshold`, `spamanvil_heuristic_score`
+**Filters:** `spamanvil_prompt`, `spamanvil_threshold`, `spamanvil_heuristic_score`, `spamanvil_review_min_checked` (default 50), `spamanvil_review_min_age_seconds` (default 604800 = 7 days)
 **Actions:** `spamanvil_before_analysis`, `spamanvil_after_analysis`, `spamanvil_spam_detected`
 
 ## Common Tasks
