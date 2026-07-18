@@ -154,7 +154,23 @@ class SpamAnvil_IP_Manager {
 	}
 
 	public function hash_ip( $ip ) {
-		return hash( 'sha256', $ip );
+		return self::compute_ip_hash( $ip, wp_salt( 'nonce' ) );
+	}
+
+	/**
+	 * Salted, keyed hash of an IP address.
+	 *
+	 * Keyed with a per-site secret so a stored hash cannot be reversed by brute-forcing
+	 * the (small, fully enumerable) IP space — an unsalted SHA-256 of an IPv4 address is
+	 * trivially reversible with a precomputed table, which would defeat the point of
+	 * hashing. Pure and static so it can be unit-tested without a WordPress bootstrap.
+	 *
+	 * @param string $ip   The IP address.
+	 * @param string $salt Per-site secret (e.g. wp_salt( 'nonce' )).
+	 * @return string 64-char hex HMAC-SHA-256.
+	 */
+	public static function compute_ip_hash( $ip, $salt ) {
+		return hash_hmac( 'sha256', (string) $ip, (string) $salt );
 	}
 
 	public function mask_ip( $ip ) {

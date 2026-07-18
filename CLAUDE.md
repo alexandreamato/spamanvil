@@ -63,7 +63,7 @@ spamanvil/                          ← Plugin root (this gets zipped for upload
 ## Database Tables (4)
 
 1. **spamanvil_queue** — Comment processing queue (status, score, reason, provider, attempts, retry_at)
-2. **spamanvil_blocked_ips** — Blocked IPs as SHA-256 hashes (escalation_level, blocked_until)
+2. **spamanvil_blocked_ips** — Blocked IPs as salted HMAC-SHA-256 hashes (escalation_level, blocked_until)
 3. **spamanvil_stats** — Daily counters with UNIQUE(stat_date, stat_key), atomic upserts
 4. **spamanvil_logs** — Per-comment evaluation logs (score, provider, model, reason, heuristic_details, processing_time_ms)
 
@@ -109,7 +109,7 @@ WP-Cron (every 5 min):
 - **All output** must be escaped: `esc_html()`, `esc_attr()`, `esc_url()`, `esc_textarea()`
 - **All input** must be sanitized: `sanitize_text_field()`, `absint()`, `wp_kses_post()`, `esc_url_raw()`
 - **API keys** are AES-256-GCM (AEAD) encrypted in DB — legacy AES-256-CBC values are still read — or defined via wp-config.php constants
-- **IPs** are stored as SHA-256 hashes, displayed masked (last octet hidden)
+- **IPs** are stored as salted, keyed hashes — `hash_hmac('sha256', $ip, wp_salt('nonce'))` via `SpamAnvil_IP_Manager::compute_ip_hash()` (unsalted SHA-256 of an IP is brute-forceable) — displayed masked (last octet hidden)
 - **Client IP resolution** trusts only the admin-configured header (`spamanvil_trusted_ip_header`, default `remote_addr`) — never a raw client-supplied `X-Forwarded-For`
 - **HTTP requests** use `wp_safe_remote_post()` with 30s timeout
 

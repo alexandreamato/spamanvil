@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.11.1
+Stable tag: 1.11.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,7 +24,7 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 * **Defense in Depth** - Honeypot, time trap, per-IP rate limit and heuristics block obvious bots for free, so the AI is only spent on the subtle cases.
 * **Open Mode** - Because the filtering is invisible and automatic, you can drop the usual barriers (name/email, login, moderation) and get more real comments - even anonymous ones - without opening the door to spam.
 * **Works With Free AI Models** - Use OpenRouter's free models for $0 cost, or connect premium models for maximum accuracy.
-* **Privacy-First** - Your data stays between you and your chosen AI provider. IP addresses are stored as irreversible SHA-256 hashes. GDPR/LGPD compliant by design.
+* **Privacy-First** - Your data stays between you and your chosen AI provider. IP addresses are stored as salted, keyed hashes (HMAC-SHA-256), not recoverable without your site's secret. GDPR/LGPD compliant by design.
 * **No Cloud Lock-in** - Choose from 6+ AI providers. Switch anytime. Your anti-spam, your rules.
 
 = Supported AI Providers =
@@ -187,7 +187,7 @@ SpamAnvil has built-in resilience: failed requests are retried up to 3 times wit
 
 = Is my data safe? =
 
-Comment content is sent to your chosen AI provider for analysis - this is the only external data transmission. API keys are encrypted with authenticated AES-256-GCM in the database (or can be defined in wp-config.php to never touch the database). IP addresses are stored as SHA-256 hashes and displayed masked in the admin panel.
+Comment content is sent to your chosen AI provider for analysis - this is the only external data transmission. API keys are encrypted with authenticated AES-256-GCM in the database (or can be defined in wp-config.php to never touch the database). IP addresses are stored as salted, keyed hashes (HMAC-SHA-256, not reversible without your site's secret) and displayed masked in the admin panel.
 
 = Does SpamAnvil work with WooCommerce? =
 
@@ -239,6 +239,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.11.2 =
+* Security/Privacy: Blocked-IP hashes are now salted and keyed with your site secret (HMAC-SHA-256) instead of a plain SHA-256. A plain hash of an IP address can be reversed by brute force (the IP space is small), so this makes the stored hashes genuinely non-reversible without your site's key. Existing temporary blocks re-accrue naturally after the update.
 
 = 1.11.1 =
 * Developer: The review-request thresholds are now filterable. `spamanvil_review_min_checked` (default 50) and `spamanvil_review_min_age_seconds` (default 604800 = 7 days) let low-traffic sites ask sooner, or others ask later. No change to default behavior.
