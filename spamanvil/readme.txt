@@ -1,7 +1,7 @@
-=== SpamAnvil ===
+=== SpamAnvil – AI Anti-Spam & Comment Spam Protection ===
 Contributors: aamato
 Donate link: https://github.com/sponsors/alexandreamato
-Tags: antispam, spam, comment spam, spam protection, ai
+Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
