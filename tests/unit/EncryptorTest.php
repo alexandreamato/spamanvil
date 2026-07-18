@@ -1,6 +1,7 @@
 <?php
 /**
- * Unit tests for SpamAnvil_Encryptor (AES-256-CBC API-key storage).
+ * Unit tests for SpamAnvil_Encryptor: authenticated AES-256-GCM API-key storage,
+ * with backward-compatible reads of the legacy AES-256-CBC format.
  */
 
 use PHPUnit\Framework\TestCase;
@@ -61,6 +62,41 @@ class EncryptorTest extends TestCase {
 		$other                            = new SpamAnvil_Encryptor();
 
 		$this->assertSame( '', $other->decrypt( $encrypted ) );
+	}
+
+	public function test_new_values_use_the_authenticated_gcm_format() {
+		$encrypted = $this->encryptor->encrypt( 'sk-modern-key' );
+
+		$this->assertStringStartsWith( 'g:', $encrypted, 'New ciphertext must carry the GCM format marker.' );
+		$this->assertSame( 'sk-modern-key', $this->encryptor->decrypt( $encrypted ) );
+	}
+
+	public function test_reads_legacy_cbc_values_written_before_1_10() {
+		$secret = 'sk-legacy-key-2024';
+		$legacy = $this->legacy_cbc_encrypt( $secret );
+
+		$this->assertStringStartsNotWith( 'g:', $legacy, 'Legacy fixture must be in the old unprefixed CBC format.' );
+		$this->assertSame( $secret, $this->encryptor->decrypt( $legacy ), 'Upgrading must not invalidate an already-saved key.' );
+	}
+
+	public function test_legacy_cbc_value_fails_closed_under_a_rotated_salt() {
+		$legacy = $this->legacy_cbc_encrypt( 'sk-legacy-key' );
+
+		$GLOBALS['__spamanvil_test_salt'] = 'a-completely-different-salt';
+		$other                            = new SpamAnvil_Encryptor();
+
+		$this->assertSame( '', $other->decrypt( $legacy ) );
+	}
+
+	/**
+	 * Reproduce the pre-1.10 storage format: base64( iv(16) . ciphertext ), no marker,
+	 * AES-256-CBC, keyed the same way the encryptor derives its key from the salt.
+	 */
+	private function legacy_cbc_encrypt( $plain_text ) {
+		$key       = hash( 'sha256', wp_salt( 'auth' ), true );
+		$iv        = openssl_random_pseudo_bytes( openssl_cipher_iv_length( 'aes-256-cbc' ) );
+		$encrypted = openssl_encrypt( $plain_text, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
+		return base64_encode( $iv . $encrypted );
 	}
 
 	public function test_mask_behaviour() {

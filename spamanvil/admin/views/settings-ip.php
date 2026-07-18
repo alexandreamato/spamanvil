@@ -10,6 +10,27 @@ settings_errors( 'spamanvil' );
 
 $ip_enabled   = get_option( 'spamanvil_ip_blocking_enabled', '1' );
 $ip_threshold = (int) get_option( 'spamanvil_ip_block_threshold', 3 );
+$ip_source    = get_option( 'spamanvil_trusted_ip_header', 'remote_addr' );
+
+$ip_header_options = array(
+	'remote_addr' => __( 'Direct connection (REMOTE_ADDR) — safest default', 'spamanvil' ),
+	'cf'          => __( 'Cloudflare (CF-Connecting-IP)', 'spamanvil' ),
+	'x_real_ip'   => __( 'Reverse proxy (X-Real-IP)', 'spamanvil' ),
+	'xff_last'    => __( 'X-Forwarded-For (right-most / nearest proxy)', 'spamanvil' ),
+	'auto'        => __( 'Auto-detect proxy header (less strict)', 'spamanvil' ),
+);
+
+// Show which proxy headers this very request arrived with, to guide the choice.
+$detected = array();
+foreach ( array(
+	'CF-Connecting-IP' => 'HTTP_CF_CONNECTING_IP',
+	'X-Real-IP'        => 'HTTP_X_REAL_IP',
+	'X-Forwarded-For'  => 'HTTP_X_FORWARDED_FOR',
+) as $label => $server_key ) {
+	if ( ! empty( $_SERVER[ $server_key ] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- presence check + masked display only.
+		$detected[] = $label;
+	}
+}
 $page_num     = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination.
 $blocked_list = $this->ip_manager->get_blocked_list( $page_num );
 ?>
@@ -37,6 +58,28 @@ $blocked_list = $this->ip_manager->get_blocked_list( $page_num );
 					   value="<?php echo esc_attr( $ip_threshold ); ?>" class="small-text">
 				<p class="description">
 					<?php esc_html_e( 'Number of spam attempts before blocking an IP. Blocks escalate: 24h, 48h, 96h, etc.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
+
+		<tr>
+			<th scope="row"><?php esc_html_e( 'Visitor IP source', 'spamanvil' ); ?></th>
+			<td>
+				<select name="spamanvil_trusted_ip_header">
+					<?php foreach ( $ip_header_options as $value => $label ) : ?>
+						<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $ip_source, $value ); ?>>
+							<?php echo esc_html( $label ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+				<p class="description">
+					<?php esc_html_e( 'Which header identifies the real visitor IP for blocking and rate limiting. Keep the default unless your site sits behind a proxy/CDN — trusting a forwardable header on a site that is NOT behind that proxy lets bots spoof their IP and bypass blocking.', 'spamanvil' ); ?>
+					<?php if ( ! empty( $detected ) ) : ?>
+						<br>
+						<strong><?php esc_html_e( 'Detected on this request:', 'spamanvil' ); ?></strong>
+						<?php echo esc_html( implode( ', ', $detected ) ); ?>.
+						<?php esc_html_e( 'If your edge is Cloudflare, choose CF-Connecting-IP.', 'spamanvil' ); ?>
+					<?php endif; ?>
 				</p>
 			</td>
 		</tr>

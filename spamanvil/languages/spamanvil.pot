@@ -814,3 +814,47 @@ msgstr ""
 #: admin/views/settings-stats.php:195
 msgid "No statistics available yet."
 msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "Visitor IP source"
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "Direct connection (REMOTE_ADDR) — safest default"
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "Cloudflare (CF-Connecting-IP)"
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "Reverse proxy (X-Real-IP)"
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "X-Forwarded-For (right-most / nearest proxy)"
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "Auto-detect proxy header (less strict)"
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "Which header identifies the real visitor IP for blocking and rate limiting. Keep the default unless your site sits behind a proxy/CDN — trusting a forwardable header on a site that is NOT behind that proxy lets bots spoof their IP and bypass blocking."
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "Detected on this request:"
+msgstr ""
+
+#: admin/views/settings-ip.php
+msgid "If your edge is Cloudflare, choose CF-Connecting-IP."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "a saved API key can no longer be decrypted — your site security keys (AUTH_SALT) likely changed. Re-enter the API key so classification can resume."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "Open the Providers tab"
+msgstr ""

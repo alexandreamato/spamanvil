@@ -99,6 +99,7 @@ class SpamAnvil_Activator {
 			'spamanvil_log_retention'        => 30,
 			'spamanvil_ip_blocking_enabled'  => '1',
 			'spamanvil_ip_block_threshold'   => 3,
+			'spamanvil_trusted_ip_header'    => 'remote_addr',
 			'spamanvil_ratelimit_enabled'    => '1',
 			'spamanvil_ratelimit_max'        => 5,
 			'spamanvil_ratelimit_window'     => 60,

@@ -177,18 +177,92 @@ class SpamAnvil_IP_Manager {
 		return '***.***.***';
 	}
 
+	/**
+	 * Resolve the client IP from the admin-configured trusted source.
+	 *
+	 * Trusting the left-most X-Forwarded-For value (the pre-1.10 behaviour) trusts
+	 * a client-supplied header: an attacker can send a different forged IP on every
+	 * request and never be blocked or rate-limited. Which header we trust is now an
+	 * admin choice ({@see spamanvil_trusted_ip_header}) and defaults to REMOTE_ADDR,
+	 * which is never spoofable. An admin only opts into a proxy header when they know
+	 * their edge sets it (e.g. CF-Connecting-IP behind Cloudflare).
+	 *
+	 * @return string A valid IP, or '' when none could be resolved.
+	 */
 	public function get_client_ip() {
-		$ip = '';
+		$source = get_option( 'spamanvil_trusted_ip_header', 'remote_addr' );
+		return self::resolve_client_ip( $source, $_SERVER ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized/validated inside resolve_client_ip().
+	}
 
-		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-			$ip  = trim( $ips[0] );
-		} elseif ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
-		} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+	/**
+	 * Pure IP resolution: pick the first valid IP for the chosen source.
+	 *
+	 * REMOTE_ADDR is always the final fallback, so a missing or invalid proxy
+	 * header never yields an empty IP. Kept static and side-effect-free so it can
+	 * be unit-tested without a WordPress/DB bootstrap.
+	 *
+	 * @param string $source One of: remote_addr, cf, x_real_ip, xff_last, auto.
+	 * @param array  $server A $_SERVER-shaped array.
+	 * @return string A valid IP, or ''.
+	 */
+	public static function resolve_client_ip( $source, array $server ) {
+		switch ( $source ) {
+			case 'cf':
+				$candidates = array( 'HTTP_CF_CONNECTING_IP', 'REMOTE_ADDR' );
+				break;
+			case 'x_real_ip':
+				$candidates = array( 'HTTP_X_REAL_IP', 'REMOTE_ADDR' );
+				break;
+			case 'xff_last':
+				$candidates = array( '__XFF_RIGHTMOST__', 'REMOTE_ADDR' );
+				break;
+			case 'auto':
+				// Prefer proxy-set headers; never the client-supplied left-most XFF.
+				$candidates = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', '__XFF_RIGHTMOST__', 'REMOTE_ADDR' );
+				break;
+			case 'remote_addr':
+			default:
+				$candidates = array( 'REMOTE_ADDR' );
+				break;
 		}
 
+		foreach ( $candidates as $key ) {
+			$raw = '__XFF_RIGHTMOST__' === $key
+				? self::forwarded_for_rightmost( $server )
+				: ( isset( $server[ $key ] ) ? $server[ $key ] : '' );
+
+			$ip = self::sanitize_ip( $raw );
+			if ( '' !== $ip ) {
+				return $ip;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * The right-most X-Forwarded-For value — appended by the nearest trusted
+	 * proxy. The left-most value is client-supplied and therefore spoofable.
+	 *
+	 * @param array $server A $_SERVER-shaped array.
+	 * @return string Raw (unsanitized) candidate, or ''.
+	 */
+	private static function forwarded_for_rightmost( array $server ) {
+		if ( empty( $server['HTTP_X_FORWARDED_FOR'] ) ) {
+			return '';
+		}
+		$parts = explode( ',', (string) $server['HTTP_X_FORWARDED_FOR'] );
+		return end( $parts );
+	}
+
+	/**
+	 * Sanitize and validate a raw header value into a canonical IP string.
+	 *
+	 * @param mixed $raw Raw header value.
+	 * @return string A valid IP, or ''.
+	 */
+	private static function sanitize_ip( $raw ) {
+		$ip = trim( sanitize_text_field( wp_unslash( (string) $raw ) ) );
 		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '';
 	}
 }

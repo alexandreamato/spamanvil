@@ -184,6 +184,31 @@ class SpamAnvil_Provider_Factory {
 		return $slugs;
 	}
 
+	/**
+	 * Whether any provider has a stored key that can no longer be decrypted.
+	 *
+	 * True when a DB-stored (non wp-config) key is present but decrypt() returns ''
+	 * — typically because AUTH_SALT rotated since the key was saved. Used to warn the
+	 * admin explicitly instead of failing silently with provider='none'.
+	 *
+	 * @return bool
+	 */
+	public function has_undecryptable_key() {
+		foreach ( self::$provider_configs as $config ) {
+			// Keys defined in wp-config.php are plain constants — never encrypted.
+			if ( defined( $config['constant_key'] ) ) {
+				continue;
+			}
+
+			$encrypted = get_option( $config['option_key'], '' );
+			if ( ! empty( $encrypted ) && '' === $this->encryptor->decrypt( $encrypted ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private function resolve_api_key( $config ) {
 		// Check wp-config constant first.
 		if ( defined( $config['constant_key'] ) ) {

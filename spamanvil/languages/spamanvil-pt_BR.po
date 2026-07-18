@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.9.0\n"
+"Project-Id-Version: SpamAnvil 1.10.0\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-"
 "plugin-for-wordpress/\n"
 "POT-Creation-Date: 2026-02-14 18:30-0300\n"
@@ -737,3 +737,36 @@ msgstr "itens/min"
 
 msgid "new words added. Save to confirm."
 msgstr "novas palavras adicionadas. Salve para confirmar."
+
+msgid "Visitor IP source"
+msgstr "Origem do IP do visitante"
+
+msgid "Direct connection (REMOTE_ADDR) — safest default"
+msgstr "Conexão direta (REMOTE_ADDR) — padrão mais seguro"
+
+msgid "Cloudflare (CF-Connecting-IP)"
+msgstr "Cloudflare (CF-Connecting-IP)"
+
+msgid "Reverse proxy (X-Real-IP)"
+msgstr "Proxy reverso (X-Real-IP)"
+
+msgid "X-Forwarded-For (right-most / nearest proxy)"
+msgstr "X-Forwarded-For (mais à direita / proxy mais próximo)"
+
+msgid "Auto-detect proxy header (less strict)"
+msgstr "Detecção automática do cabeçalho de proxy (menos rígido)"
+
+msgid "Which header identifies the real visitor IP for blocking and rate limiting. Keep the default unless your site sits behind a proxy/CDN — trusting a forwardable header on a site that is NOT behind that proxy lets bots spoof their IP and bypass blocking."
+msgstr "Qual cabeçalho identifica o IP real do visitante para bloqueio e limite de taxa. Mantenha o padrão a menos que seu site esteja atrás de um proxy/CDN — confiar em um cabeçalho encaminhável em um site que NÃO está atrás desse proxy permite que bots forjem o IP e burlem o bloqueio."
+
+msgid "Detected on this request:"
+msgstr "Detectado nesta requisição:"
+
+msgid "If your edge is Cloudflare, choose CF-Connecting-IP."
+msgstr "Se sua borda é o Cloudflare, escolha CF-Connecting-IP."
+
+msgid "a saved API key can no longer be decrypted — your site security keys (AUTH_SALT) likely changed. Re-enter the API key so classification can resume."
+msgstr "uma chave de API salva não pode mais ser descriptografada — as chaves de segurança do site (AUTH_SALT) provavelmente mudaram. Insira a chave de API novamente para que a classificação seja retomada."
+
+msgid "Open the Providers tab"
+msgstr "Abrir a aba Provedores"

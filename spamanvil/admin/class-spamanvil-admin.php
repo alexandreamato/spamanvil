@@ -58,17 +58,27 @@ class SpamAnvil_Admin {
 		if ( false === $health ) {
 			$status = $this->queue->get_queue_status();
 			$health = array(
-				'stuck'   => (int) $status['failed'] + (int) $status['max_retries'],
-				'no_prov' => ( '' === get_option( 'spamanvil_primary_provider', '' ) ) ? 1 : 0,
+				'stuck'    => (int) $status['failed'] + (int) $status['max_retries'],
+				'no_prov'  => ( '' === get_option( 'spamanvil_primary_provider', '' ) ) ? 1 : 0,
+				'bad_key'  => $this->provider_factory->has_undecryptable_key() ? 1 : 0,
 			);
 			set_transient( 'spamanvil_health_check', $health, 5 * MINUTE_IN_SECONDS );
 		}
 
-		if ( $health['stuck'] < 5 && empty( $health['no_prov'] ) ) {
+		if ( $health['stuck'] < 5 && empty( $health['no_prov'] ) && empty( $health['bad_key'] ) ) {
 			return; // Healthy enough — stay quiet.
 		}
 
-		$logs_url = admin_url( 'options-general.php?page=spamanvil&tab=logs' );
+		$providers_url = admin_url( 'options-general.php?page=spamanvil&tab=providers' );
+		$logs_url      = admin_url( 'options-general.php?page=spamanvil&tab=logs' );
+
+		// A stored key that no longer decrypts is the most actionable — surface it first.
+		if ( ! empty( $health['bad_key'] ) ) {
+			echo '<div class="notice notice-error"><p><strong>SpamAnvil:</strong> ';
+			esc_html_e( 'a saved API key can no longer be decrypted — your site security keys (AUTH_SALT) likely changed. Re-enter the API key so classification can resume.', 'spamanvil' );
+			printf( ' <a href="%s">%s</a></p></div>', esc_url( $providers_url ), esc_html__( 'Open the Providers tab', 'spamanvil' ) );
+			return;
+		}
 
 		echo '<div class="notice notice-error"><p><strong>SpamAnvil:</strong> ';
 		if ( ! empty( $health['no_prov'] ) ) {
@@ -405,6 +415,10 @@ class SpamAnvil_Admin {
 
 		update_option( 'spamanvil_ip_blocking_enabled', isset( $_POST['spamanvil_ip_blocking_enabled'] ) ? '1' : '0' );
 		update_option( 'spamanvil_ip_block_threshold', absint( $_POST['spamanvil_ip_block_threshold'] ?? 3 ) );
+
+		$ip_header_choices = array( 'remote_addr', 'cf', 'x_real_ip', 'xff_last', 'auto' );
+		$ip_header         = isset( $_POST['spamanvil_trusted_ip_header'] ) ? sanitize_text_field( wp_unslash( $_POST['spamanvil_trusted_ip_header'] ) ) : 'remote_addr';
+		update_option( 'spamanvil_trusted_ip_header', in_array( $ip_header, $ip_header_choices, true ) ? $ip_header : 'remote_addr' );
 		update_option( 'spamanvil_ratelimit_enabled', isset( $_POST['spamanvil_ratelimit_enabled'] ) ? '1' : '0' );
 		update_option( 'spamanvil_ratelimit_max', max( 1, min( 100, absint( $_POST['spamanvil_ratelimit_max'] ?? 5 ) ) ) );
 		update_option( 'spamanvil_ratelimit_window', max( 5, min( 3600, absint( $_POST['spamanvil_ratelimit_window'] ?? 60 ) ) ) );

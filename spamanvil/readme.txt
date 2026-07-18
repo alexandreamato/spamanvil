@@ -5,7 +5,7 @@ Tags: antispam, spam, comment spam, spam protection, ai
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.9.0
+Stable tag: 1.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -239,6 +239,11 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Changelog ==
 
+= 1.10.0 =
+* Security: Configurable visitor-IP source. Previously the plugin trusted the left-most X-Forwarded-For header, which the client sends and can forge — letting a bot rotate a fake IP on every request to bypass IP blocking and rate limiting. The trusted header is now a setting under Settings → IP Management (Direct connection / Cloudflare CF-Connecting-IP / X-Real-IP / X-Forwarded-For right-most / Auto), defaulting to the un-spoofable REMOTE_ADDR. Sites behind a proxy or CDN should select the header their edge sets (Cloudflare → CF-Connecting-IP). The IP tab shows which proxy headers your current request arrived with, to guide the choice.
+* Security: API keys are now encrypted with authenticated AES-256-GCM (AEAD) instead of unauthenticated AES-256-CBC. Existing keys keep working — the old format is still read — and re-saving a key upgrades it in place.
+* Improvement: When a saved API key can no longer be decrypted (usually because the site's AUTH_SALT changed), an admin notice now says so explicitly and links to the Providers tab, instead of silently falling back to "no provider configured".
+
 = 1.9.0 =
 * Feature: Automatic free-model fallback. When the configured model becomes unavailable (free models — especially on OpenRouter — are deprecated or removed often), SpamAnvil automatically finds another free model from the provider, switches to it, and saves the change — so spam checking keeps running with no manual intervention. Only triggers on "model unavailable" errors (never on auth or rate-limit issues), and the switch is recorded in the Logs. Toggle under Settings → Providers.
 
@@ -386,6 +391,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 * GDPR/LGPD privacy-first design
 
 == Upgrade Notice ==
+
+= 1.10.0 =
+Security update. If your site is behind a proxy or CDN (e.g. Cloudflare), open Settings → IP Management after updating and set "Visitor IP source" to the header your edge provides (Cloudflare → CF-Connecting-IP) — otherwise IP blocking and rate limiting will see your proxy's IP instead of the visitor's. Direct-hosted sites need no action.
 
 = 1.0.0 =
 First release of SpamAnvil. Install, configure an AI provider, and let AI handle your comment spam!
