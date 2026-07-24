@@ -19,9 +19,11 @@ $fallback         = get_option( 'spamanvil_fallback_provider', '' );
 $fallback2        = get_option( 'spamanvil_fallback2_provider', '' );
 
 // Only providers with a configured API key can be selected in the dropdowns.
+// A stored key that no longer decrypts still counts: hiding the provider here
+// would silently reset the primary/fallback selection on the next save.
 $configured_providers = array();
 foreach ( $providers as $slug => $name ) {
-	if ( $this->get_masked_key( $slug ) ) {
+	if ( $this->get_masked_key( $slug ) || $this->provider_factory->has_broken_stored_key( $slug ) ) {
 		$configured_providers[ $slug ] = $name;
 	}
 }
@@ -117,6 +119,7 @@ $signup_urls = array(
 		$model_value   = get_option( $model_key, $default_models[ $slug ] ?? '' );
 		$masked_key    = $this->get_masked_key( $slug );
 		$has_constant  = $this->has_constant_key( $slug );
+		$broken_key    = $this->provider_factory->has_broken_stored_key( $slug );
 		$signup_url    = isset( $signup_urls[ $slug ] ) ? $signup_urls[ $slug ] : '';
 	?>
 		<div class="spamanvil-card">
@@ -145,13 +148,19 @@ $signup_urls = array(
 								   placeholder="<?php echo esc_attr( $masked_key ? $masked_key : __( 'Enter API key', 'spamanvil' ) ); ?>"
 								   class="regular-text"
 								   autocomplete="off">
-							<?php if ( $masked_key ) : ?>
+							<?php if ( $masked_key || $broken_key ) : ?>
 								<button type="button"
 										class="button button-small spamanvil-clear-key-btn"
 										data-provider="<?php echo esc_attr( $slug ); ?>"
 										style="margin-left: 4px; color: #b32d2e;">
 									<?php esc_html_e( 'Clear Key', 'spamanvil' ); ?>
 								</button>
+							<?php endif; ?>
+							<?php if ( $broken_key ) : ?>
+								<p class="description" style="color: #b32d2e;">
+									<?php esc_html_e( 'A key is saved for this provider but can no longer be decrypted — the site security keys (AUTH_SALT) likely changed. Enter the key again, or clear it.', 'spamanvil' ); ?>
+								</p>
+							<?php elseif ( $masked_key ) : ?>
 								<p class="description">
 									<?php
 									printf(

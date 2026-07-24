@@ -495,6 +495,10 @@ class SpamAnvil_Admin {
 				update_option( 'spamanvil_generic_api_url', esc_url_raw( wp_unslash( $_POST['spamanvil_generic_api_url'] ) ) );
 			}
 		}
+
+		// Re-run the health check on the next admin page load so a fixed key
+		// (or provider change) clears the sitewide notice immediately.
+		delete_transient( 'spamanvil_health_check' );
 	}
 
 	private function save_prompt_settings() {
@@ -739,6 +743,7 @@ class SpamAnvil_Admin {
 		}
 
 		delete_option( $config['option_key'] );
+		delete_transient( 'spamanvil_health_check' );
 
 		wp_send_json_success( __( 'API key cleared.', 'spamanvil' ) );
 	}

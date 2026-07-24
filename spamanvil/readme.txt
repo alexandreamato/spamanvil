@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.11.2
+Stable tag: 1.11.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -239,6 +239,10 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.11.3 =
+* Fix: The "a saved API key can no longer be decrypted" notice could persist forever after re-entering your keys. It fired for stale keys left on providers you no longer use — which the Providers tab rendered as if no key were stored, with nothing to clear. The notice now only considers the providers actually selected (primary/fallbacks), the Providers tab flags an undecryptable stored key inline with a visible Clear Key button, and saving or clearing a key refreshes the health check immediately instead of after up to 5 minutes.
+* Fix: A provider whose stored key no longer decrypts stayed listed in the Primary/Fallback dropdowns instead of disappearing — previously a save in that state could silently reset your provider selection.
 
 = 1.11.2 =
 * Security/Privacy: Blocked-IP hashes are now salted and keyed with your site secret (HMAC-SHA-256) instead of a plain SHA-256. A plain hash of an IP address can be reversed by brute force (the IP space is small), so this makes the stored hashes genuinely non-reversible without your site's key. Existing temporary blocks re-accrue naturally after the update.

@@ -185,28 +185,51 @@ class SpamAnvil_Provider_Factory {
 	}
 
 	/**
-	 * Whether any provider has a stored key that can no longer be decrypted.
+	 * Whether a provider in the configured chain has a stored key that can no
+	 * longer be decrypted.
 	 *
 	 * True when a DB-stored (non wp-config) key is present but decrypt() returns ''
 	 * — typically because AUTH_SALT rotated since the key was saved. Used to warn the
 	 * admin explicitly instead of failing silently with provider='none'.
 	 *
+	 * Only the primary/fallback chain is checked: a stale key left behind on a
+	 * provider that is no longer selected doesn't affect classification, and it
+	 * shouldn't keep a sitewide error notice alive (the Providers tab still flags
+	 * it inline via has_broken_stored_key()).
+	 *
 	 * @return bool
 	 */
 	public function has_undecryptable_key() {
-		foreach ( self::$provider_configs as $config ) {
-			// Keys defined in wp-config.php are plain constants — never encrypted.
-			if ( defined( $config['constant_key'] ) ) {
-				continue;
-			}
-
-			$encrypted = get_option( $config['option_key'], '' );
-			if ( ! empty( $encrypted ) && '' === $this->encryptor->decrypt( $encrypted ) ) {
+		foreach ( $this->get_provider_chain() as $slug ) {
+			if ( $this->has_broken_stored_key( $slug ) ) {
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	/**
+	 * Whether a specific provider has a DB-stored key that no longer decrypts.
+	 *
+	 * @param string $slug Provider slug.
+	 * @return bool
+	 */
+	public function has_broken_stored_key( $slug ) {
+		if ( ! isset( self::$provider_configs[ $slug ] ) ) {
+			return false;
+		}
+
+		$config = self::$provider_configs[ $slug ];
+
+		// Keys defined in wp-config.php are plain constants — never encrypted.
+		if ( defined( $config['constant_key'] ) ) {
+			return false;
+		}
+
+		$encrypted = get_option( $config['option_key'], '' );
+
+		return ! empty( $encrypted ) && '' === $this->encryptor->decrypt( $encrypted );
 	}
 
 	private function resolve_api_key( $config ) {

@@ -702,6 +702,12 @@ msgstr ""
 msgid "Clear Key"
 msgstr ""
 
+#: admin/views/settings-providers.php:161
+msgid ""
+"A key is saved for this provider but can no longer be decrypted — the site "
+"security keys (AUTH_SALT) likely changed. Enter the key again, or clear it."
+msgstr ""
+
 #: admin/views/settings-providers.php:139
 #, php-format
 msgid "Current key: %s (leave blank to keep current key)"
