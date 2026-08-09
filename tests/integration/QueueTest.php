@@ -55,6 +55,26 @@ class QueueTest extends WP_UnitTestCase {
 		} );
 	}
 
+	/**
+	 * Configure a provider whose HTTP calls succeed with a fixed verdict —
+	 * simulates a healthy AI (used by the outage-recovery tests, 1.14.0).
+	 */
+	private function configure_succeeding_provider( $score = 90 ) {
+		update_option( 'spamanvil_primary_provider', 'openai' );
+		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		add_filter( 'pre_http_request', function () use ( $score ) {
+			return array(
+				'headers'  => array(),
+				'body'     => wp_json_encode( array(
+					'choices' => array(
+						array( 'message' => array( 'content' => '{"score": ' . (int) $score . ', "reason": "mocked verdict"}' ) ),
+					),
+				) ),
+				'response' => array( 'code' => 200, 'message' => 'OK' ),
+			);
+		} );
+	}
+
 	private function insert_item( array $fields ) {
 		global $wpdb;
 		$defaults = array(
@@ -387,5 +407,115 @@ class QueueTest extends WP_UnitTestCase {
 		$this->assertSame( 'failed', $row->status, 'Network failures keep the normal retry cycle.' );
 		$this->assertSame( 1, (int) $row->attempts );
 		$this->assertFalse( $this->queue->is_paused(), 'Transient failures must not pause the queue.' );
+	}
+
+	// --- v1.14.0: outage recovery ----------------------------------------------
+
+	public function test_successful_classification_records_provider_health() {
+		$this->configure_succeeding_provider( 95 );
+		$this->queue->enqueue( $this->new_comment(), 0 );
+
+		$this->queue->process_batch();
+
+		$this->assertGreaterThan(
+			0,
+			(int) get_option( 'spamanvil_last_llm_success', 0 ),
+			'A fresh successful LLM call must record the provider-health timestamp.'
+		);
+	}
+
+	public function test_provider_recovery_resurrects_max_retries_within_the_hour() {
+		// Item exhausted its retries 2h ago (during an outage); the provider has
+		// since answered successfully → the item must get a fresh cycle now, not
+		// wait for the 24h safety net.
+		$this->configure_succeeding_provider( 90 );
+		update_option( 'spamanvil_resurrect_config_hash', ( new SpamAnvil_Provider_Factory( new SpamAnvil_Encryptor() ) )->get_config_hash() );
+		update_option( 'spamanvil_last_llm_success', time() - 300 );
+
+		$id = $this->insert_item( array(
+			'comment_id' => $this->new_comment(),
+			'status'     => 'max_retries',
+			'attempts'   => 3,
+			'updated_at' => gmdate( 'Y-m-d H:i:s', time() - 2 * HOUR_IN_SECONDS ),
+		) );
+
+		$this->queue->process_batch();
+
+		$row = $this->get_item( $id );
+		$this->assertSame( 'completed', $row->status, 'Recovered provider must reprocess the parked item.' );
+		$this->assertSame( 1, (int) $row->resurrections, 'The fast-path resurrection must be counted.' );
+	}
+
+	public function test_no_fast_resurrection_without_a_success_after_the_failure() {
+		// Last success predates the item's failure — the provider has NOT proven
+		// healthy since, so only the 24h safety net applies.
+		$this->configure_transient_failing_provider();
+		update_option( 'spamanvil_resurrect_config_hash', ( new SpamAnvil_Provider_Factory( new SpamAnvil_Encryptor() ) )->get_config_hash() );
+		update_option( 'spamanvil_last_llm_success', time() - 3 * HOUR_IN_SECONDS );
+
+		$id = $this->insert_item( array(
+			'comment_id' => $this->new_comment(),
+			'status'     => 'max_retries',
+			'attempts'   => 3,
+			'updated_at' => gmdate( 'Y-m-d H:i:s', time() - 2 * HOUR_IN_SECONDS ),
+		) );
+
+		$this->queue->process_batch();
+
+		$this->assertSame( 'max_retries', $this->get_item( $id )->status );
+	}
+
+	public function test_fast_resurrection_capped_but_daily_net_is_not() {
+		$this->configure_succeeding_provider( 90 );
+		update_option( 'spamanvil_resurrect_config_hash', ( new SpamAnvil_Provider_Factory( new SpamAnvil_Encryptor() ) )->get_config_hash() );
+		update_option( 'spamanvil_last_llm_success', time() - 300 );
+
+		// Poison item: already burned its 5 fast cycles, failed again 2h ago.
+		$capped = $this->insert_item( array(
+			'comment_id'    => $this->new_comment(),
+			'status'        => 'max_retries',
+			'attempts'      => 3,
+			'resurrections' => 5,
+			'updated_at'    => gmdate( 'Y-m-d H:i:s', time() - 2 * HOUR_IN_SECONDS ),
+		) );
+		// Same cap, but parked for 25h → the daily safety net ignores the cap.
+		$daily = $this->insert_item( array(
+			'comment_id'    => $this->new_comment(),
+			'status'        => 'max_retries',
+			'attempts'      => 3,
+			'resurrections' => 5,
+			'updated_at'    => gmdate( 'Y-m-d H:i:s', time() - 25 * HOUR_IN_SECONDS ),
+		) );
+
+		$this->queue->process_batch();
+
+		$this->assertSame( 'max_retries', $this->get_item( $capped )->status, 'Capped poison item must not churn on the fast path.' );
+		$this->assertSame( 'completed', $this->get_item( $daily )->status, 'The daily safety net retries everything, cap or not.' );
+	}
+
+	public function test_completed_rows_are_purged_after_retention() {
+		update_option( 'spamanvil_log_retention', 30 );
+
+		$old = $this->insert_item( array(
+			'comment_id' => $this->new_comment(),
+			'status'     => 'completed',
+			'updated_at' => gmdate( 'Y-m-d H:i:s', time() - 40 * DAY_IN_SECONDS ),
+		) );
+		$recent = $this->insert_item( array(
+			'comment_id' => $this->new_comment(),
+			'status'     => 'completed',
+			'updated_at' => gmdate( 'Y-m-d H:i:s', time() - 5 * DAY_IN_SECONDS ),
+		) );
+		$pending_work = $this->insert_item( array(
+			'comment_id' => $this->new_comment(),
+			'status'     => 'max_retries',
+			'updated_at' => gmdate( 'Y-m-d H:i:s', time() - 40 * DAY_IN_SECONDS ),
+		) );
+
+		$this->queue->purge_completed();
+
+		$this->assertNull( $this->get_item( $old ), 'Completed rows beyond retention must be purged.' );
+		$this->assertNotNull( $this->get_item( $recent ), 'Recent completed rows stay.' );
+		$this->assertNotNull( $this->get_item( $pending_work ), 'Unfinished work is never purged, however old.' );
 	}
 }

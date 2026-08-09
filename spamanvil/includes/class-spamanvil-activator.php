@@ -75,6 +75,7 @@ class SpamAnvil_Activator {
 			model varchar(100) DEFAULT NULL,
 			heuristic_score smallint DEFAULT NULL,
 			attempts smallint NOT NULL DEFAULT 0,
+			resurrections smallint NOT NULL DEFAULT 0,
 			retry_at datetime DEFAULT NULL,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

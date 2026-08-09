@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.13.2
+Stable tag: 1.14.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,10 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 7. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.14.0 =
+* Improvement: Fast recovery after AI outages. Comments that exhausted their retries during a provider outage no longer wait up to 24 hours after the provider recovers: any successful classification (or a green "Test Connection") proves the AI is healthy again and gives parked items a fresh retry cycle within the hour. A per-item cap (5 fast cycles) prevents a comment that every model always fails on from churning API calls forever — the daily safety net still guarantees every item is eventually retried, and a provider-configuration change always grants a full clean slate.
+* Maintenance: Completed queue rows are now purged after the log retention window (they previously accumulated forever). Unfinished work (failed/max-retries items) is never purged.
 
 = 1.13.2 =
 * Fix: The "Browse models" button icon could render as a broken image. It used an emoji, which wp-admin rewrites into an image served from s.w.org — blocked on some networks/ad-blockers. It now uses a local WordPress dashicon (no external request). The review notice emoji was removed for the same reason.

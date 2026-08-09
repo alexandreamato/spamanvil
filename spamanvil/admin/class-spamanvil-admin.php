@@ -628,6 +628,10 @@ class SpamAnvil_Admin {
 			wp_send_json_error( $result->get_error_message() );
 		}
 
+		// A green Test Connection proves the AI is reachable again — record it so the
+		// queue gives parked max_retries items an early retry cycle (1.14.0).
+		update_option( 'spamanvil_last_llm_success', time(), false );
+
 		wp_send_json_success( $result );
 	}
 

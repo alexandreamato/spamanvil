@@ -91,8 +91,14 @@ WP-Cron (every 5 min):
     queue (item released untouched) — resumes automatically when the provider config
     hash changes. Never burns retries, never floods logs (the 1.12.0 fix for the
     1M-log-row production incident).
-  → max_retries items resurrect only when the provider config hash changed (1h) or at
-    most once per 24h — never on the old unconditional hourly loop
+  → max_retries items resurrect via three paths (1.14.0): config hash changed (1h,
+    counter reset — clean slate), provider PROVED healthy again (a fresh successful
+    classification or green Test Connection recorded in spamanvil_last_llm_success
+    after the item's failure → retry within ~1h, capped at 5 fast cycles per item via
+    the queue `resurrections` column so poison items can't churn forever), or the
+    24h daily safety net (uncapped — everything is eventually retried)
+  → completed queue rows purged after log_retention days (daily cron); failed/
+    max_retries rows are never purged — they are pending work
   → spawn_cron() called after Scan Pending to trigger immediate processing
 ```
 

@@ -242,6 +242,29 @@ class SpamAnvil_Queue {
 		delete_option( 'spamanvil_queue_paused' );
 	}
 
+	/**
+	 * Cron (daily): purge completed queue rows older than the log retention window.
+	 * Failed/max_retries rows are never purged — they are pending work that the
+	 * resurrection cycles will retry. Without this the queue table grew forever.
+	 */
+	public function purge_completed() {
+		global $wpdb;
+
+		$retention = (int) get_option( 'spamanvil_log_retention', 30 );
+		if ( $retention <= 0 ) {
+			return;
+		}
+
+		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $retention * DAY_IN_SECONDS ) );
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$this->table} WHERE status = 'completed' AND updated_at <= %s",
+				$cutoff
+			)
+		);
+	}
+
 	private function claim_items( $limit, $force = false ) {
 		global $wpdb;
 
@@ -259,20 +282,48 @@ class SpamAnvil_Queue {
 
 		// Reclaim max_retries items — but never on the old unconditional hourly loop,
 		// which recycled permanently-failing items forever (fixed in 1.12.0). A fresh
-		// retry cycle is granted after 1 hour when the provider configuration changed
-		// since the last cycle (the admin fixed something), and otherwise at most once
-		// every 24 hours, to self-heal after transient provider outages.
+		// retry cycle is granted when (1.14.0):
+		//   1. The provider configuration changed since the last cycle (the admin
+		//      fixed something) — everything parked ≥1h gets a clean slate.
+		//   2. The provider PROVED healthy again — a successful classification or Test
+		//      Connection happened after the item's last failure — so an outage
+		//      recovers within ~1h instead of waiting for the daily net. Capped at 5
+		//      fast cycles per item, so a "poison" comment that every model always
+		//      fails on cannot churn API calls and logs forever.
+		//   3. The daily safety net (24h) — every item is eventually retried no
+		//      matter what, with no cap.
 		$config_hash  = $this->provider_factory->get_config_hash();
 		$hash_changed = get_option( 'spamanvil_resurrect_config_hash', '' ) !== $config_hash;
-		$retry_cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $hash_changed ? HOUR_IN_SECONDS : DAY_IN_SECONDS ) );
-		$reclaimed    = $wpdb->query(
-			$wpdb->prepare(
-				"UPDATE {$this->table} SET status = 'queued', attempts = 0 WHERE status = 'max_retries' AND updated_at <= %s",
-				$retry_cutoff
-			)
-		);
-		if ( $reclaimed ) {
-			update_option( 'spamanvil_resurrect_config_hash', $config_hash, false );
+		$hour_ago     = gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS );
+		$day_ago      = gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS );
+
+		if ( $hash_changed ) {
+			$reclaimed = $wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$this->table} SET status = 'queued', attempts = 0, resurrections = 0
+					WHERE status = 'max_retries' AND updated_at <= %s",
+					$hour_ago
+				)
+			);
+			if ( $reclaimed ) {
+				update_option( 'spamanvil_resurrect_config_hash', $config_hash, false );
+			}
+		} else {
+			$last_success = (int) get_option( 'spamanvil_last_llm_success', 0 );
+			$success_dt   = $last_success > 0 ? gmdate( 'Y-m-d H:i:s', $last_success ) : '1970-01-01 00:00:00';
+
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$this->table} SET status = 'queued', attempts = 0, resurrections = resurrections + 1
+					WHERE status = 'max_retries' AND (
+						( updated_at <= %s AND updated_at < %s AND resurrections < 5 )
+						OR updated_at <= %s
+					)",
+					$hour_ago,
+					$success_dt,
+					$day_ago
+				)
+			);
 		}
 
 		// Atomically claim up to $limit eligible items. Each row is taken with a
@@ -412,6 +463,14 @@ class SpamAnvil_Queue {
 				// retry/backoff cycle.
 				$this->handle_failure( $item, $result->get_error_message() );
 				return 'failed';
+			}
+
+			// Record provider health: a fresh successful call is the signal that lets
+			// claim_items() give parked max_retries items an early retry cycle after an
+			// outage. Throttled to one option write per minute.
+			$last_success = (int) get_option( 'spamanvil_last_llm_success', 0 );
+			if ( time() - $last_success > MINUTE_IN_SECONDS ) {
+				update_option( 'spamanvil_last_llm_success', time(), false );
 			}
 
 			// Cache the fresh verdict (raw score/reason; the threshold is applied per-read).

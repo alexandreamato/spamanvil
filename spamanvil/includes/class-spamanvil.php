@@ -95,6 +95,7 @@ class SpamAnvil {
 		// Cron hooks.
 		add_action( 'spamanvil_process_queue', array( $this->queue, 'process_batch' ) );
 		add_action( 'spamanvil_cleanup_logs', array( $this->stats, 'cleanup_old_logs' ) );
+		add_action( 'spamanvil_cleanup_logs', array( $this->queue, 'purge_completed' ) );
 		add_action( 'spamanvil_email_digest', array( 'SpamAnvil_Notifier', 'send_digest' ) );
 
 		// Admin hooks.
