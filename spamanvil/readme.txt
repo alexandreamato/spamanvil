@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.13.1
+Stable tag: 1.13.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 7. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.13.2 =
+* Fix: The "Browse models" button icon could render as a broken image. It used an emoji, which wp-admin rewrites into an image served from s.w.org — blocked on some networks/ad-blockers. It now uses a local WordPress dashicon (no external request). The review notice emoji was removed for the same reason.
 
 = 1.13.1 =
 * Improvement: The OpenRouter default model is now the router chain "openrouter/free, openrouter/auto" — the free-pool router is tried first and the paid auto router is the fallback. Unlike a hard-coded free model, OpenRouter's routers never go stale when individual models are deprecated. Installs still on an unmodified old default are migrated automatically; custom model choices are never touched.

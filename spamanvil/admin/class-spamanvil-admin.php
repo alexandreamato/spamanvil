@@ -222,7 +222,7 @@ class SpamAnvil_Admin {
 				<?php
 				printf(
 					/* translators: %s: number of comments checked */
-					esc_html__( 'SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free. 🙏', 'spamanvil' ),
+					esc_html__( 'SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free.', 'spamanvil' ),
 					'<strong>' . esc_html( $checked ) . '</strong>'
 				);
 				?>

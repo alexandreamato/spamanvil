@@ -192,7 +192,9 @@ $signup_urls = array(
 									class="button button-small spamanvil-browse-models-btn"
 									data-provider="<?php echo esc_attr( $slug ); ?>"
 									style="margin-left: 4px;">
-								<?php esc_html_e( '🔍 Browse models', 'spamanvil' ); ?>
+								<?php // Dashicon, not an emoji: wp-admin rewrites emoji into <img> tags served from s.w.org, which shows a broken image when that host is blocked. ?>
+								<span class="dashicons dashicons-search" aria-hidden="true"></span>
+								<?php esc_html_e( 'Browse models', 'spamanvil' ); ?>
 							</button>
 							<div class="spamanvil-model-picker" data-provider="<?php echo esc_attr( $slug ); ?>" style="display:none;">
 								<div class="spamanvil-model-picker-controls">

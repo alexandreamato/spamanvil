@@ -566,3 +566,13 @@
 	margin-left: auto;
 	white-space: nowrap;
 }
+
+/* Browse-models button: local dashicon (emoji get rewritten to s.w.org images,
+   which break when that host is blocked). */
+.spamanvil-browse-models-btn .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	vertical-align: text-bottom;
+	margin-right: 2px;
+}
