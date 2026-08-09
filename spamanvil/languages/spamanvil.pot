@@ -1,326 +1,375 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR Alexandre Amato
-# This file is distributed under the same license as the SpamAnvil package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
+# Copyright (C) 2026 Alexandre Amato
+# This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.1.9\n"
-"Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-"
-"plugin-for-wordpress/\n"
-"POT-Creation-Date: 2026-02-14 18:36-0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Project-Id-Version: SpamAnvil 1.13.2\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/spamanvil\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-09T14:13:35+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: spamanvil\n"
 
-#: includes/class-spamanvil-comment-processor.php:43
-msgid ""
-"Your comment has been blocked. If you believe this is an error, please "
-"contact the site administrator."
-msgstr ""
-
-#: includes/class-spamanvil-comment-processor.php:44
-msgid "Comment Blocked"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:73
-#, php-format
-msgid "Unknown provider: %s"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:89
-#, php-format
-msgid "No API key configured for %s"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:103
-#, php-format
-msgid "No model configured for %s"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:154
-msgid ""
-"No LLM provider is configured. Please configure a provider in the plugin "
-"settings."
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:198
-msgid "OpenAI"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:199
-msgid "OpenRouter"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:200
-msgid "Featherless.ai"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:201
-msgid "Anthropic Claude"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:202
-msgid "Google Gemini"
-msgstr ""
-
-#: includes/class-spamanvil-provider-factory.php:203
-msgid "Generic OpenAI-Compatible"
-msgstr ""
-
-#: includes/class-spamanvil.php:102
-msgid "Every 5 Minutes"
-msgstr ""
-
-#: includes/class-spamanvil.php:111 admin/class-spamanvil-admin.php:627
-msgid "Settings"
-msgstr ""
-
-#: includes/class-spamanvil.php:118 admin/class-spamanvil-admin.php:630
-msgid "Rate ★★★★★"
-msgstr ""
-
-#: includes/class-spamanvil.php:123
-msgid "Docs"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:49 admin/class-spamanvil-admin.php:50
-#: admin/class-spamanvil-admin.php:600
+#. Plugin Name of the plugin
+#: spamanvil.php
+#: admin/class-spamanvil-admin.php:270
+#: admin/class-spamanvil-admin.php:271
+#: admin/class-spamanvil-admin.php:851
 msgid "SpamAnvil"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:101
-msgid "Testing..."
+#. Plugin URI of the plugin
+#: spamanvil.php
+msgid "https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:102
-msgid "Connection successful!"
+#. Description of the plugin
+#: spamanvil.php
+msgid "Blocks comment spam using AI/LLM services with support for multiple providers, async processing, and intelligent heuristics."
+msgstr ""
+
+#. Author of the plugin
+#: spamanvil.php
+msgid "Alexandre Amato"
+msgstr ""
+
+#. Author URI of the plugin
+#: spamanvil.php
+msgid "https://amato.com.br"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:99
+msgid "comment classification is paused because of a configuration error. Fix the provider settings and processing resumes automatically."
 msgstr ""
 
 #: admin/class-spamanvil-admin.php:103
-msgid "Connection failed:"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:104
-msgid "Unblocking..."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:105
-msgid "IP unblocked successfully"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:106
-msgid "Are you sure?"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:107
-msgid "Applied! Save to confirm."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:108
-msgid "Scanning..."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:109
-msgid "Scan complete!"
+#: admin/class-spamanvil-admin.php:111
+msgid "Open the Providers tab"
 msgstr ""
 
 #: admin/class-spamanvil-admin.php:110
-msgid "Processing..."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:111
-msgid "Done!"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:112
-msgid "Processing batch..."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:113 admin/views/settings-general.php:77
-msgid "Stop"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:114
-msgid "Stopping..."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:115
-msgid "Stopped."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:116
-msgid "Connection error, retrying..."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:117
-msgid "Failed after multiple retries."
+msgid "a saved API key can no longer be decrypted — your site security keys (AUTH_SALT) likely changed. Re-enter the API key so classification can resume."
 msgstr ""
 
 #: admin/class-spamanvil-admin.php:118
-msgid "items/min"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:119 admin/views/settings-stats.php:173
-msgid "Spam"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:120
-msgid "Ham"
+msgid "comments are waiting in the queue but WP-Cron has not run recently."
 msgstr ""
 
 #: admin/class-spamanvil-admin.php:121
-msgid "Are you sure you want to delete this API key?"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:122 admin/views/settings-providers.php:125
-msgid "Enter API key"
+msgid "DISABLE_WP_CRON is enabled on this site — make sure a real (system) cron job calls wp-cron.php regularly, or comments will never be classified."
 msgstr ""
 
 #: admin/class-spamanvil-admin.php:123
-msgid ""
-"This will merge an extended spam word list into your current list. Continue?"
+msgid "Low-traffic sites may need a real (system) cron job calling wp-cron.php, or use the \"Process Queue Now\" button on the Logs tab."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:124
-msgid "new words added. Save to confirm."
+#: admin/class-spamanvil-admin.php:131
+msgid "no AI provider is configured, so comments are not being classified."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:125
-msgid "Extended list loaded. Save to confirm."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:126
-msgid "No provider configured."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:127 admin/class-spamanvil-admin.php:166
-#: admin/class-spamanvil-admin.php:179
-msgid "Configure a Provider"
+#. translators: %d: number of comments stuck in failed/max-retries
+#: admin/class-spamanvil-admin.php:135
+#, php-format
+msgid "%d comment(s) could not be classified (failed or max retries) — check the provider configuration and API key."
 msgstr ""
 
 #: admin/class-spamanvil-admin.php:139
-msgid "General"
+msgid "View SpamAnvil logs"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:140
-msgid "Providers"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:141
-msgid "Prompt"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:142
-msgid "IP Management"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:143 admin/class-spamanvil-admin.php:628
-msgid "Statistics"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:144
-msgid "Logs"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:157
-msgid "SpamAnvil Settings"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:162
-msgid "Welcome to SpamAnvil!"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:163
-msgid ""
-"Thank you for installing SpamAnvil. To get started, configure an AI provider "
-"below."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:167
-msgid "Read the Docs"
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:175
-msgid "SpamAnvil is enabled but no provider is configured."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:176
-msgid ""
-"Comments cannot be analyzed until you configure at least one AI provider."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:190
+#. translators: %s: number of comments checked
+#: admin/class-spamanvil-admin.php:225
 #, php-format
-msgid ""
-"SpamAnvil has checked %s comments for you! If it's helping keep your site "
-"clean, would you mind leaving a quick review? It really helps!"
+msgid "SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:196
-msgid "Leave a Review"
+#: admin/class-spamanvil-admin.php:231
+msgid "Leave a review ★★★★★"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:197
-msgid "No thanks, don't ask again"
+#: admin/class-spamanvil-admin.php:232
+msgid "Maybe later"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:244
-msgid "Settings saved."
+#: admin/class-spamanvil-admin.php:233
+msgid "I already did / don't ask again"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:340 admin/class-spamanvil-admin.php:384
-#: admin/class-spamanvil-admin.php:465 admin/class-spamanvil-admin.php:507
-#: admin/class-spamanvil-admin.php:525 admin/class-spamanvil-admin.php:548
-msgid "Permission denied."
+#: admin/class-spamanvil-admin.php:322
+msgid "Testing..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:323
+msgid "Add to model chain"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:324
+msgid "Connection successful!"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:325
+msgid "Connection failed:"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:326
+msgid "Unblocking..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:327
+msgid "IP unblocked successfully"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:328
+msgid "Are you sure?"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:329
+msgid "Applied! Save to confirm."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:330
+msgid "Scanning..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:331
+msgid "Scan complete!"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:332
+msgid "Processing..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:333
+msgid "Done!"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:334
+msgid "Processing batch..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:335
+#: admin/views/settings-general.php:113
+msgid "Stop"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:336
+msgid "Stopping..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:337
+msgid "Stopped."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:338
+msgid "Connection error, retrying..."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:339
+msgid "Failed after multiple retries."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:340
+msgid "items/min"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:341
+#: admin/views/settings-stats.php:186
+msgid "Spam"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:342
+msgid "Ham"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:343
+msgid "Are you sure you want to delete this API key?"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:344
+#: admin/views/settings-providers.php:148
+msgid "Enter API key"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:345
+msgid "This will merge an extended spam word list into your current list. Continue?"
 msgstr ""
 
 #: admin/class-spamanvil-admin.php:346
+msgid "new words added. Save to confirm."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:347
+msgid "Extended list loaded. Save to confirm."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:348
+msgid "No provider configured."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:349
+#: admin/class-spamanvil-admin.php:398
+#: admin/class-spamanvil-admin.php:411
+msgid "Configure a Provider"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:350
+msgid "Batch failed — check Logs tab for details."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:351
+msgid "Loading models…"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:352
+msgid "Could not load models:"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:353
+msgid "No models match your search."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:365
+msgid "General"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:366
+msgid "Providers"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:367
+msgid "Prompt"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:368
+msgid "IP Management"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:369
+#: admin/class-spamanvil-admin.php:879
+msgid "Statistics"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:370
+msgid "Logs"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:389
+msgid "SpamAnvil Settings"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:394
+msgid "Welcome to SpamAnvil!"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:395
+msgid "Thank you for installing SpamAnvil. To get started, configure an AI provider below."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:399
+msgid "Read the Docs"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:407
+msgid "SpamAnvil is enabled but no provider is configured."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:408
+msgid "Comments cannot be analyzed until you configure at least one AI provider."
+msgstr ""
+
+#. translators: %s: sponsor link
+#: admin/class-spamanvil-admin.php:438
+#, php-format
+msgid "What's the next WordPress problem I'll solve and make free? I'm tired of expensive solutions for simple problems. %s"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:439
+msgid "Buy me a beer ☕"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:476
+msgid "Settings saved."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:592
+#: admin/class-spamanvil-admin.php:641
+#: admin/class-spamanvil-admin.php:683
+#: admin/class-spamanvil-admin.php:714
+#: admin/class-spamanvil-admin.php:757
+#: admin/class-spamanvil-admin.php:775
+#: admin/class-spamanvil-admin.php:799
+msgid "Permission denied."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:598
+#: admin/class-spamanvil-admin.php:646
 msgid "No provider specified."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:469
+#: admin/class-spamanvil-admin.php:668
+#: includes/providers/class-spamanvil-openai-compatible.php:112
+msgid "This provider does not support listing models."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:718
 msgid "No provider configured. Go to the Providers tab to set one up."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:513
+#: admin/class-spamanvil-admin.php:763
 msgid "Invalid IP ID."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:518
+#: admin/class-spamanvil-admin.php:768
 msgid "IP unblocked."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:532
+#: admin/class-spamanvil-admin.php:782
 msgid "Invalid provider."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:536
+#: admin/class-spamanvil-admin.php:786
 msgid "Key is defined in wp-config.php and cannot be cleared from here."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:541
+#: admin/class-spamanvil-admin.php:792
 msgid "API key cleared."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:556
+#: admin/class-spamanvil-admin.php:807
 msgid "Invalid notice."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:614 admin/views/settings-general.php:32
+#: admin/class-spamanvil-admin.php:865
+#: admin/views/settings-general.php:32
 #: admin/views/settings-stats.php:20
 msgid "Spam Comments Blocked"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:619 admin/views/settings-general.php:37
+#. translators: 1: LLM spam count, 2: heuristic count, 3: IP blocked count
+#: admin/class-spamanvil-admin.php:870
+#: admin/views/settings-general.php:37
 #: admin/views/settings-stats.php:25
 #, php-format
 msgid "%1$s by AI  |  %2$s by Heuristics  |  %3$s by IP Blocking"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:878
+#: includes/class-spamanvil.php:137
+msgid "Settings"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:881
+#: includes/class-spamanvil.php:144
+msgid "Rate ★★★★★"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:883
+#: includes/class-spamanvil.php:154
+msgid "Sponsor ☕"
 msgstr ""
 
 #: admin/views/settings-general.php:52
@@ -343,217 +392,336 @@ msgstr ""
 msgid "Max Retries"
 msgstr ""
 
-#: admin/views/settings-general.php:74
+#. translators: %s: human-readable time difference (e.g. "2 minutes")
+#: admin/views/settings-general.php:81
+#, php-format
+msgid "Last automatic run: %s ago"
+msgstr ""
+
+#: admin/views/settings-general.php:87
+msgid "WP-Cron may not be running. Check your site's cron configuration."
+msgstr ""
+
+#: admin/views/settings-general.php:90
+msgid "Last automatic run: Never"
+msgstr ""
+
+#: admin/views/settings-general.php:95
+msgid "DISABLE_WP_CRON is enabled in wp-config.php. Automatic queue processing and pending comment scanning will not work unless you set up a real server cron job."
+msgstr ""
+
+#. translators: %s: the WP-Cron URL example
+#: admin/views/settings-general.php:100
+#, php-format
+msgid "Add a cron job that calls %s every 5 minutes."
+msgstr ""
+
+#: admin/views/settings-general.php:110
 msgid "Process Queue Now"
 msgstr ""
 
-#: admin/views/settings-general.php:95 admin/views/settings-general.php:106
+#: admin/views/settings-general.php:131
+#: admin/views/settings-general.php:142
 msgid "Scan Pending Comments"
 msgstr ""
 
-#: admin/views/settings-general.php:100
+#. translators: %s: number of pending comments
+#: admin/views/settings-general.php:136
 #, php-format
-msgid ""
-"There are %s comments awaiting moderation. You can scan them now to run "
-"heuristic analysis and enqueue them for LLM evaluation."
+msgid "There are %s comments awaiting moderation. You can scan them now to run heuristic analysis and enqueue them for LLM evaluation."
 msgstr ""
 
-#: admin/views/settings-general.php:113
+#: admin/views/settings-general.php:149
 msgid "Enable Plugin"
 msgstr ""
 
-#: admin/views/settings-general.php:117
+#: admin/views/settings-general.php:153
 msgid "Enable SpamAnvil comment checking"
 msgstr ""
 
-#: admin/views/settings-general.php:123
+#: admin/views/settings-general.php:159
 msgid "Processing Mode"
 msgstr ""
 
-#: admin/views/settings-general.php:127
+#: admin/views/settings-general.php:163
 msgid "Async (WP-Cron) - Recommended"
 msgstr ""
 
-#: admin/views/settings-general.php:130
+#: admin/views/settings-general.php:166
 msgid "Sync (Immediate) - Slower page load"
 msgstr ""
 
-#: admin/views/settings-general.php:134
-msgid ""
-"Async mode holds comments as pending and processes them in the background. "
-"Sync mode processes immediately but adds latency to comment submission."
+#: admin/views/settings-general.php:170
+msgid "Async mode holds comments as pending and processes them in the background. Sync mode processes immediately but adds latency to comment submission."
 msgstr ""
 
-#: admin/views/settings-general.php:140
+#: admin/views/settings-general.php:176
+msgid "Email Notifications"
+msgstr ""
+
+#: admin/views/settings-general.php:180
+msgid "Smart — notify only after the verdict (Recommended)"
+msgstr ""
+
+#: admin/views/settings-general.php:183
+msgid "Daily digest — one summary email per day"
+msgstr ""
+
+#: admin/views/settings-general.php:186
+msgid "Off — default WordPress emails"
+msgstr ""
+
+#: admin/views/settings-general.php:190
+msgid "WordPress normally emails you the moment a comment is held — before SpamAnvil has evaluated it, so every spam attempt generates an email. Smart mode holds those notifications and emails only when it matters: legitimate comments notify the post author after approval, spam is silent, and you are only asked to moderate when the classifier genuinely could not decide. Daily digest replaces per-comment emails with one summary. Comments from users SpamAnvil skips (e.g. moderators) always keep normal notifications."
+msgstr ""
+
+#: admin/views/settings-general.php:196
+msgid "Open Mode"
+msgstr ""
+
+#: admin/views/settings-general.php:200
+msgid "Maximum openness — make leaving a real comment effortless"
+msgstr ""
+
+#: admin/views/settings-general.php:203
+msgid "Removes WordPress comment friction: no required name/email (anonymous allowed), no login, no first-comment moderation hold. Comments appear instantly and SpamAnvil removes spam in the background. The anti-spam layers (honeypot, time trap, rate limit, heuristics, AI) do the filtering invisibly. Trade-off: on low-traffic sites, subtle spam may be visible for a few minutes until it is evaluated — enable Sync mode above for zero delay."
+msgstr ""
+
+#: admin/views/settings-general.php:209
 msgid "Anvil Mode"
 msgstr ""
 
-#: admin/views/settings-general.php:144
+#: admin/views/settings-general.php:213
 msgid "Send comments to ALL configured providers"
 msgstr ""
 
-#: admin/views/settings-general.php:147
-msgid ""
-"If any provider flags a comment as spam, it is blocked. Uses more API calls "
-"but provides stronger protection. Requires at least 2 providers configured."
+#: admin/views/settings-general.php:216
+msgid "If any provider flags a comment as spam, it is blocked. Uses more API calls but provides stronger protection. Requires at least 2 providers configured."
 msgstr ""
 
-#: admin/views/settings-general.php:154
+#: admin/views/settings-general.php:223
 msgid "Spam Threshold"
 msgstr ""
 
-#: admin/views/settings-general.php:162
-msgid ""
-"Comments scoring at or above this threshold will be marked as spam. Lower = "
-"more aggressive. (Default: 70)"
+#: admin/views/settings-general.php:231
+msgid "Comments scoring at or above this threshold will be marked as spam. Lower = more aggressive. (Default: 70)"
 msgstr ""
 
-#: admin/views/settings-general.php:166
+#: admin/views/settings-general.php:235
 msgid "AI Suggestion:"
 msgstr ""
 
-#: admin/views/settings-general.php:170
+#. translators: 1: suggested threshold, 2: accuracy percentage, 3: total samples
+#: admin/views/settings-general.php:239
 #, php-format
-msgid ""
-"Based on %3$s evaluated comments, the optimal threshold is %1$s (accuracy: "
-"%2$s%%)."
-msgstr ""
-
-#: admin/views/settings-general.php:179
-msgid "Apply suggestion"
-msgstr ""
-
-#: admin/views/settings-general.php:187
-#, php-format
-msgid ""
-"Data: %1$s spam, %2$s legitimate. At this threshold: %3$s false positives, "
-"%4$s false negatives."
-msgstr ""
-
-#: admin/views/settings-general.php:202
-msgid "Heuristic Auto-Spam Threshold"
-msgstr ""
-
-#: admin/views/settings-general.php:210
-msgid ""
-"Comments with heuristic scores at or above this value will be auto-blocked "
-"without calling the LLM. (Default: 95)"
-msgstr ""
-
-#: admin/views/settings-general.php:216
-msgid "Batch Size"
-msgstr ""
-
-#: admin/views/settings-general.php:221
-msgid "Number of comments to process per cron run. (Default: 5)"
-msgstr ""
-
-#: admin/views/settings-general.php:227
-msgid "Log Retention"
-msgstr ""
-
-#: admin/views/settings-general.php:230 admin/views/settings-general.php:231
-#: admin/views/settings-general.php:232
-msgid "days"
-msgstr ""
-
-#: admin/views/settings-general.php:238
-msgid "Skip Moderators"
-msgstr ""
-
-#: admin/views/settings-general.php:242
-msgid "Skip spam checking for users with moderate_comments capability"
+msgid "Based on %3$s evaluated comments, the optimal threshold is %1$s (accuracy: %2$s%%)."
 msgstr ""
 
 #: admin/views/settings-general.php:248
+msgid "Apply suggestion"
+msgstr ""
+
+#. translators: 1: spam count, 2: ham count, 3: false positive count, 4: false negative count
+#: admin/views/settings-general.php:256
+#, php-format
+msgid "Data: %1$s spam, %2$s legitimate. At this threshold: %3$s false positives, %4$s false negatives."
+msgstr ""
+
+#: admin/views/settings-general.php:271
+msgid "Heuristic Auto-Spam Threshold"
+msgstr ""
+
+#: admin/views/settings-general.php:279
+msgid "Comments with heuristic scores at or above this value will be auto-blocked without calling the LLM. (Default: 95)"
+msgstr ""
+
+#: admin/views/settings-general.php:285
+msgid "Batch Size"
+msgstr ""
+
+#: admin/views/settings-general.php:290
+msgid "Number of comments to process per cron run. (Default: 5)"
+msgstr ""
+
+#: admin/views/settings-general.php:296
+msgid "Log Retention"
+msgstr ""
+
+#: admin/views/settings-general.php:299
+#: admin/views/settings-general.php:300
+#: admin/views/settings-general.php:301
+msgid "days"
+msgstr ""
+
+#: admin/views/settings-general.php:307
+msgid "Skip Moderators"
+msgstr ""
+
+#: admin/views/settings-general.php:311
+msgid "Skip spam checking for users with moderate_comments capability"
+msgstr ""
+
+#: admin/views/settings-general.php:317
+msgid "Honeypot"
+msgstr ""
+
+#: admin/views/settings-general.php:321
+msgid "Add a hidden field to comment forms and instantly mark submissions that fill it as spam (blocks bots for free, before any AI call)"
+msgstr ""
+
+#: admin/views/settings-general.php:327
+msgid "Time Trap"
+msgstr ""
+
+#: admin/views/settings-general.php:331
+msgid "Mark comments submitted faster than a human could plausibly write them as spam"
+msgstr ""
+
+#: admin/views/settings-general.php:335
+msgid "Minimum seconds before submit:"
+msgstr ""
+
+#: admin/views/settings-general.php:338
+msgid "Inactive on sites with full-page caching."
+msgstr ""
+
+#: admin/views/settings-general.php:344
 msgid "Delete Data on Uninstall"
 msgstr ""
 
-#: admin/views/settings-general.php:252
+#: admin/views/settings-general.php:348
 msgid "Delete all plugin data when the plugin is deleted"
 msgstr ""
 
-#: admin/views/settings-general.php:255
-msgid ""
-"When disabled, your settings, statistics, logs, and blocked IPs are "
-"preserved if you reinstall the plugin. Enable this only if you want a "
-"complete removal."
+#: admin/views/settings-general.php:351
+msgid "When disabled, your settings, statistics, logs, and blocked IPs are preserved if you reinstall the plugin. Enable this only if you want a complete removal."
 msgstr ""
 
-#: admin/views/settings-general.php:261
+#: admin/views/settings-general.php:357
 msgid "Privacy Notice"
 msgstr ""
 
-#: admin/views/settings-general.php:265
+#: admin/views/settings-general.php:361
 msgid "Show privacy notice to commenters"
 msgstr ""
 
-#: admin/views/settings-general.php:268
-msgid ""
-"LGPD/Privacy Notice: This plugin sends comment content (including author "
-"name, email, URL, and comment text) to third-party AI services for spam "
-"analysis. Ensure this complies with your local data protection regulations."
+#: admin/views/settings-general.php:364
+msgid "LGPD/Privacy Notice: This plugin sends comment content (including author name, email, URL, and comment text) to third-party AI services for spam analysis. Ensure this complies with your local data protection regulations."
 msgstr ""
 
-#: admin/views/settings-ip.php:24
+#: admin/views/settings-ip.php:16
+msgid "Direct connection (REMOTE_ADDR) — safest default"
+msgstr ""
+
+#: admin/views/settings-ip.php:17
+msgid "Cloudflare (CF-Connecting-IP)"
+msgstr ""
+
+#: admin/views/settings-ip.php:18
+msgid "Reverse proxy (X-Real-IP)"
+msgstr ""
+
+#: admin/views/settings-ip.php:19
+msgid "X-Forwarded-For (right-most / nearest proxy)"
+msgstr ""
+
+#: admin/views/settings-ip.php:20
+msgid "Auto-detect proxy header (less strict)"
+msgstr ""
+
+#: admin/views/settings-ip.php:45
 msgid "IP Blocking"
 msgstr ""
 
-#: admin/views/settings-ip.php:28
+#: admin/views/settings-ip.php:49
 msgid "Enable automatic IP blocking for repeat spam offenders"
 msgstr ""
 
-#: admin/views/settings-ip.php:34
+#: admin/views/settings-ip.php:55
 msgid "Block Threshold"
 msgstr ""
 
-#: admin/views/settings-ip.php:39
-msgid ""
-"Number of spam attempts before blocking an IP. Blocks escalate: 24h, 48h, "
-"96h, etc."
-msgstr ""
-
-#: admin/views/settings-ip.php:50
-msgid "Blocked IPs"
-msgstr ""
-
-#: admin/views/settings-ip.php:53
-msgid "No IPs are currently tracked."
-msgstr ""
-
-#: admin/views/settings-ip.php:58
-msgid "IP (Masked)"
-msgstr ""
-
-#: admin/views/settings-ip.php:59
-msgid "Attempts"
-msgstr ""
-
 #: admin/views/settings-ip.php:60
-msgid "Blocked Until"
+msgid "Number of spam attempts before blocking an IP. Blocks escalate: 24h, 48h, 96h, etc."
 msgstr ""
 
-#: admin/views/settings-ip.php:61
-msgid "Escalation Level"
+#: admin/views/settings-ip.php:66
+msgid "Visitor IP source"
 msgstr ""
 
-#: admin/views/settings-ip.php:62
-msgid "Last Updated"
-msgstr ""
-
-#: admin/views/settings-ip.php:63
-msgid "Actions"
+#: admin/views/settings-ip.php:76
+msgid "Which header identifies the real visitor IP for blocking and rate limiting. Keep the default unless your site sits behind a proxy/CDN — trusting a forwardable header on a site that is NOT behind that proxy lets bots spoof their IP and bypass blocking."
 msgstr ""
 
 #: admin/views/settings-ip.php:79
-msgid "Active"
+msgid "Detected on this request:"
 msgstr ""
 
 #: admin/views/settings-ip.php:81
+msgid "If your edge is Cloudflare, choose CF-Connecting-IP."
+msgstr ""
+
+#: admin/views/settings-ip.php:88
+msgid "Rate Limit"
+msgstr ""
+
+#: admin/views/settings-ip.php:92
+msgid "Throttle rapid repeat comments from the same IP (blocks floods before any AI call)"
+msgstr ""
+
+#: admin/views/settings-ip.php:96
+msgid "Max"
+msgstr ""
+
+#: admin/views/settings-ip.php:98
+msgid "comments per"
+msgstr ""
+
+#: admin/views/settings-ip.php:100
+msgid "seconds, per IP."
+msgstr ""
+
+#: admin/views/settings-ip.php:112
+msgid "Blocked IPs"
+msgstr ""
+
+#: admin/views/settings-ip.php:115
+msgid "No IPs are currently tracked."
+msgstr ""
+
+#: admin/views/settings-ip.php:120
+msgid "IP (Masked)"
+msgstr ""
+
+#: admin/views/settings-ip.php:121
+msgid "Attempts"
+msgstr ""
+
+#: admin/views/settings-ip.php:122
+msgid "Blocked Until"
+msgstr ""
+
+#: admin/views/settings-ip.php:123
+msgid "Escalation Level"
+msgstr ""
+
+#: admin/views/settings-ip.php:124
+msgid "Last Updated"
+msgstr ""
+
+#: admin/views/settings-ip.php:125
+msgid "Actions"
+msgstr ""
+
+#: admin/views/settings-ip.php:141
+msgid "Active"
+msgstr ""
+
+#: admin/views/settings-ip.php:143
 msgid "Expired"
 msgstr ""
 
-#: admin/views/settings-ip.php:93
+#: admin/views/settings-ip.php:155
 msgid "Remove"
 msgstr ""
 
@@ -581,7 +749,8 @@ msgstr ""
 msgid "LLM Score"
 msgstr ""
 
-#: admin/views/settings-logs.php:25 admin/views/settings-stats.php:175
+#: admin/views/settings-logs.php:25
+#: admin/views/settings-stats.php:188
 msgid "Heuristic"
 msgstr ""
 
@@ -597,7 +766,8 @@ msgstr ""
 msgid "Time (ms)"
 msgstr ""
 
-#: admin/views/settings-logs.php:29 admin/views/settings-stats.php:171
+#: admin/views/settings-logs.php:29
+#: admin/views/settings-stats.php:184
 msgid "Date"
 msgstr ""
 
@@ -610,13 +780,11 @@ msgid "System Prompt"
 msgstr ""
 
 #: admin/views/settings-prompt.php:30
-msgid ""
-"The system prompt tells the LLM how to behave. The CRITICAL SECURITY "
-"INSTRUCTION section is essential for prompt injection defense - do not "
-"remove it."
+msgid "The system prompt tells the LLM how to behave. The CRITICAL SECURITY INSTRUCTION section is essential for prompt injection defense - do not remove it."
 msgstr ""
 
-#: admin/views/settings-prompt.php:33 admin/views/settings-prompt.php:60
+#: admin/views/settings-prompt.php:33
+#: admin/views/settings-prompt.php:60
 msgid "Reset to Default"
 msgstr ""
 
@@ -641,9 +809,7 @@ msgid "Load Extended List"
 msgstr ""
 
 #: admin/views/settings-prompt.php:77
-msgid ""
-"Loads 100+ curated spam words/phrases (gambling, pharma, SEO, piracy, "
-"scams). Merges with your existing list."
+msgid "Loads 100+ curated spam words/phrases (gambling, pharma, SEO, piracy, scams). Merges with your existing list."
 msgstr ""
 
 #: admin/views/settings-providers.php:12
@@ -651,77 +817,101 @@ msgid "Tip:"
 msgstr ""
 
 #: admin/views/settings-providers.php:13
-msgid ""
-"Set a monthly spending limit on your API key to avoid unexpected charges. "
-"SpamAnvil uses very little — typically less than $0.10/month for most sites "
-"— but a limit ensures peace of mind. Most providers offer this in their "
-"billing settings."
+msgid "Set a monthly spending limit on your API key to avoid unexpected charges. SpamAnvil uses very little — typically less than $0.10/month for most sites — but a limit ensures peace of mind. Most providers offer this in their billing settings."
 msgstr ""
 
-#: admin/views/settings-providers.php:47
+#: admin/views/settings-providers.php:57
 msgid "Primary Provider"
 msgstr ""
 
-#: admin/views/settings-providers.php:50
+#: admin/views/settings-providers.php:60
 msgid "-- Select --"
 msgstr ""
 
-#: admin/views/settings-providers.php:60
+#: admin/views/settings-providers.php:70
 msgid "Fallback Provider"
 msgstr ""
 
-#: admin/views/settings-providers.php:63 admin/views/settings-providers.php:79
+#: admin/views/settings-providers.php:73
+#: admin/views/settings-providers.php:89
 msgid "-- None --"
 msgstr ""
 
-#: admin/views/settings-providers.php:71
+#: admin/views/settings-providers.php:81
 msgid "Used when the primary provider fails or times out."
 msgstr ""
 
-#: admin/views/settings-providers.php:76
+#: admin/views/settings-providers.php:86
 msgid "Fallback Provider 2"
 msgstr ""
 
-#: admin/views/settings-providers.php:87
+#: admin/views/settings-providers.php:97
 msgid "Used when both the primary and first fallback fail."
 msgstr ""
 
-#: admin/views/settings-providers.php:107
+#: admin/views/settings-providers.php:102
+msgid "Auto Free-Model Fallback"
+msgstr ""
+
+#: admin/views/settings-providers.php:106
+msgid "If the configured model becomes unavailable, automatically switch to another free model from the provider"
+msgstr ""
+
+#: admin/views/settings-providers.php:109
+msgid "Free models (especially on OpenRouter) are frequently deprecated. When one stops working, SpamAnvil finds a working free model, switches to it, and saves the change — so spam checking keeps running without manual intervention."
+msgstr ""
+
+#: admin/views/settings-providers.php:130
 msgid "Get API Key"
 msgstr ""
 
-#: admin/views/settings-providers.php:114
+#: admin/views/settings-providers.php:137
 msgid "API Key"
 msgstr ""
 
-#: admin/views/settings-providers.php:119
+#: admin/views/settings-providers.php:142
 msgid "Key set via wp-config.php constant."
 msgstr ""
 
-#: admin/views/settings-providers.php:133
+#: admin/views/settings-providers.php:156
 msgid "Clear Key"
 msgstr ""
 
 #: admin/views/settings-providers.php:161
-msgid ""
-"A key is saved for this provider but can no longer be decrypted — the site "
-"security keys (AUTH_SALT) likely changed. Enter the key again, or clear it."
+msgid "A key is saved for this provider but can no longer be decrypted — the site security keys (AUTH_SALT) likely changed. Enter the key again, or clear it."
 msgstr ""
 
-#: admin/views/settings-providers.php:139
+#. translators: %s: masked API key
+#: admin/views/settings-providers.php:168
 #, php-format
 msgid "Current key: %s (leave blank to keep current key)"
 msgstr ""
 
-#: admin/views/settings-providers.php:150
+#: admin/views/settings-providers.php:179
 msgid "Model"
 msgstr ""
 
-#: admin/views/settings-providers.php:162
+#: admin/views/settings-providers.php:188
+msgid "You can list several models separated by commas — they are tried in order until one answers (e.g. a free model first, then a paid one)."
+msgstr ""
+
+#: admin/views/settings-providers.php:197
+msgid "Browse models"
+msgstr ""
+
+#: admin/views/settings-providers.php:201
+msgid "Search models…"
+msgstr ""
+
+#: admin/views/settings-providers.php:202
+msgid "Free only"
+msgstr ""
+
+#: admin/views/settings-providers.php:213
 msgid "API URL"
 msgstr ""
 
-#: admin/views/settings-providers.php:179
+#: admin/views/settings-providers.php:230
 msgid "Test Connection"
 msgstr ""
 
@@ -737,7 +927,8 @@ msgstr ""
 msgid "Spam Detected (LLM)"
 msgstr ""
 
-#: admin/views/settings-stats.php:49 admin/views/settings-stats.php:174
+#: admin/views/settings-stats.php:49
+#: admin/views/settings-stats.php:187
 msgid "Approved"
 msgstr ""
 
@@ -745,7 +936,8 @@ msgstr ""
 msgid "Heuristic Blocked"
 msgstr ""
 
-#: admin/views/settings-stats.php:59 admin/views/settings-stats.php:176
+#: admin/views/settings-stats.php:59
+#: admin/views/settings-stats.php:189
 msgid "IP Blocked"
 msgstr ""
 
@@ -758,125 +950,233 @@ msgid "LLM Errors"
 msgstr ""
 
 #: admin/views/settings-stats.php:89
-msgid ""
-"Over half of your comments are spam. Enable IP Blocking in the IP Management "
-"tab to automatically block repeat offenders."
+msgid "Over half of your comments are spam. Enable IP Blocking in the IP Management tab to automatically block repeat offenders."
 msgstr ""
 
 #: admin/views/settings-stats.php:101
-msgid ""
-"Your LLM error rate is above 10%. Check your provider configuration in the "
-"Providers tab, or consider adding a fallback provider."
+msgid "Your LLM error rate is above 10%. Check your provider configuration in the Providers tab, or consider adding a fallback provider."
 msgstr ""
 
 #: admin/views/settings-stats.php:111
-msgid ""
-"You have no fallback provider configured. Adding one ensures comments are "
-"still analyzed if your primary provider is unavailable."
+msgid "You have no fallback provider configured. Adding one ensures comments are still analyzed if your primary provider is unavailable."
 msgstr ""
 
+#. translators: %s: link to review page
 #: admin/views/settings-stats.php:122
 #, php-format
-msgid ""
-"Enjoying SpamAnvil? A %s on WordPress.org helps other site owners discover "
-"it."
+msgid "Enjoying SpamAnvil? A %s on WordPress.org helps other site owners discover it."
 msgstr ""
 
 #: admin/views/settings-stats.php:123
 msgid "5-star review"
 msgstr ""
 
-#: admin/views/settings-stats.php:133
-msgid ""
-"Your heuristic rules are catching more spam than the LLM — that means "
-"obvious spam is being blocked instantly without API calls, saving you money."
+#. translators: %s: link to sponsor page
+#: admin/views/settings-stats.php:135
+#, php-format
+msgid "SpamAnvil is 100%% free and always will be. If it's saving you time, consider %s."
 msgstr ""
 
-#: admin/views/settings-stats.php:144
+#: admin/views/settings-stats.php:136
+msgid "sponsoring the project"
+msgstr ""
+
+#: admin/views/settings-stats.php:146
+msgid "Your heuristic rules are catching more spam than the LLM — that means obvious spam is being blocked instantly without API calls, saving you money."
+msgstr ""
+
+#. translators: %s: link to providers tab
+#: admin/views/settings-stats.php:157
 #, php-format
 msgid "No comments have been analyzed yet. %s to start protecting your site."
 msgstr ""
 
-#: admin/views/settings-stats.php:145
+#: admin/views/settings-stats.php:158
 msgid "Configure a provider"
 msgstr ""
 
-#: admin/views/settings-stats.php:153
+#: admin/views/settings-stats.php:166
 msgid "Tips & Insights"
 msgstr ""
 
-#: admin/views/settings-stats.php:165
+#: admin/views/settings-stats.php:178
 msgid "Daily Activity (Last 30 Days)"
 msgstr ""
 
-#: admin/views/settings-stats.php:172
+#: admin/views/settings-stats.php:185
 msgid "Checked"
 msgstr ""
 
-#: admin/views/settings-stats.php:177
+#: admin/views/settings-stats.php:190
 msgid "Errors"
 msgstr ""
 
-#: admin/views/settings-stats.php:195
+#: admin/views/settings-stats.php:208
 msgid "No statistics available yet."
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "Visitor IP source"
+#: includes/class-spamanvil-comment-processor.php:43
+msgid "Your comment has been blocked. If you believe this is an error, please contact the site administrator."
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "Direct connection (REMOTE_ADDR) — safest default"
+#: includes/class-spamanvil-comment-processor.php:44
+msgid "Comment Blocked"
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "Cloudflare (CF-Connecting-IP)"
+#: includes/class-spamanvil-comment-processor.php:82
+msgid "You are commenting too quickly. Please wait a moment and try again."
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "Reverse proxy (X-Real-IP)"
+#: includes/class-spamanvil-comment-processor.php:83
+msgid "Slow down"
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "X-Forwarded-For (right-most / nearest proxy)"
+#: includes/class-spamanvil-comment-processor.php:252
+msgid "Leave this field empty"
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "Auto-detect proxy header (less strict)"
+#. translators: 1: site name, 2: number of spam comments blocked
+#: includes/class-spamanvil-notifier.php:185
+#, php-format
+msgid "[%1$s] SpamAnvil daily digest — %2$d spam blocked"
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "Which header identifies the real visitor IP for blocking and rate limiting. Keep the default unless your site sits behind a proxy/CDN — trusting a forwardable header on a site that is NOT behind that proxy lets bots spoof their IP and bypass blocking."
+#. translators: %s: site name
+#: includes/class-spamanvil-notifier.php:207
+#, php-format
+msgid "SpamAnvil activity on %s in the last 24 hours:"
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "Detected on this request:"
+#. translators: %d: number of spam comments blocked
+#: includes/class-spamanvil-notifier.php:213
+#, php-format
+msgid "- Spam blocked: %d"
 msgstr ""
 
-#: admin/views/settings-ip.php
-msgid "If your edge is Cloudflare, choose CF-Connecting-IP."
+#. translators: %d: number of legitimate comments approved
+#: includes/class-spamanvil-notifier.php:218
+#, php-format
+msgid "- Legitimate comments approved: %d"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php
-msgid "a saved API key can no longer be decrypted — your site security keys (AUTH_SALT) likely changed. Re-enter the API key so classification can resume."
+#. translators: %d: number of comments awaiting moderation
+#: includes/class-spamanvil-notifier.php:226
+#, php-format
+msgid "- Awaiting your moderation: %d"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php
-msgid "Open the Providers tab"
+#: includes/class-spamanvil-notifier.php:233
+msgid "You receive this summary instead of one email per comment (SpamAnvil email mode: Daily digest)."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php
-msgid "SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free. 🙏"
+#. translators: %s: provider slug
+#: includes/class-spamanvil-provider-factory.php:76
+#, php-format
+msgid "Unknown provider: %s"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php
-msgid "Leave a review ★★★★★"
+#. translators: %s: provider name
+#: includes/class-spamanvil-provider-factory.php:99
+#, php-format
+msgid "No API key configured for %s"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php
-msgid "Maybe later"
+#. translators: %s: provider name
+#: includes/class-spamanvil-provider-factory.php:119
+#, php-format
+msgid "No model configured for %s"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php
-msgid "I already did / don't ask again"
+#: includes/class-spamanvil-provider-factory.php:170
+msgid "No LLM provider is configured. Please configure a provider in the plugin settings."
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:266
+msgid "the stored value is corrupted"
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:267
+msgid "the site security keys (AUTH_SALT) likely changed since it was saved"
+msgstr ""
+
+#. translators: 1: provider slug, 2: probable cause
+#: includes/class-spamanvil-provider-factory.php:273
+#, php-format
+msgid "The stored API key for \"%1$s\" could not be decrypted — %2$s. Re-enter the API key on the Providers tab, or define it in wp-config.php."
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:384
+msgid "OpenAI"
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:385
+msgid "OpenRouter"
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:386
+msgid "Featherless.ai"
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:387
+msgid "Anthropic Claude"
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:388
+msgid "Google Gemini"
+msgstr ""
+
+#: includes/class-spamanvil-provider-factory.php:389
+msgid "Generic OpenAI-Compatible"
+msgstr ""
+
+#: includes/class-spamanvil.php:128
+msgid "Every 5 Minutes"
+msgstr ""
+
+#: includes/class-spamanvil.php:149
+msgid "Docs"
+msgstr ""
+
+#: includes/providers/class-spamanvil-anthropic.php:58
+#: includes/providers/class-spamanvil-gemini.php:52
+#: includes/providers/class-spamanvil-openai-compatible.php:79
+msgid "Failed to parse API response JSON"
+msgstr ""
+
+#: includes/providers/class-spamanvil-anthropic.php:75
+msgid "The model declined to evaluate this content (refusal stop reason)"
+msgstr ""
+
+#: includes/providers/class-spamanvil-anthropic.php:87
+#: includes/providers/class-spamanvil-gemini.php:66
+#: includes/providers/class-spamanvil-openai-compatible.php:93
+msgid "Unexpected API response format"
+msgstr ""
+
+#. translators: %d: HTTP status code
+#: includes/providers/class-spamanvil-openai-compatible.php:134
+#, php-format
+msgid "Model list request failed (HTTP %d). Check the API key."
+msgstr ""
+
+#: includes/providers/class-spamanvil-openai-compatible.php:182
+msgid "Unexpected model list format from the provider."
+msgstr ""
+
+#. translators: 1: HTTP code, 2: response body
+#: includes/providers/class-spamanvil-provider.php:49
+#, php-format
+msgid "API returned HTTP %1$d: %2$s"
+msgstr ""
+
+#. translators: %s: raw response content
+#: includes/providers/class-spamanvil-provider.php:144
+#, php-format
+msgid "Could not parse a score from the response: %s"
+msgstr ""
+
+#. translators: %d: the invalid score
+#: includes/providers/class-spamanvil-provider.php:157
+#, php-format
+msgid "Score %d is out of range (0-100)"
 msgstr ""

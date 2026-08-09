@@ -55,7 +55,7 @@ SpamAnvil layers several spam defenses so cheap, invisible filters catch obvious
 * **Verdict Cache** - Identical repeated spam reuses a recent AI verdict instead of calling the API again, cutting cost during floods.
 * **Intelligent Heuristics Engine** - Pre-analyzes comments to catch obvious spam without API calls.
 * **Async Background Processing** - Comments are queued and processed via WP-Cron so your site stays fast.
-* **Smart IP Blocking** - Automatically blocks repeat offenders with escalating ban durations (24h, 48h, 96h...).
+* **Smart IP Blocking** - Automatically blocks repeat offenders with escalating ban durations (24h, 48h, 96h... capped at 30 days).
 * **Automatic Retry with Backoff** - Failed API calls retry with exponential delays; a real "Test Connection" verifies actual classification, not just the HTTP status.
 * **Encrypted API Key Storage** - Authenticated AES-256-GCM encryption, or wp-config.php constants for maximum security.
 * **Statistics Dashboard & Logs** - Track spam caught by each layer, API usage and errors, with the AI's reasoning for every comment. An admin warning surfaces silent failures (no provider, or a backlog of failed items).
@@ -94,7 +94,7 @@ SpamAnvil follows WordPress security best practices throughout:
 * Capability checks on all admin actions
 * Prepared SQL statements on every database query
 * Output escaping on all rendered content
-* Prompt injection defense: boundary tags, system prompt hardening, heuristic injection detection, strict JSON validation, temperature 0
+* Prompt injection defense: boundary tags around the comment body AND commenter metadata, system prompt hardening, heuristic injection detection (body and author fields), strict JSON validation, deterministic settings
 
 = Languages =
 

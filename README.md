@@ -17,7 +17,7 @@
   <a href="https://www.gnu.org/licenses/gpl-2.0.html"><img src="https://img.shields.io/badge/license-GPLv2-blue.svg" alt="License: GPLv2"></a>
   <a href="https://wordpress.org/plugins/spamanvil/"><img src="https://img.shields.io/badge/WordPress-5.8%2B-21759b.svg" alt="WordPress 5.8+"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-7.4%2B-777bb4.svg" alt="PHP 7.4+"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-1.8.0-green.svg" alt="Version 1.8.0"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.13.2-green.svg" alt="Version 1.13.2"></a>
 </p>
 
 ---
@@ -40,8 +40,8 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 | Provider | Free Option | Default Model |
 |----------|:-----------:|---------------|
 | **OpenAI** | No | `gpt-4o-mini` |
-| **OpenRouter** | Yes | `openai/gpt-oss-20b:free` |
-| **Anthropic Claude** | No | `claude-sonnet-4-5-20250929` |
+| **OpenRouter** | Yes | `openrouter/free, openrouter/auto` (router chain: free pool first, paid auto as fallback) |
+| **Anthropic Claude** | No | `claude-sonnet-5` |
 | **Google Gemini** | Free tier | `gemini-2.0-flash` |
 | **Featherless.ai** | Free tier | `meta-llama/Meta-Llama-3.1-8B-Instruct` |
 | **Any OpenAI-compatible** | Varies | Custom URL + model |
@@ -69,7 +69,7 @@ Comment submitted
   │
   ├─ 7. Score >= threshold (default 70)? ──→ Spam   else ──→ Approve
   │
-  └─ 8. Repeat offender IPs auto-blocked (24h → 48h → 96h → escalating)
+  └─ 8. Repeat offender IPs auto-blocked (24h → 48h → 96h → … capped at 30 days)
 ```
 
 With **Open Mode** on, comments publish instantly (no name/email/login/moderation) and spam is removed in the background instead of being held.
@@ -85,10 +85,12 @@ With **Open Mode** on, comments publish instantly (no name/email/login/moderatio
 - **Adaptive Threshold** -- Analyzes historical data and suggests the optimal threshold
 - **Async Processing** -- Background queue via WP-Cron, zero latency for visitors
 - **Atomic Queue** -- Concurrent cron/manual runs never double-process (no duplicate paid calls)
-- **Smart IP Blocking** -- Escalating bans for repeat offenders (24h, 48h, 96h...)
+- **Smart IP Blocking** -- Escalating bans for repeat offenders (24h, 48h, 96h… capped at 30 days)
 - **Real "Test Connection"** -- Verifies actual spam classification, not just an HTTP 200
 - **Encrypted Keys** -- AES-256-GCM (per-site salt), or wp-config.php constants
-- **Fallback Provider** -- Backup AI so spam checking never stops
+- **Model Chains** -- List several models per provider (comma-separated), tried in order — e.g. free models first, then paid
+- **Fallback Provider** -- Backup AI so spam checking never stops; permanent config errors pause the queue (with an admin notice) instead of burning retries and flooding logs
+- **Smart Email Notifications** -- No more one email per spam attempt: you're notified only after the verdict (ham → post author; undecidable → moderator; spam → silence), or via a single daily digest
 - **Prompt Injection Defense** -- 6-layer protection against adversarial comments
 - **Statistics, Logs & Health Alerts** -- Per-layer counts, AI reasoning per comment, and an admin warning when spam checking is silently failing
 - **Customizable Prompts, Moderator Bypass, WooCommerce, Multilingual**
@@ -139,7 +141,7 @@ It's applied via filters, so it never overwrites your stored settings — turnin
 1. Create a free account at [OpenRouter.ai](https://openrouter.ai/)
 2. Generate an API key
 3. In SpamAnvil, select **OpenRouter** as primary provider
-4. Paste your key -- the default model (`llama-3.3-70b-instruct:free`) is free!
+4. Paste your key -- the default (`openrouter/free`) routes across OpenRouter's free-model pool — $0!
 
 ## Security
 
@@ -151,18 +153,18 @@ SpamAnvil follows WordPress security best practices throughout:
 - **All output**: Escaped with `esc_html()`, `esc_attr()`, `esc_url()`
 - **All input**: Sanitized with `sanitize_text_field()`, `absint()`, `wp_kses_post()`
 - **HTTP**: `wp_safe_remote_post()` (blocks internal/metadata IPs) with a 60s timeout
-- **IPs**: SHA-256 hashed storage, masked display
+- **IPs**: Salted, keyed HMAC-SHA-256 hashes (not brute-forceable without your site secret), masked display
 - **Client IP source**: Configurable trusted header (default `REMOTE_ADDR`) so a forged `X-Forwarded-For` can't bypass IP blocking/rate limiting; sites behind a proxy/CDN select their edge's header (e.g. Cloudflare)
 
 ### Prompt Injection Defense (6 layers)
 
 | Layer | Defense |
 |-------|---------|
-| 1 | `<comment_data>` boundary tags isolate user input |
+| 1 | `<comment_data>` + `<commenter_data>` boundary tags isolate the comment body AND author name/email/URL |
 | 2 | System prompt explicitly forbids following comment instructions |
-| 3 | Heuristic regex detects 14 injection patterns |
+| 3 | Heuristic regex detects injection patterns — in the body and in author fields |
 | 4 | Strict JSON validation (only `score` + `reason` accepted) |
-| 5 | Temperature = 0 for deterministic output |
+| 5 | Deterministic settings (temperature 0 where supported; thinking disabled on current Claude models) |
 | 6 | Content truncated at 5,000 characters |
 
 ## Optional: wp-config.php API Keys
