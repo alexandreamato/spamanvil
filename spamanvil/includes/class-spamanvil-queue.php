@@ -81,6 +81,14 @@ class SpamAnvil_Queue {
 		$start_time = microtime( true );
 
 		try {
+			// A queue paused on a permanent configuration error (missing/undecryptable
+			// key, no provider) stays paused until the provider config changes — cron
+			// runs return immediately instead of re-failing every item and flooding the
+			// logs. Manual runs (force) always try again: if the config is still broken
+			// the first item re-pauses; if it was fixed, is_paused() already resumed.
+			if ( ! $force && $this->is_paused() ) {
+				return 0;
+			}
 			$batch_size     = (int) get_option( 'spamanvil_batch_size', 5 );
 			$auto_enqueued  = false;
 
@@ -101,7 +109,21 @@ class SpamAnvil_Queue {
 				}
 
 				foreach ( $items as $item ) {
-					$this->process_single( $item );
+					$outcome = $this->process_single( $item );
+
+					// A permanent config error paused the queue mid-batch: put the
+					// remaining claimed items back and stop — retrying them now would
+					// only produce identical failures and identical log rows.
+					if ( 'paused' === $outcome ) {
+						$current_index = array_search( $item, $items, true );
+						$remaining     = array_slice( $items, $current_index + 1 );
+						$remaining_ids = wp_list_pluck( $remaining, 'id' );
+						if ( ! empty( $remaining_ids ) ) {
+							$this->release_items( $remaining_ids );
+						}
+						return $processed;
+					}
+
 					$processed++;
 
 					// Time guard: stop if approaching limit.
@@ -156,6 +178,70 @@ class SpamAnvil_Queue {
 		);
 	}
 
+	/**
+	 * Pause queue processing because of a permanent configuration error.
+	 *
+	 * The pause records the current provider-config hash: is_paused() auto-resumes
+	 * as soon as the configuration changes, so the admin never has to "unpause"
+	 * manually — fixing the key/provider is enough.
+	 *
+	 * @param string $code    WP_Error code that caused the pause.
+	 * @param string $message Human-readable reason (shown in the health notice).
+	 */
+	public function pause( $code, $message ) {
+		update_option(
+			'spamanvil_queue_paused',
+			array(
+				'code'        => (string) $code,
+				'message'     => (string) $message,
+				'config_hash' => $this->provider_factory->get_config_hash(),
+				'paused_at'   => time(),
+			),
+			false
+		);
+	}
+
+	/**
+	 * Whether the queue is paused on a configuration error.
+	 *
+	 * Auto-resumes (clears the pause) when the provider configuration changed since
+	 * the pause was recorded — the admin fixed something, so it's worth trying again.
+	 *
+	 * @return bool
+	 */
+	public function is_paused() {
+		$paused = get_option( 'spamanvil_queue_paused', array() );
+
+		if ( empty( $paused ) || ! is_array( $paused ) ) {
+			return false;
+		}
+
+		$stored_hash = isset( $paused['config_hash'] ) ? $paused['config_hash'] : '';
+		if ( $this->provider_factory->get_config_hash() !== $stored_hash ) {
+			$this->resume();
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Pause details for the admin health notice, or null when not paused.
+	 *
+	 * @return array|null { code, message, paused_at }
+	 */
+	public function get_pause_info() {
+		$paused = get_option( 'spamanvil_queue_paused', array() );
+		return ( ! empty( $paused ) && is_array( $paused ) ) ? $paused : null;
+	}
+
+	/**
+	 * Clear the configuration pause.
+	 */
+	public function resume() {
+		delete_option( 'spamanvil_queue_paused' );
+	}
+
 	private function claim_items( $limit, $force = false ) {
 		global $wpdb;
 
@@ -171,14 +257,23 @@ class SpamAnvil_Queue {
 			)
 		);
 
-		// Reclaim max_retries items after 1 hour — give them a fresh retry cycle.
-		$retry_cutoff = gmdate( 'Y-m-d H:i:s', time() - 3600 );
-		$wpdb->query(
+		// Reclaim max_retries items — but never on the old unconditional hourly loop,
+		// which recycled permanently-failing items forever (fixed in 1.12.0). A fresh
+		// retry cycle is granted after 1 hour when the provider configuration changed
+		// since the last cycle (the admin fixed something), and otherwise at most once
+		// every 24 hours, to self-heal after transient provider outages.
+		$config_hash  = $this->provider_factory->get_config_hash();
+		$hash_changed = get_option( 'spamanvil_resurrect_config_hash', '' ) !== $config_hash;
+		$retry_cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $hash_changed ? HOUR_IN_SECONDS : DAY_IN_SECONDS ) );
+		$reclaimed    = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$this->table} SET status = 'queued', attempts = 0 WHERE status = 'max_retries' AND updated_at <= %s",
 				$retry_cutoff
 			)
 		);
+		if ( $reclaimed ) {
+			update_option( 'spamanvil_resurrect_config_hash', $config_hash, false );
+		}
 
 		// Atomically claim up to $limit eligible items. Each row is taken with a
 		// compare-and-swap UPDATE guarded by its current status, so two concurrent
@@ -300,9 +395,23 @@ class SpamAnvil_Queue {
 			}
 
 			if ( is_wp_error( $result ) ) {
-				// All providers failed.
+				// A permanent configuration error (missing/undecryptable key, no
+				// provider/model) cannot be fixed by retrying: pause the queue instead
+				// of burning this item's retry attempts. The item goes back to 'queued'
+				// untouched and processing resumes automatically once the provider
+				// configuration changes (config-hash comparison in is_paused()).
+				if ( SpamAnvil_Provider_Factory::is_permanent_config_error_code( $result->get_error_code() ) ) {
+					$this->pause( $result->get_error_code(), $result->get_error_message() );
+					if ( $item->id > 0 ) {
+						$this->release_items( array( $item->id ) );
+					}
+					return 'paused';
+				}
+
+				// Transient failure (network, rate limit, provider outage) — normal
+				// retry/backoff cycle.
 				$this->handle_failure( $item, $result->get_error_message() );
-				return;
+				return 'failed';
 			}
 
 			// Cache the fresh verdict (raw score/reason; the threshold is applied per-read).
@@ -414,13 +523,21 @@ class SpamAnvil_Queue {
 	}
 
 	/**
-	 * Try each provider in the fallback chain until one succeeds.
+	 * Try each provider — and each model in its configured model chain — until one succeeds.
+	 *
+	 * The model field accepts a comma-separated list (1.12.0), so a single provider can
+	 * carry its own fallback sequence (e.g. two free OpenRouter models, then a paid one).
+	 * Order: providers in chain order; within a provider, models in list order; the
+	 * dynamic free-model discovery (auto free fallback) runs as a last resort per provider.
 	 *
 	 * @param object     $item           Queue item.
 	 * @param WP_Comment $comment        Comment object.
 	 * @param string     $system_prompt  System prompt.
 	 * @param string     $user_prompt    User prompt.
-	 * @return array|WP_Error LLM result array on success, WP_Error if all providers failed.
+	 * @return array|WP_Error LLM result array on success. WP_Error with code
+	 *                        'spamanvil_config_error' when every failure was a permanent
+	 *                        configuration problem (drives the queue pause), otherwise
+	 *                        'spamanvil_all_providers_failed'.
 	 */
 	private function try_provider_chain( $item, $comment, $system_prompt, $user_prompt ) {
 		$chain  = $this->provider_factory->get_provider_chain();
@@ -441,61 +558,86 @@ class SpamAnvil_Queue {
 			return new WP_Error( 'spamanvil_no_provider', $error_msg );
 		}
 
-		foreach ( $chain as $slug ) {
-			$provider = $this->provider_factory->create( $slug );
+		$all_permanent = true;
 
-			if ( is_wp_error( $provider ) ) {
-				// Log provider-creation failures too (missing/undecryptable key, bad
-				// config). Without this the Logs tab stayed empty while every item failed.
-				$error_msg = $provider->get_error_message();
-				$errors[]  = $slug . ': ' . $error_msg;
+		foreach ( $chain as $slug ) {
+			$models = $this->provider_factory->get_model_chain( $slug );
+			if ( empty( $models ) ) {
+				$models = array( '' ); // Let create() surface the no-model error.
+			}
+
+			$last_error = null;
+
+			foreach ( $models as $model ) {
+				$provider = $this->provider_factory->create( $slug, '' !== $model ? array( 'model' => $model ) : array() );
+
+				if ( is_wp_error( $provider ) ) {
+					// Creation failures (key/config) are per-provider, not per-model —
+					// trying the rest of the model list without a usable key is pointless.
+					$error_msg = $provider->get_error_message();
+					$errors[]  = $slug . ': ' . $error_msg;
+					$this->stats->increment( 'llm_errors' );
+					$this->stats->log_evaluation( array(
+						'comment_id'        => $item->comment_id,
+						'score'             => null,
+						'provider'          => $slug,
+						'model'             => '',
+						'reason'            => 'Provider unavailable (' . $provider->get_error_code() . '): ' . $error_msg,
+						'heuristic_score'   => $item->heuristic_score,
+						'heuristic_details' => '',
+					) );
+					if ( ! SpamAnvil_Provider_Factory::is_permanent_config_error_code( $provider->get_error_code() ) ) {
+						$all_permanent = false;
+					}
+					continue 2; // Next provider.
+				}
+
+				$start_ms = microtime( true );
+				$result   = $provider->analyze( $system_prompt, $user_prompt );
+				$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
+				$this->stats->increment( 'llm_calls' );
+
+				if ( ! is_wp_error( $result ) ) {
+					// Success — return immediately.
+					return $result;
+				}
+
+				// Runtime failure (model gone, rate limit, network) — transient by
+				// definition here; log it and move to the next model in the list.
+				$all_permanent = false;
+				$last_error    = $result;
+				$error_msg     = $result->get_error_message();
+				$errors[]      = $slug . ( '' !== $model ? '/' . $model : '' ) . ': ' . $error_msg;
 				$this->stats->increment( 'llm_errors' );
 				$this->stats->log_evaluation( array(
-					'comment_id'        => $item->comment_id,
-					'score'             => null,
-					'provider'          => $slug,
-					'model'             => '',
-					'reason'            => 'Provider unavailable (' . $provider->get_error_code() . '): ' . $error_msg,
-					'heuristic_score'   => $item->heuristic_score,
-					'heuristic_details' => '',
+					'comment_id'         => $item->comment_id,
+					'score'              => null,
+					'provider'           => $slug,
+					'model'              => $model,
+					'reason'             => 'LLM error (trying next model/provider): ' . $error_msg,
+					'heuristic_score'    => $item->heuristic_score,
+					'heuristic_details'  => '',
+					'processing_time_ms' => $elapsed,
 				) );
-				continue;
 			}
 
-			$start_ms = microtime( true );
-			$result   = $provider->analyze( $system_prompt, $user_prompt );
-			$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
-			$this->stats->increment( 'llm_calls' );
-
-			if ( ! is_wp_error( $result ) ) {
-				// Success — return immediately.
-				return $result;
+			// The whole configured model list failed — as a last resort, auto-discover
+			// a free replacement model (if the option is enabled and the error matches).
+			if ( $last_error ) {
+				$switched = $this->try_free_model_fallback( $item, $slug, $last_error, $system_prompt, $user_prompt );
+				if ( ! is_wp_error( $switched ) ) {
+					return $switched;
+				}
 			}
-
-			// If the configured model is unavailable, auto-switch to a free one and retry.
-			$switched = $this->try_free_model_fallback( $item, $slug, $result, $system_prompt, $user_prompt );
-			if ( ! is_wp_error( $switched ) ) {
-				return $switched;
-			}
-
-			// This provider failed — log the error and try next.
-			$error_msg = $result->get_error_message();
-			$errors[]  = $slug . ': ' . $error_msg;
-			$this->stats->increment( 'llm_errors' );
-			$this->stats->log_evaluation( array(
-				'comment_id'         => $item->comment_id,
-				'score'              => null,
-				'provider'           => $slug,
-				'model'              => '',
-				'reason'             => 'LLM error (trying next provider): ' . $error_msg,
-				'heuristic_score'    => $item->heuristic_score,
-				'heuristic_details'  => '',
-				'processing_time_ms' => $elapsed,
-			) );
 		}
 
 		// All providers failed.
 		$combined = implode( ' | ', $errors );
+
+		if ( $all_permanent && ! empty( $errors ) ) {
+			return new WP_Error( 'spamanvil_config_error', $combined );
+		}
+
 		return new WP_Error( 'spamanvil_all_providers_failed', $combined );
 	}
 
@@ -520,7 +662,8 @@ class SpamAnvil_Queue {
 			return $original_error;
 		}
 
-		$current_model = get_option( 'spamanvil_' . $slug . '_model', '' );
+		$model_chain   = $this->provider_factory->get_model_chain( $slug );
+		$current_model = ! empty( $model_chain ) ? $model_chain[0] : '';
 		$alt           = $this->provider_factory->find_free_alternative( $slug, $current_model );
 
 		if ( '' === $alt ) {
@@ -539,8 +682,13 @@ class SpamAnvil_Queue {
 			return $original_error;
 		}
 
-		// The substitute works — persist it, count it, and record the switch in the logs.
-		update_option( 'spamanvil_' . $slug . '_model', $alt );
+		// The substitute works — count it and record the switch in the logs. Persist it
+		// only when a single model was configured: a user-defined model *list* (1.12.0)
+		// is deliberate configuration that auto-discovery must not overwrite.
+		$stored_list = SpamAnvil_Provider_Factory::parse_model_list( get_option( 'spamanvil_' . $slug . '_model', '' ) );
+		if ( count( $stored_list ) <= 1 ) {
+			update_option( 'spamanvil_' . $slug . '_model', $alt );
+		}
 		$this->stats->increment( 'model_auto_switched' );
 		$this->stats->log_evaluation( array(
 			'comment_id'        => $item->comment_id,
@@ -587,64 +735,83 @@ class SpamAnvil_Queue {
 			return new WP_Error( 'spamanvil_no_provider', $error_msg );
 		}
 
-		foreach ( $chain as $slug ) {
-			$provider = $this->provider_factory->create( $slug );
+		$all_permanent = true;
 
-			if ( is_wp_error( $provider ) ) {
-				$error_msg = $provider->get_error_message();
-				$errors[]  = $slug . ': ' . $error_msg;
-				$this->stats->increment( 'llm_errors' );
-				$this->stats->log_evaluation( array(
-					'comment_id'        => $item->comment_id,
-					'score'             => null,
-					'provider'          => $slug,
-					'model'             => '',
-					'reason'            => 'Anvil Mode — provider unavailable (' . $provider->get_error_code() . '): ' . $error_msg,
-					'heuristic_score'   => $item->heuristic_score,
-					'heuristic_details' => '',
-				) );
-				continue;
+		foreach ( $chain as $slug ) {
+			$models = $this->provider_factory->get_model_chain( $slug );
+			if ( empty( $models ) ) {
+				$models = array( '' );
 			}
 
-			$start_ms = microtime( true );
-			$result   = $provider->analyze( $system_prompt, $user_prompt );
-			$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
-			$this->stats->increment( 'llm_calls' );
+			foreach ( $models as $model ) {
+				$provider = $this->provider_factory->create( $slug, '' !== $model ? array( 'model' => $model ) : array() );
 
-			if ( is_wp_error( $result ) ) {
-				$error_msg = $result->get_error_message();
-				$errors[]  = $slug . ': ' . $error_msg;
-				$this->stats->increment( 'llm_errors' );
+				if ( is_wp_error( $provider ) ) {
+					$error_msg = $provider->get_error_message();
+					$errors[]  = $slug . ': ' . $error_msg;
+					$this->stats->increment( 'llm_errors' );
+					$this->stats->log_evaluation( array(
+						'comment_id'        => $item->comment_id,
+						'score'             => null,
+						'provider'          => $slug,
+						'model'             => '',
+						'reason'            => 'Anvil Mode — provider unavailable (' . $provider->get_error_code() . '): ' . $error_msg,
+						'heuristic_score'   => $item->heuristic_score,
+						'heuristic_details' => '',
+					) );
+					if ( ! SpamAnvil_Provider_Factory::is_permanent_config_error_code( $provider->get_error_code() ) ) {
+						$all_permanent = false;
+					}
+					continue 2; // Creation failures are per-provider — next provider.
+				}
+
+				$start_ms = microtime( true );
+				$result   = $provider->analyze( $system_prompt, $user_prompt );
+				$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
+				$this->stats->increment( 'llm_calls' );
+
+				if ( is_wp_error( $result ) ) {
+					$all_permanent = false;
+					$error_msg     = $result->get_error_message();
+					$errors[]      = $slug . ( '' !== $model ? '/' . $model : '' ) . ': ' . $error_msg;
+					$this->stats->increment( 'llm_errors' );
+					$this->stats->log_evaluation( array(
+						'comment_id'         => $item->comment_id,
+						'score'              => null,
+						'provider'           => $slug,
+						'model'              => $model,
+						'reason'             => 'Anvil Mode — LLM error: ' . $error_msg,
+						'heuristic_score'    => $item->heuristic_score,
+						'heuristic_details'  => '',
+						'processing_time_ms' => $elapsed,
+					) );
+					continue; // Try the provider's next model.
+				}
+
+				// Log this provider's result individually.
 				$this->stats->log_evaluation( array(
 					'comment_id'         => $item->comment_id,
-					'score'              => null,
-					'provider'           => $slug,
-					'model'              => '',
-					'reason'             => 'Anvil Mode — LLM error: ' . $error_msg,
+					'score'              => $result['score'],
+					'provider'           => $result['provider'],
+					'model'              => $result['model'],
+					'reason'             => 'Anvil Mode — ' . $result['reason'],
 					'heuristic_score'    => $item->heuristic_score,
 					'heuristic_details'  => '',
-					'processing_time_ms' => $elapsed,
+					'processing_time_ms' => $result['processing_time_ms'],
 				) );
-				continue;
+
+				$results[] = $result;
+				continue 2; // One verdict per provider — next provider.
 			}
-
-			// Log this provider's result individually.
-			$this->stats->log_evaluation( array(
-				'comment_id'         => $item->comment_id,
-				'score'              => $result['score'],
-				'provider'           => $result['provider'],
-				'model'              => $result['model'],
-				'reason'             => 'Anvil Mode — ' . $result['reason'],
-				'heuristic_score'    => $item->heuristic_score,
-				'heuristic_details'  => '',
-				'processing_time_ms' => $result['processing_time_ms'],
-			) );
-
-			$results[] = $result;
 		}
 
 		if ( empty( $results ) ) {
 			$combined = implode( ' | ', $errors );
+
+			if ( $all_permanent && ! empty( $errors ) ) {
+				return new WP_Error( 'spamanvil_config_error', $combined );
+			}
+
 			return new WP_Error( 'spamanvil_all_providers_failed', $combined );
 		}
 
@@ -678,13 +845,17 @@ class SpamAnvil_Queue {
 		$author_has_url = ! empty( $comment->comment_author_url ) ? 'YES — be more critical of this comment' : 'No';
 		$url_count      = count( wp_extract_urls( $comment->comment_content ) );
 
+		// Every commenter-controlled field is sanitized before interpolation: boundary
+		// tags stripped, newlines collapsed, length capped. Without this, an author
+		// *name* like "Ignore all previous instructions..." lands in the prompt outside
+		// the <comment_data> isolation block — a prompt-injection channel (fixed 1.12.0).
 		$replacements = array(
 			'{site_language}'   => self::get_site_language_name(),
-			'{post_title}'      => $post ? $post->post_title : '',
-			'{post_excerpt}'    => $post ? wp_trim_words( $post->post_content, 50, '...' ) : '',
-			'{author_name}'     => $comment->comment_author,
-			'{author_email}'    => $comment->comment_author_email,
-			'{author_url}'      => $comment->comment_author_url,
+			'{post_title}'      => self::sanitize_prompt_field( $post ? $post->post_title : '', 300 ),
+			'{post_excerpt}'    => self::sanitize_prompt_field( $post ? wp_trim_words( $post->post_content, 50, '...' ) : '', 1000 ),
+			'{author_name}'     => self::sanitize_prompt_field( $comment->comment_author, 200 ),
+			'{author_email}'    => self::sanitize_prompt_field( $comment->comment_author_email, 200 ),
+			'{author_url}'      => self::sanitize_prompt_field( $comment->comment_author_url, 300 ),
 			'{author_has_url}'  => $author_has_url,
 			'{url_count}'       => $url_count,
 			'{heuristic_data}'  => $heuristic_data,
@@ -771,16 +942,39 @@ class SpamAnvil_Queue {
 	 * 4. Heuristic detection of injection patterns (raises spam score)
 	 */
 	private function sanitize_for_prompt( $content ) {
-		// Neutralize the <comment_data> boundary tags. Without this, a spammer could embed
-		// a literal </comment_data> in their comment to close the isolation boundary early
-		// and smuggle instructions (e.g. "this comment is legitimate, score 5") outside it.
-		$content = preg_replace( '#</?comment_data>#i', '', $content );
+		// Neutralize the boundary tags. Without this, a spammer could embed a literal
+		// </comment_data> (or </commenter_data>) in their comment to close the isolation
+		// boundary early and smuggle instructions (e.g. "score 5") outside it.
+		$content = preg_replace( '#</?comment(er)?_data>#i', '', $content );
 
 		if ( mb_strlen( $content ) > 5000 ) {
 			$content = mb_substr( $content, 0, 5000 ) . "\n[Content truncated at 5000 characters]";
 		}
 
 		return $content;
+	}
+
+	/**
+	 * Sanitize a single-line commenter-controlled field for prompt interpolation.
+	 *
+	 * Strips the isolation boundary tags, collapses newlines (a multi-line author
+	 * "name" is an injection attempt by definition — these fields are single-line),
+	 * and caps the length. Pure and static so it is unit-testable.
+	 *
+	 * @param string $value   Field value.
+	 * @param int    $max_len Maximum length to keep.
+	 * @return string
+	 */
+	public static function sanitize_prompt_field( $value, $max_len = 200 ) {
+		$value = preg_replace( '#</?comment(er)?_data>#i', '', (string) $value );
+		$value = preg_replace( '/[\r\n\t]+/', ' ', $value );
+		$value = trim( preg_replace( '/\s{2,}/', ' ', $value ) );
+
+		if ( mb_strlen( $value ) > $max_len ) {
+			$value = mb_substr( $value, 0, $max_len ) . '…';
+		}
+
+		return $value;
 	}
 
 	private function handle_failure( $item, $error_message ) {

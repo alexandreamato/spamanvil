@@ -104,6 +104,12 @@ if ( ! function_exists( 'is_wp_error' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $data ) {
+		return json_encode( $data ); // phpcs:ignore
+	}
+}
+
 // Load the classes under test directly (no autoloader needed).
 $plugin_includes = dirname( __DIR__, 2 ) . '/spamanvil/includes';
 require_once $plugin_includes . '/class-spamanvil-encryptor.php';
@@ -112,4 +118,6 @@ require_once $plugin_includes . '/class-spamanvil-ip-manager.php';
 require_once dirname( __DIR__, 2 ) . '/spamanvil/admin/class-spamanvil-admin.php';
 require_once $plugin_includes . '/providers/class-spamanvil-provider.php';
 require_once $plugin_includes . '/providers/class-spamanvil-openai-compatible.php';
+require_once $plugin_includes . '/providers/class-spamanvil-anthropic.php';
 require_once $plugin_includes . '/class-spamanvil-provider-factory.php';
+require_once $plugin_includes . '/class-spamanvil-queue.php';

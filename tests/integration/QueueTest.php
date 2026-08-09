@@ -27,8 +27,10 @@ class QueueTest extends WP_UnitTestCase {
 		global $wpdb;
 		$this->table = $wpdb->prefix . 'spamanvil_queue';
 
-		// No provider configured on purpose: process_single() will fail each item,
-		// which lets us observe claim/retry transitions without any network calls.
+		// No provider configured by default. Since 1.12.0 that is a *permanent*
+		// config error which pauses the queue; tests that need the classic
+		// retry/backoff cycle configure a transient failure instead (see
+		// configure_transient_failing_provider()).
 		update_option( 'spamanvil_primary_provider', '' );
 		update_option( 'spamanvil_fallback_provider', '' );
 
@@ -38,6 +40,19 @@ class QueueTest extends WP_UnitTestCase {
 			new SpamAnvil_Heuristics(),
 			new SpamAnvil_IP_Manager()
 		);
+	}
+
+	/**
+	 * Configure a provider whose HTTP calls fail at the network layer — a
+	 * *transient* failure, so items go through the normal retry/backoff cycle
+	 * (permanent config errors pause the queue instead since 1.12.0).
+	 */
+	private function configure_transient_failing_provider() {
+		update_option( 'spamanvil_primary_provider', 'openai' );
+		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		add_filter( 'pre_http_request', function () {
+			return new WP_Error( 'http_request_failed', 'Simulated network timeout' );
+		} );
 	}
 
 	private function insert_item( array $fields ) {
@@ -86,6 +101,7 @@ class QueueTest extends WP_UnitTestCase {
 
 	public function test_failed_item_respects_retry_at_across_timezones() {
 		update_option( 'timezone_string', 'America/Sao_Paulo' ); // UTC-3 — exposes the old bug.
+		$this->configure_transient_failing_provider();
 
 		$comment_id = $this->new_comment();
 
@@ -187,8 +203,9 @@ class QueueTest extends WP_UnitTestCase {
 	// --- Tier 2: atomic claim -------------------------------------------------
 
 	public function test_batch_processes_each_item_exactly_once() {
-		// No provider → each claimed item fails exactly once. If a row were claimed
-		// twice within a single run it would be processed twice and attempts > 1.
+		// Transient provider failure → each claimed item fails exactly once. If a row
+		// were claimed twice within a single run it would be processed twice and attempts > 1.
+		$this->configure_transient_failing_provider();
 		for ( $i = 0; $i < 3; $i++ ) {
 			$this->queue->enqueue( $this->new_comment(), 0 );
 		}
@@ -262,6 +279,7 @@ class QueueTest extends WP_UnitTestCase {
 
 	public function test_caching_disabled_falls_through_to_the_provider() {
 		update_option( 'spamanvil_cache_enabled', '0' );
+		$this->configure_transient_failing_provider();
 
 		$comment_id = self::factory()->comment->create( array(
 			'comment_approved' => '0',
@@ -313,5 +331,61 @@ class QueueTest extends WP_UnitTestCase {
 
 		$this->assertTrue( is_wp_error( $result ) );
 		$this->assertSame( 'spamanvil_key_decrypt_failed', $result->get_error_code() );
+	}
+
+	// --- v1.12.0: permanent config errors pause the queue ----------------------
+
+	public function test_permanent_config_error_pauses_queue_and_preserves_attempts() {
+		// No provider configured at all → spamanvil_no_provider (permanent).
+		$id = $this->insert_item( array( 'comment_id' => $this->new_comment() ) );
+
+		$this->queue->process_batch();
+
+		$row = $this->get_item( $id );
+		$this->assertSame( 'queued', $row->status, 'Item must be released, not marked failed.' );
+		$this->assertSame( 0, (int) $row->attempts, 'A config error must not burn retry attempts.' );
+		$this->assertTrue( $this->queue->is_paused(), 'Queue must pause on a permanent config error.' );
+	}
+
+	public function test_paused_queue_skips_processing_and_stops_log_flood() {
+		$this->insert_item( array( 'comment_id' => $this->new_comment() ) );
+		$this->queue->process_batch(); // First run pauses the queue.
+
+		global $wpdb;
+		$logs             = $wpdb->prefix . 'spamanvil_logs';
+		$rows_after_pause = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$logs}" );
+
+		// This was the 1M-row bug: every cycle re-failed every item and logged each
+		// failure. A paused queue must not write a single additional row.
+		$this->queue->process_batch();
+
+		$this->assertSame(
+			$rows_after_pause,
+			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$logs}" ),
+			'A paused queue must not write new log rows.'
+		);
+	}
+
+	public function test_queue_resumes_when_provider_config_changes() {
+		$this->insert_item( array( 'comment_id' => $this->new_comment() ) );
+		$this->queue->process_batch();
+		$this->assertTrue( $this->queue->is_paused() );
+
+		// The admin fixes the configuration → config hash changes → auto-resume.
+		update_option( 'spamanvil_primary_provider', 'openai' );
+
+		$this->assertFalse( $this->queue->is_paused(), 'Pause must clear when the provider configuration changes.' );
+	}
+
+	public function test_transient_failure_still_uses_retry_cycle_not_pause() {
+		$this->configure_transient_failing_provider();
+		$id = $this->insert_item( array( 'comment_id' => $this->new_comment() ) );
+
+		$this->queue->process_batch();
+
+		$row = $this->get_item( $id );
+		$this->assertSame( 'failed', $row->status, 'Network failures keep the normal retry cycle.' );
+		$this->assertSame( 1, (int) $row->attempts );
+		$this->assertFalse( $this->queue->is_paused(), 'Transient failures must not pause the queue.' );
 	}
 }

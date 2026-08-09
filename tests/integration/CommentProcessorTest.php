@@ -206,9 +206,34 @@ class CommentProcessorTest extends WP_UnitTestCase {
 	public function test_open_mode_publishes_optimistically() {
 		update_option( 'spamanvil_mode', 'async' );
 		update_option( 'spamanvil_open_mode', '1' );
+		// Since 1.12.0 optimistic publishing requires a working classifier — a
+		// configured provider and an unpaused queue.
+		update_option( 'spamanvil_primary_provider', 'openai' );
 
 		// Optimistic: approve now (1), let async evaluation remove spam later.
 		$this->assertSame( 1, $this->processor->hold_for_review( 1, array() ) );
+	}
+
+	// --- v1.12.0: Open Mode safe degradation ----------------------------------
+
+	public function test_open_mode_holds_comments_without_provider() {
+		update_option( 'spamanvil_mode', 'async' );
+		update_option( 'spamanvil_open_mode', '1' );
+		update_option( 'spamanvil_primary_provider', '' );
+
+		// No classifier running → published spam would stay live forever. Hold instead.
+		$this->assertSame( 0, $this->processor->hold_for_review( 1, array() ) );
+	}
+
+	public function test_open_mode_holds_comments_while_queue_is_paused() {
+		update_option( 'spamanvil_mode', 'async' );
+		update_option( 'spamanvil_open_mode', '1' );
+		update_option( 'spamanvil_primary_provider', 'openai' );
+
+		// Queue paused on a permanent config error (e.g. undecryptable key).
+		$this->queue->pause( 'spamanvil_no_api_key', 'No API key configured for openai' );
+
+		$this->assertSame( 0, $this->processor->hold_for_review( 1, array() ) );
 	}
 
 	public function test_default_async_holds_comment_as_pending() {

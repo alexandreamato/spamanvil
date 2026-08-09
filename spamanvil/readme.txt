@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.11.3
+Stable tag: 1.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -239,6 +239,18 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
 
 == Changelog ==
+
+= 1.12.0 =
+* Security: Commenter metadata (author name, email, URL) is now sanitized and isolated inside a <commenter_data> boundary in the LLM prompt — previously an instruction-shaped author *name* could inject prompt text outside the <comment_data> isolation block. The prompt-injection heuristics now scan author fields too. Installs using the unmodified default prompts are migrated automatically; customized prompts are never touched.
+* Fix: Permanent configuration errors (missing or undecryptable API key, no provider selected) no longer burn retry attempts, recycle hourly forever, or write one log row per comment per cycle. The queue now pauses on a configuration error and resumes automatically the moment the provider settings change. On one audited production site this loop had produced 1,000,000+ identical log rows (350 MB).
+* Fix: Items stuck at max retries are re-tried when the provider configuration changes (or at most once a day after a transient outage) — not on the old unconditional hourly loop.
+* Fix: The Anthropic provider now works with current Claude models (Sonnet 5 / Opus 5): the removed `temperature` parameter is no longer sent (it caused HTTP 400), adaptive thinking is disabled for classification calls, responses are parsed from the content array instead of assuming the first block is text, the `refusal` stop reason is handled, and `max_tokens` has proper headroom. New default model: claude-sonnet-5.
+* Fix: IP block escalation is now capped at 30 days. Unbounded doubling produced effectively permanent multi-year bans (a false positive became a life sentence) and could overflow the database DATETIME at high levels.
+* New: Model fallback chains — the Model field accepts several models separated by commas, tried in order until one answers (e.g. two free OpenRouter models, then a paid one). The model picker gained a "+" button to append to the chain, and the automatic free-model fallback no longer overwrites a hand-configured list.
+* Improvement: Open Mode degrades safely — when classification is paused on a configuration error (or no provider is configured), comments are held for review again instead of being published unchecked. On the audited site, a three-week provider failure had left 5,000+ comments published without any classification.
+* Improvement: The health notice now warns when the queue is paused (with the exact reason), and when comments are waiting but WP-Cron is not running (e.g. DISABLE_WP_CRON without a system cron).
+* Improvement: Key-decryption errors now name the provider and distinguish a corrupted stored value from rotated security keys (AUTH_SALT).
+* Improvement: Evaluation logs now record which model produced each error/verdict when trying a model chain.
 
 = 1.11.3 =
 * Fix: The "a saved API key can no longer be decrypted" notice could persist forever after re-entering your keys. It fired for stale keys left on providers you no longer use — which the Providers tab rendered as if no key were stored, with nothing to clear. The notice now only considers the providers actually selected (primary/fallbacks), the Providers tab flags an undecryptable stored key inline with a visible Clear Key button, and saving or clearing a key refreshes the health check immediately instead of after up to 5 minutes.

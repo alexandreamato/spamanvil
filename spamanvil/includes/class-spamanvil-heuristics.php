@@ -120,7 +120,12 @@ class SpamAnvil_Heuristics {
 		}
 
 		// Prompt injection detection - boost heuristic score if injection patterns found.
-		$injection_score = $this->detect_prompt_injection( $content );
+		// Author name/email/URL are scanned too: they are interpolated into the LLM
+		// prompt just like the body, so an instruction-shaped author name is as
+		// dangerous as one inside the comment (1.12.0).
+		$injection_score = $this->detect_prompt_injection(
+			$content . ' ' . $author . ' ' . $author_email . ' ' . $author_url
+		);
 		if ( $injection_score > 0 ) {
 			$signals[] = array(
 				'name'   => 'prompt_injection',

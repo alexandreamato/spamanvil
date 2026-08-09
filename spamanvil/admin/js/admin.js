@@ -125,14 +125,28 @@
             renderModelList($(this).closest('.spamanvil-model-picker'));
         });
 
-        // Select a model → fill the text field.
-        $('.spamanvil-model-list').on('click', '.spamanvil-model-item', function() {
-            var $picker = $(this).closest('.spamanvil-model-picker');
+        // Select a model → fill the text field. The "+" button appends to the
+        // comma-separated model chain instead of replacing it.
+        $('.spamanvil-model-list').on('click', '.spamanvil-model-item, .spamanvil-model-add', function(e) {
+            var $target = $(e.target);
+            var append = $target.hasClass('spamanvil-model-add');
+            var $item = $target.closest('.spamanvil-model-item');
+            var $picker = $item.closest('.spamanvil-model-picker');
             var provider = $picker.data('provider');
-            var id = $(this).attr('data-id');
-            $picker.closest('.spamanvil-card')
-                .find('input.spamanvil-model-input[data-provider="' + provider + '"]')
-                .val(id);
+            var id = $item.attr('data-id');
+            var $input = $picker.closest('.spamanvil-card')
+                .find('input.spamanvil-model-input[data-provider="' + provider + '"]');
+
+            if (append) {
+                var current = ($input.val() || '').trim().replace(/,\s*$/, '');
+                if (current && current.split(/\s*,\s*/).indexOf(id) !== -1) {
+                    return; // Already in the chain.
+                }
+                $input.val(current ? current + ', ' + id : id);
+                return; // Keep the picker open for adding more.
+            }
+
+            $input.val(id);
             $picker.hide();
         });
     }
@@ -165,6 +179,10 @@
             if (m.context) {
                 $('<span class="spamanvil-model-context"></span>').text(Math.round(m.context / 1000) + 'k ctx').appendTo($item);
             }
+            $('<button type="button" class="button button-small spamanvil-model-add"></button>')
+                .text('+')
+                .attr('title', spamAnvil.strings.add_to_chain || 'Add to model chain')
+                .appendTo($item);
             $item.appendTo($list);
         });
 

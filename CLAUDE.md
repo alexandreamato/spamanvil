@@ -80,14 +80,33 @@ Comment submitted
       → Else: Enqueue for async LLM analysis (or process sync)
 
 WP-Cron (every 5 min):
+  → If queue is paused on a config error (see below): return immediately
   → Claim batch from queue (transient lock prevents concurrent runs)
   → Loop: claim batch_size items → process each → repeat until queue empty or 50s elapsed
-  → For each: Build prompt → Call LLM → Parse JSON → Apply threshold
+  → For each: Build prompt → Call LLM (provider chain × model chain) → Parse JSON → Apply threshold
   → score >= threshold(70): Mark spam + record IP attempt
   → score < threshold: Auto-approve
-  → On failure: Exponential backoff (60s, 300s, 900s), max 3 retries
+  → On TRANSIENT failure (network, rate limit): exponential backoff (60s, 300s, 900s), max 3 retries
+  → On PERMANENT config error (no/undecryptable key, no provider/model): PAUSE the whole
+    queue (item released untouched) — resumes automatically when the provider config
+    hash changes. Never burns retries, never floods logs (the 1.12.0 fix for the
+    1M-log-row production incident).
+  → max_retries items resurrect only when the provider config hash changed (1h) or at
+    most once per 24h — never on the old unconditional hourly loop
   → spawn_cron() called after Scan Pending to trigger immediate processing
 ```
+
+**Error classification (1.12.0):** `SpamAnvil_Provider_Factory::is_permanent_config_error_code()` (pure, unit-tested in `tests/unit/ErrorClassificationTest.php`) decides pause-vs-retry. `get_config_hash()` fingerprints chain + model lists + stored keys; `SpamAnvil_Queue::pause()/is_paused()/resume()` persist the pause in `spamanvil_queue_paused` (auto-clears on hash change). The health notice shows the pause reason, and also warns when comments are queued but WP-Cron hasn't run in 30+ min (e.g. `DISABLE_WP_CRON` without a system cron).
+
+**Model chains (1.12.0):** every provider's Model field accepts a comma/newline-separated list, parsed by `parse_model_list()` and tried in order by `try_provider_chain()`/`try_anvil_mode()` (log rows record which model failed/answered). The auto free-model fallback runs per provider as a last resort and only persists its discovery when a single model (not a list) was configured. The model picker has a "+" button to append to the chain.
+
+**Prompt-injection hardening (1.12.0, audit S1):** author name/email/URL and post title are sanitized via `SpamAnvil_Queue::sanitize_prompt_field()` (strips boundary tags, collapses newlines, caps length; unit-tested) and the default user prompt template wraps commenter metadata in `<commenter_data>` (system prompt declares both tags untrusted). Installs whose stored prompts match an old default verbatim (MD5 whitelist in `SpamAnvil_Activator::LEGACY_*_PROMPT_HASHES`) are migrated on upgrade via `maybe_upgrade_default_prompts()`; customized prompts are never touched. Heuristic injection detection also scans author fields.
+
+**Anthropic provider (1.12.0, audit B5):** no `temperature` (removed on current Claude models — HTTP 400), `thinking: disabled` sent for claude-sonnet-5/opus-5 (adaptive thinking is on by default there and would eat the token budget), omitted for fable/mythos (always-on, disabled → 400) and older models; `max_tokens` 1024; response parsed via `extract_text_block()` (first text block, not `content[0]`); `stop_reason: refusal` → distinct WP_Error. Unit-tested in `tests/unit/AnthropicProviderTest.php`.
+
+**IP escalation cap (1.12.0, audit S3):** `SpamAnvil_IP_Manager::block_hours_for_level()` — 24/48/96/192/384h then hard cap 720h (30 days). Unbounded doubling gave multi-year bans and overflowed DATETIME.
+
+**Open Mode degradation (1.12.0, audit S2):** in open mode, `hold_for_review()` publishes optimistically only while a provider is configured AND the queue is not paused; otherwise it degrades to holding comments for review.
 
 ## Supported Providers
 
@@ -96,7 +115,7 @@ WP-Cron (every 5 min):
 | OpenAI      | SpamAnvil_OpenAI_Compatible  | gpt-4o-mini                                |
 | OpenRouter  | SpamAnvil_OpenAI_Compatible  | meta-llama/llama-3.3-70b-instruct:free     |
 | Featherless | SpamAnvil_OpenAI_Compatible  | meta-llama/Meta-Llama-3.1-8B-Instruct      |
-| Anthropic   | SpamAnvil_Anthropic          | claude-sonnet-4-5-20250929                 |
+| Anthropic   | SpamAnvil_Anthropic          | claude-sonnet-5                            |
 | Gemini      | SpamAnvil_Gemini             | gemini-2.0-flash                           |
 | Generic     | SpamAnvil_OpenAI_Compatible  | (user-defined)                             |
 

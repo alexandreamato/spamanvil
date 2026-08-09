@@ -117,7 +117,16 @@ class SpamAnvil_Comment_Processor {
 			// pre-LLM layers (honeypot, time-trap, rate-limit, heuristics) still block obvious
 			// bots at comment_post, so only subtle spam can briefly appear. Otherwise hold
 			// the comment as pending until it has been evaluated.
-			return '1' === get_option( 'spamanvil_open_mode', '0' ) ? 1 : 0;
+			if ( '1' === get_option( 'spamanvil_open_mode', '0' ) ) {
+				// Safe degradation: optimistic publishing is only safe while the async
+				// classifier is actually running. With no provider configured, or with
+				// the queue paused on a permanent configuration error, published spam
+				// would stay live indefinitely — hold for review until it recovers.
+				$provider_configured = '' !== get_option( 'spamanvil_primary_provider', '' );
+				return ( $provider_configured && ! $this->queue->is_paused() ) ? 1 : 0;
+			}
+
+			return 0;
 		}
 
 		return $approved;

@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.11.3\n"
+"Project-Id-Version: SpamAnvil 1.12.0\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-"
 "plugin-for-wordpress/\n"
 "POT-Creation-Date: 2026-02-14 18:30-0300\n"
@@ -790,3 +790,33 @@ msgstr "Mais tarde"
 
 msgid "I already did / don't ask again"
 msgstr "Já avaliei / não perguntar de novo"
+
+msgid "the stored value is corrupted"
+msgstr "o valor armazenado está corrompido"
+
+msgid "the site security keys (AUTH_SALT) likely changed since it was saved"
+msgstr "as chaves de segurança do site (AUTH_SALT) provavelmente mudaram desde que ela foi salva"
+
+msgid "The stored API key for \"%1$s\" could not be decrypted — %2$s. Re-enter the API key on the Providers tab, or define it in wp-config.php."
+msgstr "A chave de API armazenada para \"%1$s\" não pôde ser descriptografada — %2$s. Insira a chave novamente na aba Provedores, ou defina-a no wp-config.php."
+
+msgid "The model declined to evaluate this content (refusal stop reason)"
+msgstr "O modelo se recusou a avaliar este conteúdo (stop reason de recusa)"
+
+msgid "Add to model chain"
+msgstr "Adicionar à cadeia de modelos"
+
+msgid "comment classification is paused because of a configuration error. Fix the provider settings and processing resumes automatically."
+msgstr "a classificação de comentários está pausada por um erro de configuração. Corrija as configurações do provedor e o processamento retoma automaticamente."
+
+msgid "comments are waiting in the queue but WP-Cron has not run recently."
+msgstr "há comentários aguardando na fila, mas o WP-Cron não roda há um bom tempo."
+
+msgid "DISABLE_WP_CRON is enabled on this site — make sure a real (system) cron job calls wp-cron.php regularly, or comments will never be classified."
+msgstr "DISABLE_WP_CRON está ativo neste site — garanta que um cron de sistema chame o wp-cron.php regularmente, ou os comentários nunca serão classificados."
+
+msgid "Low-traffic sites may need a real (system) cron job calling wp-cron.php, or use the \"Process Queue Now\" button on the Logs tab."
+msgstr "Sites de baixo tráfego podem precisar de um cron de sistema chamando o wp-cron.php, ou use o botão \"Processar Fila Agora\" na aba Logs."
+
+msgid "You can list several models separated by commas — they are tried in order until one answers (e.g. a free model first, then a paid one)."
+msgstr "Você pode listar vários modelos separados por vírgulas — eles são tentados em ordem até um responder (ex.: um modelo gratuito primeiro, depois um pago)."

@@ -63,26 +63,66 @@ class SpamAnvil_Admin {
 		$health = get_transient( 'spamanvil_health_check' );
 		if ( false === $health ) {
 			$status = $this->queue->get_queue_status();
+
+			// Comments waiting but WP-Cron not firing (typically DISABLE_WP_CRON without
+			// a system cron hitting wp-cron.php) starves the whole async pipeline.
+			$last_run  = (int) get_option( 'spamanvil_last_cron_run', 0 );
+			$cron_dead = ( (int) $status['queued'] > 0
+				&& 'async' === get_option( 'spamanvil_mode', 'async' )
+				&& ( time() - $last_run ) > 30 * MINUTE_IN_SECONDS ) ? 1 : 0;
+
 			$health = array(
-				'stuck'    => (int) $status['failed'] + (int) $status['max_retries'],
-				'no_prov'  => ( '' === get_option( 'spamanvil_primary_provider', '' ) ) ? 1 : 0,
-				'bad_key'  => $this->provider_factory->has_undecryptable_key() ? 1 : 0,
+				'stuck'     => (int) $status['failed'] + (int) $status['max_retries'],
+				'no_prov'   => ( '' === get_option( 'spamanvil_primary_provider', '' ) ) ? 1 : 0,
+				'bad_key'   => $this->provider_factory->has_undecryptable_key() ? 1 : 0,
+				'paused'    => $this->queue->is_paused() ? 1 : 0,
+				'cron_dead' => $cron_dead,
 			);
 			set_transient( 'spamanvil_health_check', $health, 5 * MINUTE_IN_SECONDS );
 		}
 
-		if ( $health['stuck'] < 5 && empty( $health['no_prov'] ) && empty( $health['bad_key'] ) ) {
+		$health = array_merge( array( 'paused' => 0, 'cron_dead' => 0 ), (array) $health );
+
+		if ( $health['stuck'] < 5 && empty( $health['no_prov'] ) && empty( $health['bad_key'] )
+			&& empty( $health['paused'] ) && empty( $health['cron_dead'] ) ) {
 			return; // Healthy enough — stay quiet.
 		}
 
 		$providers_url = admin_url( 'options-general.php?page=spamanvil&tab=providers' );
 		$logs_url      = admin_url( 'options-general.php?page=spamanvil&tab=logs' );
 
+		// A paused queue is the most severe state: nothing is being classified at all.
+		if ( ! empty( $health['paused'] ) ) {
+			$info   = $this->queue->get_pause_info();
+			$reason = $info && ! empty( $info['message'] ) ? $info['message'] : '';
+			echo '<div class="notice notice-error"><p><strong>SpamAnvil:</strong> ';
+			esc_html_e( 'comment classification is paused because of a configuration error. Fix the provider settings and processing resumes automatically.', 'spamanvil' );
+			if ( '' !== $reason ) {
+				echo '<br><em>' . esc_html( $reason ) . '</em>';
+			}
+			printf( ' <a href="%s">%s</a></p></div>', esc_url( $providers_url ), esc_html__( 'Open the Providers tab', 'spamanvil' ) );
+			return;
+		}
+
 		// A stored key that no longer decrypts is the most actionable — surface it first.
 		if ( ! empty( $health['bad_key'] ) ) {
 			echo '<div class="notice notice-error"><p><strong>SpamAnvil:</strong> ';
 			esc_html_e( 'a saved API key can no longer be decrypted — your site security keys (AUTH_SALT) likely changed. Re-enter the API key so classification can resume.', 'spamanvil' );
 			printf( ' <a href="%s">%s</a></p></div>', esc_url( $providers_url ), esc_html__( 'Open the Providers tab', 'spamanvil' ) );
+			return;
+		}
+
+		// Comments queued but the cron never runs — the site owner must fix WP-Cron.
+		if ( ! empty( $health['cron_dead'] ) ) {
+			echo '<div class="notice notice-warning"><p><strong>SpamAnvil:</strong> ';
+			esc_html_e( 'comments are waiting in the queue but WP-Cron has not run recently.', 'spamanvil' );
+			echo ' ';
+			if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) {
+				esc_html_e( 'DISABLE_WP_CRON is enabled on this site — make sure a real (system) cron job calls wp-cron.php regularly, or comments will never be classified.', 'spamanvil' );
+			} else {
+				esc_html_e( 'Low-traffic sites may need a real (system) cron job calling wp-cron.php, or use the "Process Queue Now" button on the Logs tab.', 'spamanvil' );
+			}
+			echo '</p></div>';
 			return;
 		}
 
@@ -279,7 +319,8 @@ class SpamAnvil_Admin {
 			'has_provider' => ( '' !== get_option( 'spamanvil_primary_provider', '' ) ),
 			'providers_url' => admin_url( 'options-general.php?page=spamanvil&tab=providers' ),
 			'strings'  => array(
-				'testing'    => __( 'Testing...', 'spamanvil' ),
+				'testing'      => __( 'Testing...', 'spamanvil' ),
+			'add_to_chain' => __( 'Add to model chain', 'spamanvil' ),
 				'success'    => __( 'Connection successful!', 'spamanvil' ),
 				'error'      => __( 'Connection failed:', 'spamanvil' ),
 				'unblocking' => __( 'Unblocking...', 'spamanvil' ),

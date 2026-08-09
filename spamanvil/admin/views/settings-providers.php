@@ -32,7 +32,7 @@ $default_models = array(
 	'openai'      => 'gpt-4o-mini',
 	'openrouter'  => 'openai/gpt-oss-20b:free',
 	'featherless' => 'meta-llama/Meta-Llama-3.1-8B-Instruct',
-	'anthropic'   => 'claude-sonnet-4-5-20250929',
+	'anthropic'   => 'claude-sonnet-5',
 	'gemini'      => 'gemini-2.0-flash',
 	'generic'     => '',
 );
@@ -181,9 +181,12 @@ $signup_urls = array(
 						<input type="text"
 							   name="<?php echo esc_attr( $model_key ); ?>"
 							   value="<?php echo esc_attr( $model_value ); ?>"
-							   class="regular-text spamanvil-model-input"
+							   class="large-text spamanvil-model-input"
 							   data-provider="<?php echo esc_attr( $slug ); ?>"
 							   placeholder="<?php echo esc_attr( $default_models[ $slug ] ?? '' ); ?>">
+						<p class="description">
+							<?php esc_html_e( 'You can list several models separated by commas — they are tried in order until one answers (e.g. a free model first, then a paid one).', 'spamanvil' ); ?>
+						</p>
 						<?php if ( in_array( $slug, array( 'openai', 'openrouter', 'featherless', 'generic' ), true ) ) : ?>
 							<button type="button"
 									class="button button-small spamanvil-browse-models-btn"

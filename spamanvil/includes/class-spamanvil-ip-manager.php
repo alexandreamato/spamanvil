@@ -59,6 +59,28 @@ class SpamAnvil_IP_Manager {
 		return true;
 	}
 
+	/**
+	 * Escalating block duration in hours, capped at 30 days.
+	 *
+	 * 24h, 48h, 96h, 192h, 384h, then a hard ceiling of 720h (30 days): unbounded
+	 * doubling produced multi-year — effectively permanent — bans by level ~10, which
+	 * turns any false positive into a life sentence and can overflow the DATETIME
+	 * column at high levels (fixed 1.12.0). Pure and static (unit-tested).
+	 *
+	 * @param int $level Escalation level (1-based).
+	 * @return int Hours to block.
+	 */
+	public static function block_hours_for_level( $level ) {
+		$level = max( 1, (int) $level );
+
+		// pow() overflows to INF around level ~1030; short-circuit well before that.
+		if ( $level >= 6 ) {
+			return 720;
+		}
+
+		return (int) min( 24 * pow( 2, $level - 1 ), 720 );
+	}
+
 	public function record_spam_attempt( $ip ) {
 		if ( empty( $ip ) || '1' !== get_option( 'spamanvil_ip_blocking_enabled', '1' ) ) {
 			return;
@@ -88,8 +110,7 @@ class SpamAnvil_IP_Manager {
 
 			if ( $new_attempts >= $threshold ) {
 				$new_level = $existing->escalation_level + 1;
-				// Escalating durations: 24h, 48h, 96h, 192h, 384h...
-				$hours = 24 * pow( 2, $new_level - 1 );
+				$hours     = self::block_hours_for_level( $new_level );
 				$update_data['blocked_until']    = gmdate( 'Y-m-d H:i:s', time() + ( $hours * 3600 ) );
 				$update_data['escalation_level'] = $new_level;
 			}

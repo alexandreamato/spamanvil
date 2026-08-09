@@ -22,18 +22,31 @@ class SpamAnvil_Anthropic extends SpamAnvil_Provider {
 	}
 
 	protected function build_request_body( $system_prompt, $user_prompt ) {
-		return array(
-			'model'       => $this->model,
-			'max_tokens'  => 400,
-			'temperature' => 0,
-			'system'      => $system_prompt,
-			'messages'    => array(
+		// No `temperature`: current Claude models (Opus 4.7+, Opus 5, Sonnet 5) removed
+		// the sampling parameters — sending temperature returns HTTP 400.
+		$body = array(
+			'model'      => $this->model,
+			'max_tokens' => 1024,
+			'system'     => $system_prompt,
+			'messages'   => array(
 				array(
 					'role'    => 'user',
 					'content' => $user_prompt,
 				),
 			),
 		);
+
+		// Sonnet 5 / Opus 5 run adaptive *thinking* by default when the field is
+		// omitted — thinking tokens would eat the max_tokens budget and prepend a
+		// thinking block before the JSON verdict. Classification wants the plain
+		// answer, so disable it explicitly on those models. Fable/Mythos-class models
+		// reject an explicit "disabled" (thinking is always on there), and older
+		// models don't need the field — both omit it.
+		if ( preg_match( '/^claude-(sonnet|opus)-5/', $this->model ) ) {
+			$body['thinking'] = array( 'type' => 'disabled' );
+		}
+
+		return $body;
 	}
 
 	protected function parse_response_body( $body ) {
@@ -53,13 +66,48 @@ class SpamAnvil_Anthropic extends SpamAnvil_Provider {
 			return new WP_Error( 'spamanvil_api_error', $msg );
 		}
 
-		if ( ! isset( $data['content'][0]['text'] ) ) {
+		// Safety classifiers on newer models can decline a request: HTTP 200 with
+		// stop_reason "refusal" and empty/partial content. Surface it as an error so
+		// the chain falls through to the next model/provider instead of mis-parsing.
+		if ( isset( $data['stop_reason'] ) && 'refusal' === $data['stop_reason'] ) {
+			return new WP_Error(
+				'spamanvil_refusal',
+				__( 'The model declined to evaluate this content (refusal stop reason)', 'spamanvil' )
+			);
+		}
+
+		// The first content block is not necessarily text (e.g. a thinking block on
+		// models with thinking enabled) — find the first text block instead of
+		// hard-coding content[0].
+		$text = self::extract_text_block( $data );
+
+		if ( '' === $text ) {
 			return new WP_Error(
 				'spamanvil_unexpected_format',
 				__( 'Unexpected API response format', 'spamanvil' )
 			);
 		}
 
-		return $data['content'][0]['text'];
+		return $text;
+	}
+
+	/**
+	 * First text block from a Messages API response. Pure and static (unit-tested).
+	 *
+	 * @param array $data Decoded response body.
+	 * @return string Text content, or '' when no text block exists.
+	 */
+	public static function extract_text_block( $data ) {
+		if ( ! isset( $data['content'] ) || ! is_array( $data['content'] ) ) {
+			return '';
+		}
+
+		foreach ( $data['content'] as $block ) {
+			if ( is_array( $block ) && isset( $block['type'], $block['text'] ) && 'text' === $block['type'] ) {
+				return (string) $block['text'];
+			}
+		}
+
+		return '';
 	}
 }

@@ -38,7 +38,7 @@ class SpamAnvil_Provider_Factory {
 			'constant_key'  => 'SPAMANVIL_ANTHROPIC_API_KEY',
 			'option_key'    => 'spamanvil_anthropic_api_key',
 			'model_option'  => 'spamanvil_anthropic_model',
-			'default_model' => 'claude-sonnet-4-5-20250929',
+			'default_model' => 'claude-sonnet-5',
 		),
 		'gemini'      => array(
 			'class'         => 'SpamAnvil_Gemini',
@@ -82,7 +82,7 @@ class SpamAnvil_Provider_Factory {
 		if ( ! empty( $overrides['api_key'] ) ) {
 			$api_key = $overrides['api_key'];
 		} else {
-			$api_key = $this->resolve_api_key( $config );
+			$api_key = $this->resolve_api_key( $config, $provider_slug );
 			if ( is_wp_error( $api_key ) ) {
 				return $api_key; // Decryption failure — distinct, actionable error.
 			}
@@ -99,8 +99,14 @@ class SpamAnvil_Provider_Factory {
 			);
 		}
 
-		// Use override model if provided, otherwise read from DB/default.
-		$model = ! empty( $overrides['model'] ) ? $overrides['model'] : get_option( $config['model_option'], $config['default_model'] );
+		// Use override model if provided, otherwise the first entry of the stored
+		// model list (the field accepts a comma-separated fallback chain since 1.12.0).
+		if ( ! empty( $overrides['model'] ) ) {
+			$model = $overrides['model'];
+		} else {
+			$chain = $this->get_model_chain( $provider_slug );
+			$model = ! empty( $chain ) ? $chain[0] : '';
+		}
 
 		if ( empty( $model ) ) {
 			return new WP_Error(
@@ -232,7 +238,7 @@ class SpamAnvil_Provider_Factory {
 		return ! empty( $encrypted ) && '' === $this->encryptor->decrypt( $encrypted );
 	}
 
-	private function resolve_api_key( $config ) {
+	private function resolve_api_key( $config, $provider_slug = '' ) {
 		// Check wp-config constant first.
 		if ( defined( $config['constant_key'] ) ) {
 			return constant( $config['constant_key'] );
@@ -248,16 +254,125 @@ class SpamAnvil_Provider_Factory {
 		$decrypted = $this->encryptor->decrypt( $encrypted );
 
 		if ( '' === $decrypted ) {
-			// A key IS stored but can't be decrypted — the site's AUTH_SALT (or hosting
-			// environment) changed since it was saved. Surface this distinctly instead of
-			// the misleading "no API key configured", so the admin knows to re-enter it.
+			// A key IS stored but can't be decrypted. Name the provider and the likely
+			// cause so the admin can act, instead of a generic one-size-fits-all message:
+			// a malformed stored value points at a corrupted option; a well-formed value
+			// that fails authentication points at rotated security keys (AUTH_SALT).
+			$looks_malformed = ! (bool) base64_decode( preg_replace( '/^g:/', '', $encrypted ), true );
+			$cause           = $looks_malformed
+				? __( 'the stored value is corrupted', 'spamanvil' )
+				: __( 'the site security keys (AUTH_SALT) likely changed since it was saved', 'spamanvil' );
+
 			return new WP_Error(
 				'spamanvil_key_decrypt_failed',
-				__( 'A stored API key could not be decrypted — the site security keys (AUTH_SALT) likely changed. Re-enter the API key on the Providers tab, or define it in wp-config.php.', 'spamanvil' )
+				sprintf(
+					/* translators: 1: provider slug, 2: probable cause */
+					__( 'The stored API key for "%1$s" could not be decrypted — %2$s. Re-enter the API key on the Providers tab, or define it in wp-config.php.', 'spamanvil' ),
+					$provider_slug,
+					$cause
+				)
 			);
 		}
 
 		return $decrypted;
+	}
+
+	/**
+	 * Parse a stored model option into an ordered list of model ids.
+	 *
+	 * The model field accepts a comma- or newline-separated chain (1.12.0), e.g.
+	 * "openai/gpt-oss-20b:free, meta-llama/llama-3.3-70b-instruct:free" — models are
+	 * tried in order until one answers. Pure, unit-tested.
+	 *
+	 * @param string $raw Raw option value.
+	 * @return array Ordered, de-duplicated list of model ids (possibly empty).
+	 */
+	public static function parse_model_list( $raw ) {
+		$parts  = preg_split( '/[,\n]+/', (string) $raw );
+		$models = array();
+		foreach ( $parts as $part ) {
+			$part = trim( $part );
+			if ( '' !== $part && ! in_array( $part, $models, true ) ) {
+				$models[] = $part;
+			}
+		}
+		return $models;
+	}
+
+	/**
+	 * Ordered model chain configured for a provider (stored list, or the default model).
+	 *
+	 * @param string $slug Provider slug.
+	 * @return array Model ids in the order they should be tried.
+	 */
+	public function get_model_chain( $slug ) {
+		if ( ! isset( self::$provider_configs[ $slug ] ) ) {
+			return array();
+		}
+
+		$config = self::$provider_configs[ $slug ];
+		$models = self::parse_model_list( get_option( $config['model_option'], '' ) );
+
+		if ( empty( $models ) && '' !== $config['default_model'] ) {
+			$models = array( $config['default_model'] );
+		}
+
+		return $models;
+	}
+
+	/**
+	 * Whether a WP_Error code denotes a *permanent* configuration problem — one that
+	 * retrying can never fix (missing/undecryptable key, no provider or model set).
+	 * Transient problems (network, rate limits, provider outages) are NOT listed here.
+	 *
+	 * Pure, unit-tested: drives the queue's pause behaviour, so a config error must
+	 * never burn retry attempts or flood the logs once per item per cycle (1.12.0).
+	 *
+	 * @param string $code WP_Error code.
+	 * @return bool
+	 */
+	public static function is_permanent_config_error_code( $code ) {
+		return in_array(
+			(string) $code,
+			array(
+				'spamanvil_no_api_key',
+				'spamanvil_key_decrypt_failed',
+				'spamanvil_no_model',
+				'spamanvil_unknown_provider',
+				'spamanvil_no_provider',
+				'spamanvil_config_error',
+			),
+			true
+		);
+	}
+
+	/**
+	 * Fingerprint of the provider configuration the queue depends on.
+	 *
+	 * Changes whenever the chain, any chained provider's model list, or any stored
+	 * key changes — used to auto-resume a paused queue and to gate the max_retries
+	 * resurrection cycle (re-trying items only makes sense after the config moved).
+	 *
+	 * @return string
+	 */
+	public function get_config_hash() {
+		$parts = array();
+
+		foreach ( $this->get_provider_chain() as $slug ) {
+			$parts[] = $slug;
+
+			if ( ! isset( self::$provider_configs[ $slug ] ) ) {
+				continue;
+			}
+
+			$config  = self::$provider_configs[ $slug ];
+			$parts[] = (string) get_option( $config['model_option'], $config['default_model'] );
+			// The raw encrypted value (not the decrypted key) is enough: re-saving a
+			// key re-encrypts with a fresh IV, so the value — and the hash — changes.
+			$parts[] = defined( $config['constant_key'] ) ? 'const' : md5( (string) get_option( $config['option_key'], '' ) );
+		}
+
+		return md5( implode( '|', $parts ) );
 	}
 
 	public static function get_available_providers() {
