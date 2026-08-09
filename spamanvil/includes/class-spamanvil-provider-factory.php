@@ -298,6 +298,9 @@ class SpamAnvil_Provider_Factory {
 			if ( '' !== $part && ! in_array( $part, $models, true ) ) {
 				$models[] = $part;
 			}
+			if ( count( $models ) >= 10 ) {
+				break; // Sanity cap: a runaway chain would multiply latency and cost per comment (audit N3).
+			}
 		}
 		return $models;
 	}

@@ -122,3 +122,4 @@ require_once $plugin_includes . '/providers/class-spamanvil-anthropic.php';
 require_once $plugin_includes . '/class-spamanvil-provider-factory.php';
 require_once $plugin_includes . '/class-spamanvil-queue.php';
 require_once $plugin_includes . '/class-spamanvil-notifier.php';
+require_once $plugin_includes . '/class-spamanvil-activator.php';

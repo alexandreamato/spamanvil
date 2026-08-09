@@ -10,6 +10,7 @@ class SpamAnvil_Activator {
 		self::set_default_options();
 		self::maybe_upgrade_default_prompts();
 		self::maybe_upgrade_default_models();
+		self::maybe_cap_legacy_ip_blocks();
 		self::schedule_cron();
 	}
 
@@ -40,22 +41,59 @@ class SpamAnvil_Activator {
 	const LEGACY_USER_PROMPT_HASHES   = array( '211af1236500d5766e905f58b665bfc9' ); // 1.5.0–1.11.3
 
 	/**
+	 * Canonicalize a prompt template's line endings to LF.
+	 *
+	 * Browsers submit textarea content with CRLF line endings (per the HTML spec),
+	 * so a default prompt that was ever re-saved on the Prompt tab hashes
+	 * differently from the LF source string even though not a single character was
+	 * customized — which silently blocked the 1.12.0 security migration on real
+	 * sites (field audit, N1). Every hash comparison and every save goes through
+	 * this normalization.
+	 *
+	 * @param string $text Prompt text.
+	 * @return string
+	 */
+	public static function normalize_prompt( $text ) {
+		return str_replace( array( "\r\n", "\r" ), "\n", (string) $text );
+	}
+
+	/**
 	 * Upgrade stored prompt templates that still match a previous default verbatim.
 	 *
 	 * Customized prompts are never touched — only unmodified defaults migrate, so
 	 * security fixes to the default templates reach existing installs (1.12.0 moved
 	 * commenter metadata inside an isolation boundary; see the S1 audit finding).
+	 * Comparison is done on LF-normalized text (see normalize_prompt()).
 	 */
 	private static function maybe_upgrade_default_prompts() {
 		$stored = get_option( 'spamanvil_system_prompt', '' );
-		if ( '' !== $stored && in_array( md5( $stored ), self::LEGACY_SYSTEM_PROMPT_HASHES, true ) ) {
+		if ( '' !== $stored && in_array( md5( self::normalize_prompt( $stored ) ), self::LEGACY_SYSTEM_PROMPT_HASHES, true ) ) {
 			update_option( 'spamanvil_system_prompt', self::get_default_system_prompt() );
 		}
 
 		$stored = get_option( 'spamanvil_user_prompt', '' );
-		if ( '' !== $stored && in_array( md5( $stored ), self::LEGACY_USER_PROMPT_HASHES, true ) ) {
+		if ( '' !== $stored && in_array( md5( self::normalize_prompt( $stored ) ), self::LEGACY_USER_PROMPT_HASHES, true ) ) {
 			update_option( 'spamanvil_user_prompt', self::get_default_user_prompt() );
 		}
+	}
+
+	/**
+	 * One-time cap for blocked-IP rows created before the 1.12.0 escalation ceiling:
+	 * unbounded doubling had produced multi-century bans (e.g. blocked_until in the
+	 * year 2743 — field audit, N2). Idempotent, so it simply runs on every upgrade.
+	 */
+	private static function maybe_cap_legacy_ip_blocks() {
+		global $wpdb;
+
+		$table     = $wpdb->prefix . 'spamanvil_blocked_ips';
+		$max_until = gmdate( 'Y-m-d H:i:s', time() + ( SpamAnvil_IP_Manager::block_hours_for_level( 6 ) * 3600 ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare( "UPDATE {$table} SET blocked_until = %s WHERE blocked_until > %s", $max_until, $max_until ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+		$wpdb->query( "UPDATE {$table} SET escalation_level = 6 WHERE escalation_level > 6" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:enable
 	}
 
 	private static function create_tables() {

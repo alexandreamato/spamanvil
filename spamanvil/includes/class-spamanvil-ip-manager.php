@@ -109,7 +109,9 @@ class SpamAnvil_IP_Manager {
 			);
 
 			if ( $new_attempts >= $threshold ) {
-				$new_level = $existing->escalation_level + 1;
+				// Level 6 is where the 30-day duration ceiling lives — higher values
+				// add no duration and only grow the column unboundedly (audit N2).
+				$new_level = min( 6, $existing->escalation_level + 1 );
 				$hours     = self::block_hours_for_level( $new_level );
 				$update_data['blocked_until']    = gmdate( 'Y-m-d H:i:s', time() + ( $hours * 3600 ) );
 				$update_data['escalation_level'] = $new_level;

@@ -556,11 +556,14 @@ class SpamAnvil_Admin {
 		// They intentionally contain angle-bracket tags like <comment_data> and <number 0-100>.
 		// wp_kses_post() would strip those, so we use wp_unslash() only.
 		// Field is admin-only (manage_options) and output via esc_textarea().
+		// Line endings are LF-normalized on save: browsers submit textareas with CRLF,
+		// which made an unmodified default hash differently from the source string and
+		// silently blocked default-prompt migrations (field audit N1, 1.14.1).
 		if ( isset( $_POST['spamanvil_system_prompt'] ) ) {
-			update_option( 'spamanvil_system_prompt', wp_unslash( $_POST['spamanvil_system_prompt'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- intentional: plain-text LLM prompt template, not HTML. Contains <comment_data> tags that wp_kses would strip.
+			update_option( 'spamanvil_system_prompt', SpamAnvil_Activator::normalize_prompt( wp_unslash( $_POST['spamanvil_system_prompt'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- intentional: plain-text LLM prompt template, not HTML. Contains <comment_data> tags that wp_kses would strip.
 		}
 		if ( isset( $_POST['spamanvil_user_prompt'] ) ) {
-			update_option( 'spamanvil_user_prompt', wp_unslash( $_POST['spamanvil_user_prompt'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- intentional: plain-text LLM prompt template, not HTML. Contains <comment_data> tags that wp_kses would strip.
+			update_option( 'spamanvil_user_prompt', SpamAnvil_Activator::normalize_prompt( wp_unslash( $_POST['spamanvil_user_prompt'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- intentional: plain-text LLM prompt template, not HTML. Contains <comment_data> tags that wp_kses would strip.
 		}
 		if ( isset( $_POST['spamanvil_spam_words'] ) ) {
 			update_option( 'spamanvil_spam_words', sanitize_textarea_field( wp_unslash( $_POST['spamanvil_spam_words'] ) ) );

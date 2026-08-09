@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.14.0
+Stable tag: 1.14.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,11 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 7. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.14.1 =
+* Security fix: The 1.12.0 prompt-security migration (which isolates commenter metadata inside a <commenter_data> boundary) silently skipped any site where the admin had ever pressed Save on the Prompt tab: browsers submit textareas with CRLF line endings, so the unmodified default hashed differently from the plugin's source string. Hash comparison and saving are now line-ending-normalized, and the migration re-runs on upgrade — reaching those sites. Customized prompts are still never touched. (Field audit N1: 4 of 7 audited sites were affected.)
+* Fix: IP blocks created before the 1.12.0 escalation ceiling kept their multi-century expirations (e.g. a ban until the year 2743). A one-time migration caps legacy bans at the 30-day ceiling and escalation levels at 6; new escalations no longer grow the level beyond 6 (the duration ceiling lives there).
+* Hardening: Model fallback chains are capped at 10 entries as a sanity limit.
 
 = 1.14.0 =
 * Improvement: Fast recovery after AI outages. Comments that exhausted their retries during a provider outage no longer wait up to 24 hours after the provider recovers: any successful classification (or a green "Test Connection") proves the AI is healthy again and gives parked items a fresh retry cycle within the hour. A per-item cap (5 fast cycles) prevents a comment that every model always fails on from churning API calls forever — the daily safety net still guarantees every item is eventually retried, and a provider-configuration change always grants a full clean slate.

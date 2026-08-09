@@ -84,6 +84,11 @@ class ErrorClassificationTest extends TestCase {
 		$this->assertSame( array(), SpamAnvil_Provider_Factory::parse_model_list( ' , ' ) );
 	}
 
+	public function test_model_list_is_capped_at_ten() {
+		$raw = implode( ',', array_map( function ( $i ) { return "model-$i"; }, range( 1, 30 ) ) );
+		$this->assertCount( 10, SpamAnvil_Provider_Factory::parse_model_list( $raw ) );
+	}
+
 	// ---- get_model_chain() / get_config_hash() ----
 
 	private function make_factory() {
