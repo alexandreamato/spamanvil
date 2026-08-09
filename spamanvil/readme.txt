@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.13.0
+Stable tag: 1.13.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 7. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.13.1 =
+* Improvement: The OpenRouter default model is now the router chain "openrouter/free, openrouter/auto" — the free-pool router is tried first and the paid auto router is the fallback. Unlike a hard-coded free model, OpenRouter's routers never go stale when individual models are deprecated. Installs still on an unmodified old default are migrated automatically; custom model choices are never touched.
 
 = 1.13.0 =
 * New: Smart email notifications (enabled by default). WordPress normally emails you the instant a comment is held — before SpamAnvil has evaluated it, so every spam attempt used to generate a "please moderate" email. SpamAnvil now holds those notifications and emails only after the verdict: legitimate comments notify the post author once approved, spam is completely silent, and you are only asked to moderate when the classifier genuinely could not decide (max retries reached). Comments from users SpamAnvil skips (e.g. moderators) keep their normal notifications.

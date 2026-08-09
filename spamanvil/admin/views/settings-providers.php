@@ -30,7 +30,7 @@ foreach ( $providers as $slug => $name ) {
 
 $default_models = array(
 	'openai'      => 'gpt-4o-mini',
-	'openrouter'  => 'openai/gpt-oss-20b:free',
+	'openrouter'  => 'openrouter/free, openrouter/auto',
 	'featherless' => 'meta-llama/Meta-Llama-3.1-8B-Instruct',
 	'anthropic'   => 'claude-sonnet-5',
 	'gemini'      => 'gemini-2.0-flash',

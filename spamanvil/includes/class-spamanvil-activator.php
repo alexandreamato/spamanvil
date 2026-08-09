@@ -9,7 +9,27 @@ class SpamAnvil_Activator {
 		self::create_tables();
 		self::set_default_options();
 		self::maybe_upgrade_default_prompts();
+		self::maybe_upgrade_default_models();
 		self::schedule_cron();
+	}
+
+	/**
+	 * Previous OpenRouter default models — individual free models that go stale as
+	 * OpenRouter churns its catalog. Installs still on one of these (i.e. the user
+	 * never customized the field) migrate to the router chain, which never goes
+	 * stale: openrouter/free routes across the free pool, openrouter/auto is the
+	 * paid fallback.
+	 */
+	const LEGACY_OPENROUTER_DEFAULTS = array(
+		'openai/gpt-oss-20b:free',              // 1.9.x–1.13.0
+		'meta-llama/llama-3.3-70b-instruct:free', // pre-1.9
+	);
+
+	private static function maybe_upgrade_default_models() {
+		$stored = trim( (string) get_option( 'spamanvil_openrouter_model', '' ) );
+		if ( '' !== $stored && in_array( $stored, self::LEGACY_OPENROUTER_DEFAULTS, true ) ) {
+			update_option( 'spamanvil_openrouter_model', 'openrouter/free, openrouter/auto' );
+		}
 	}
 
 	/**

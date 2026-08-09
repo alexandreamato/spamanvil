@@ -24,7 +24,10 @@ class SpamAnvil_Provider_Factory {
 			'constant_key'  => 'SPAMANVIL_OPENROUTER_API_KEY',
 			'option_key'    => 'spamanvil_openrouter_api_key',
 			'model_option'  => 'spamanvil_openrouter_model',
-			'default_model' => 'openai/gpt-oss-20b:free',
+			// Router chain: openrouter/free tries the free-model pool; if it fails,
+			// openrouter/auto picks a suitable paid model. Both are OpenRouter-managed
+			// routers, so this default never goes stale when individual models churn.
+			'default_model' => 'openrouter/free, openrouter/auto',
 		),
 		'featherless' => array(
 			'class'         => 'SpamAnvil_OpenAI_Compatible',
@@ -313,8 +316,9 @@ class SpamAnvil_Provider_Factory {
 		$config = self::$provider_configs[ $slug ];
 		$models = self::parse_model_list( get_option( $config['model_option'], '' ) );
 
-		if ( empty( $models ) && '' !== $config['default_model'] ) {
-			$models = array( $config['default_model'] );
+		if ( empty( $models ) ) {
+			// Defaults can be chains too (e.g. OpenRouter's "free, auto" routers).
+			$models = self::parse_model_list( $config['default_model'] );
 		}
 
 		return $models;

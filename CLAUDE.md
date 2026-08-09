@@ -115,7 +115,7 @@ WP-Cron (every 5 min):
 | Provider    | Class                        | Default Model                              |
 |-------------|------------------------------|--------------------------------------------|
 | OpenAI      | SpamAnvil_OpenAI_Compatible  | gpt-4o-mini                                |
-| OpenRouter  | SpamAnvil_OpenAI_Compatible  | meta-llama/llama-3.3-70b-instruct:free     |
+| OpenRouter  | SpamAnvil_OpenAI_Compatible  | openrouter/free, openrouter/auto (router chain; legacy single-model defaults migrate on upgrade) |
 | Featherless | SpamAnvil_OpenAI_Compatible  | meta-llama/Meta-Llama-3.1-8B-Instruct      |
 | Anthropic   | SpamAnvil_Anthropic          | claude-sonnet-5                            |
 | Gemini      | SpamAnvil_Gemini             | gemini-2.0-flash                           |
