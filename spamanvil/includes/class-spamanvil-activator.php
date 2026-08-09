@@ -136,6 +136,7 @@ class SpamAnvil_Activator {
 			'spamanvil_timetrap_enabled'     => '1',
 			'spamanvil_timetrap_seconds'     => 3,
 			'spamanvil_delete_data'          => '0',
+			'spamanvil_email_mode'           => 'smart',
 			'spamanvil_system_prompt'        => self::get_default_system_prompt(),
 			'spamanvil_user_prompt'          => self::get_default_user_prompt(),
 			'spamanvil_spam_words'           => self::get_default_spam_words(),
@@ -266,6 +267,10 @@ Pre-analysis score: {heuristic_score}/100
 		}
 		if ( ! wp_next_scheduled( 'spamanvil_cleanup_logs' ) ) {
 			wp_schedule_event( time(), 'daily', 'spamanvil_cleanup_logs' );
+		}
+		if ( ! wp_next_scheduled( 'spamanvil_email_digest' ) ) {
+			// The handler no-ops unless the email mode is 'digest'.
+			wp_schedule_event( time(), 'daily', 'spamanvil_email_digest' );
 		}
 	}
 }

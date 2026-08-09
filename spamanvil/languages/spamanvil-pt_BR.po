@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.12.0\n"
+"Project-Id-Version: SpamAnvil 1.13.0\n"
 "Report-Msgid-Bugs-To: https://software.amato.com.br/spamanvil-antispam-"
 "plugin-for-wordpress/\n"
 "POT-Creation-Date: 2026-02-14 18:30-0300\n"
@@ -820,3 +820,36 @@ msgstr "Sites de baixo tráfego podem precisar de um cron de sistema chamando o 
 
 msgid "You can list several models separated by commas — they are tried in order until one answers (e.g. a free model first, then a paid one)."
 msgstr "Você pode listar vários modelos separados por vírgulas — eles são tentados em ordem até um responder (ex.: um modelo gratuito primeiro, depois um pago)."
+
+msgid "Email Notifications"
+msgstr "Notificações por E-mail"
+
+msgid "Smart — notify only after the verdict (Recommended)"
+msgstr "Inteligente — notificar só depois do veredito (Recomendado)"
+
+msgid "Daily digest — one summary email per day"
+msgstr "Resumo diário — um e-mail de resumo por dia"
+
+msgid "Off — default WordPress emails"
+msgstr "Desligado — e-mails padrão do WordPress"
+
+msgid "WordPress normally emails you the moment a comment is held — before SpamAnvil has evaluated it, so every spam attempt generates an email. Smart mode holds those notifications and emails only when it matters: legitimate comments notify the post author after approval, spam is silent, and you are only asked to moderate when the classifier genuinely could not decide. Daily digest replaces per-comment emails with one summary. Comments from users SpamAnvil skips (e.g. moderators) always keep normal notifications."
+msgstr "O WordPress normalmente envia e-mail no momento em que um comentário é retido — antes de o SpamAnvil avaliá-lo, então cada tentativa de spam gera um e-mail. O modo Inteligente segura essas notificações e envia e-mail só quando importa: comentários legítimos notificam o autor do post após a aprovação, spam fica em silêncio, e você só é chamado a moderar quando o classificador realmente não conseguiu decidir. O Resumo diário substitui os e-mails individuais por um resumo. Comentários de usuários que o SpamAnvil pula (ex.: moderadores) sempre mantêm as notificações normais."
+
+msgid "[%1$s] SpamAnvil daily digest — %2$d spam blocked"
+msgstr "[%1$s] Resumo diário do SpamAnvil — %2$d spams bloqueados"
+
+msgid "SpamAnvil activity on %s in the last 24 hours:"
+msgstr "Atividade do SpamAnvil em %s nas últimas 24 horas:"
+
+msgid "- Spam blocked: %d"
+msgstr "- Spams bloqueados: %d"
+
+msgid "- Legitimate comments approved: %d"
+msgstr "- Comentários legítimos aprovados: %d"
+
+msgid "- Awaiting your moderation: %d"
+msgstr "- Aguardando sua moderação: %d"
+
+msgid "You receive this summary instead of one email per comment (SpamAnvil email mode: Daily digest)."
+msgstr "Você recebe este resumo em vez de um e-mail por comentário (modo de e-mail do SpamAnvil: Resumo diário)."

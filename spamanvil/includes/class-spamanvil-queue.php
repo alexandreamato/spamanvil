@@ -464,6 +464,10 @@ class SpamAnvil_Queue {
 		} else {
 			wp_set_comment_status( $item->comment_id, 'approve' );
 			$this->stats->increment( 'ham_approved' );
+
+			// Smart email mode: the insert-time notification was held back — now that
+			// the comment is verified ham and approved, tell the post author.
+			SpamAnvil_Notifier::send_postauthor( $item->comment_id );
 		}
 
 		$this->stats->increment( 'comments_checked' );
@@ -997,6 +1001,11 @@ class SpamAnvil_Queue {
 				null,
 				array( '%d' )
 			);
+
+			// Smart email mode: classification failed for good, so a human decision is
+			// genuinely needed — send the moderation email that was held at insert time.
+			SpamAnvil_Notifier::send_moderator( $item->comment_id );
+
 			return;
 		}
 

@@ -86,9 +86,16 @@ class SpamAnvil {
 			add_filter( 'pre_option_comment_previously_approved', '__return_zero' );
 		}
 
+		// Smart email notifications: hold WordPress' insert-time comment emails for
+		// comments SpamAnvil will evaluate; the queue re-sends after the verdict
+		// (ham → post author; unclassifiable → moderator). See SpamAnvil_Notifier.
+		add_filter( 'notify_moderator', array( 'SpamAnvil_Notifier', 'filter_moderator_notify' ), 10, 2 );
+		add_filter( 'notify_post_author', array( 'SpamAnvil_Notifier', 'filter_postauthor_notify' ), 10, 2 );
+
 		// Cron hooks.
 		add_action( 'spamanvil_process_queue', array( $this->queue, 'process_batch' ) );
 		add_action( 'spamanvil_cleanup_logs', array( $this->stats, 'cleanup_old_logs' ) );
+		add_action( 'spamanvil_email_digest', array( 'SpamAnvil_Notifier', 'send_digest' ) );
 
 		// Admin hooks.
 		if ( is_admin() && $this->admin ) {

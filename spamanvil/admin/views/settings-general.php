@@ -173,6 +173,26 @@ $alltime_blocked   = $alltime_spam + $alltime_heuristic + $alltime_ip;
 		</tr>
 
 		<tr>
+			<th scope="row"><?php esc_html_e( 'Email Notifications', 'spamanvil' ); ?></th>
+			<td>
+				<select name="spamanvil_email_mode">
+					<option value="smart" <?php selected( SpamAnvil_Notifier::get_mode(), 'smart' ); ?>>
+						<?php esc_html_e( 'Smart — notify only after the verdict (Recommended)', 'spamanvil' ); ?>
+					</option>
+					<option value="digest" <?php selected( SpamAnvil_Notifier::get_mode(), 'digest' ); ?>>
+						<?php esc_html_e( 'Daily digest — one summary email per day', 'spamanvil' ); ?>
+					</option>
+					<option value="off" <?php selected( SpamAnvil_Notifier::get_mode(), 'off' ); ?>>
+						<?php esc_html_e( 'Off — default WordPress emails', 'spamanvil' ); ?>
+					</option>
+				</select>
+				<p class="description">
+					<?php esc_html_e( 'WordPress normally emails you the moment a comment is held — before SpamAnvil has evaluated it, so every spam attempt generates an email. Smart mode holds those notifications and emails only when it matters: legitimate comments notify the post author after approval, spam is silent, and you are only asked to moderate when the classifier genuinely could not decide. Daily digest replaces per-comment emails with one summary. Comments from users SpamAnvil skips (e.g. moderators) always keep normal notifications.', 'spamanvil' ); ?>
+				</p>
+			</td>
+		</tr>
+
+		<tr>
 			<th scope="row"><?php esc_html_e( 'Open Mode', 'spamanvil' ); ?></th>
 			<td>
 				<label>

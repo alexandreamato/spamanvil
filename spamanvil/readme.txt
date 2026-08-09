@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.12.0
+Stable tag: 1.13.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -237,8 +237,14 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 4. IP Management - View and manage blocked IPs with escalation levels
 5. Statistics dashboard - Daily activity, spam caught, heuristic blocks, API usage
 6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
+7. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.13.0 =
+* New: Smart email notifications (enabled by default). WordPress normally emails you the instant a comment is held — before SpamAnvil has evaluated it, so every spam attempt used to generate a "please moderate" email. SpamAnvil now holds those notifications and emails only after the verdict: legitimate comments notify the post author once approved, spam is completely silent, and you are only asked to moderate when the classifier genuinely could not decide (max retries reached). Comments from users SpamAnvil skips (e.g. moderators) keep their normal notifications.
+* New: Daily digest mode — replace per-comment emails entirely with one daily summary (spam blocked, comments approved, items awaiting moderation with a link). Sent only on days with activity.
+* The mode is configurable under Settings → SpamAnvil → General → Email Notifications (Smart / Daily digest / Off).
 
 = 1.12.0 =
 * Security: Commenter metadata (author name, email, URL) is now sanitized and isolated inside a <commenter_data> boundary in the LLM prompt — previously an instruction-shaped author *name* could inject prompt text outside the <comment_data> isolation block. The prompt-injection heuristics now scan author fields too. Installs using the unmodified default prompts are migrated automatically; customized prompts are never touched.

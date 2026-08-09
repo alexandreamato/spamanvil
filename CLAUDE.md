@@ -108,6 +108,8 @@ WP-Cron (every 5 min):
 
 **Open Mode degradation (1.12.0, audit S2):** in open mode, `hold_for_review()` publishes optimistically only while a provider is configured AND the queue is not paused; otherwise it degrades to holding comments for review.
 
+**Smart email notifications (1.13.0):** `SpamAnvil_Notifier` (static class, hooked in `define_hooks()`) filters `notify_moderator`/`notify_post_author` to hold WordPress' insert-time comment emails for comments SpamAnvil will evaluate, then re-sends after the verdict via a `$sending_deferred` flag that lets the deliberate send pass its own suppression filter: ham → `send_postauthor()` (respects `comments_notify`), max_retries → `send_moderator()` (called from `handle_failure()`), spam → silence. `digest` mode sends one daily summary (`spamanvil_email_digest` daily cron, handler no-ops in other modes; `build_digest_body()` is pure/unit-tested; quiet days send nothing). Mode option `spamanvil_email_mode` defaults to `'smart'` for everyone including upgrades (add_option on activate + `'smart'` as the get_option default everywhere). Skipped users (moderators) always keep normal notifications. Tests: `tests/unit/NotifierUnitTest.php`, `tests/integration/NotifierTest.php` (uses the WP mock PHPMailer).
+
 ## Supported Providers
 
 | Provider    | Class                        | Default Model                              |
@@ -360,6 +362,7 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 | `spamanvil_ratelimit_enabled` | `'1'` | Throttle rapid repeat comments per IP |
 | `spamanvil_ratelimit_max` / `_window` | `5` / `60` | Max comments per window (seconds) per IP |
 | `spamanvil_open_mode` | `'0'` | "Crazy Open" — strip WP comment friction + optimistic publish |
+| `spamanvil_email_mode` | `'smart'` | Email notifications: `smart` (notify after verdict) / `digest` (daily summary) / `off` (WP default) |
 | `spamanvil_auto_free_fallback` | `'1'` | Auto-switch to another free model when the configured one is unavailable |
 
 **Trusted IP header + AES-256-GCM keys (1.10.0):** two security fixes from a production review.
