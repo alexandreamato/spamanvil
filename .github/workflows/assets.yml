@@ -1,0 +1,34 @@
+name: Deploy WordPress.org assets
+
+# The plugin page's icons, banners and screenshots live in .wordpress-org/ and are
+# published to the SVN `assets/` directory, which is versioned independently of the
+# plugin itself: updating a screenshot must not require a release.
+#
+# Runs on any push to main that touches that directory. The tagged release workflow
+# (deploy.yml) also syncs the same directory, so the two never disagree.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.wordpress-org/**'
+      - '.github/workflows/assets.yml'
+  workflow_dispatch:
+
+jobs:
+  assets:
+    name: Sync .wordpress-org to SVN assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy assets
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+          SLUG: spamanvil
+          ASSETS_DIR: .wordpress-org
+          # The shippable plugin (and its readme) lives in the spamanvil/ subfolder.
+          README_NAME: spamanvil/readme.txt

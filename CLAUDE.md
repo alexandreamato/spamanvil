@@ -289,6 +289,32 @@ svn-spamanvil/
     └── X.Y.Z/          # Tagged releases (one directory per version)
 ```
 
+### Screenshots (`.wordpress-org/`)
+
+WordPress.org page assets — icons, banners and `screenshot-N.png` — are versioned in **`.wordpress-org/`** at the repo root and published by `.github/workflows/assets.yml` (10up asset-update action) on any push to `main` that touches that directory. Assets are versioned independently of the plugin: a new screenshot needs no release. The directory is synced as a whole, so **every** asset must live there — a file missing locally is removed from SVN.
+
+To regenerate the screenshots, build a throwaway demo install (no MySQL needed):
+
+```bash
+# WordPress on SQLite, in a scratch dir
+curl -sL -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+curl -sL https://wordpress.org/latest.tar.gz | tar xz
+curl -sL -o sqlite.zip https://downloads.wordpress.org/plugin/sqlite-database-integration.zip
+unzip -q sqlite.zip -d wordpress/wp-content/plugins/
+# copy db.copy → wp-content/db.php replacing {SQLITE_IMPLEMENTATION_FOLDER_PATH} / {SQLITE_PLUGIN}
+php wp-cli.phar core install --url=http://localhost:8931 --title="Demo Site" --admin_user=demo ...
+php wp-cli.phar eval-file bin/demo-seed.php      # fictional data: 180 days of stats, logs, blocked IPs
+PHP_CLI_SERVER_WORKERS=8 php -S localhost:8931 -t wordpress   # workers matter: single-threaded hangs Chrome
+```
+
+Four traps that cost time the first time:
+- **`PHP_CLI_SERVER_WORKERS`** — with the single-threaded built-in server the admin page's own subrequests deadlock and the headless capture hangs until timeout.
+- **`siteurl`/`home`** — `wp core install --url=…` can still leave `/wordpress` in the option, and every stylesheet 404s: the capture comes out completely unstyled. Check `wp option get siteurl` before capturing.
+- **Cron** — with `DISABLE_WP_CRON` off, WP-Cron fires on page loads, `cleanup_old_logs()` **purges stats older than 90 days** (so the "all-time" hero shrinks), and the queue tries to process the seeded items. Disable it, then set `spamanvil_last_cron_run` to now and delete the `spamanvil_health_check` transient, or the health notice lands in every screenshot.
+- **Auth** — mu-plugin redefining the pluggable `auth_redirect()` as a no-op + `wp_set_current_user()` on `init` is what makes headless wp-admin capture work.
+
+Capture with `--headless=new --force-device-scale-factor=2 --window-size=1440,2600 --screenshot=…`, then crop and downscale to 2160px wide.
+
 ### Updating Only Assets (No New Release)
 
 Assets (icons, banners, screenshots) live in `assets/` and can be deployed independently:
