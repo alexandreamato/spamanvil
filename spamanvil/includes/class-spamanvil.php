@@ -110,6 +110,7 @@ class SpamAnvil {
 			add_action( 'admin_notices', array( $this->admin, 'maybe_show_review_notice' ) );
 
 			// AJAX handlers.
+			add_action( 'wp_ajax_spamanvil_setup_finish', array( $this->admin, 'ajax_setup_finish' ) );
 			add_action( 'wp_ajax_spamanvil_test_connection', array( $this->admin, 'ajax_test_connection' ) );
 			add_action( 'wp_ajax_spamanvil_list_models', array( $this->admin, 'ajax_list_models' ) );
 			add_action( 'wp_ajax_spamanvil_unblock_ip', array( $this->admin, 'ajax_unblock_ip' ) );

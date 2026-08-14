@@ -46,8 +46,28 @@ class SpamAnvil_Admin {
 			return;
 		}
 
-		wp_safe_redirect( admin_url( 'options-general.php?page=spamanvil&welcome=1' ) );
+		// Unconfigured installs go to the wizard, which asks for exactly one thing.
+		// Reactivations of a working install go to the settings page as before.
+		$target = '' === (string) get_option( 'spamanvil_primary_provider', '' )
+			? 'options-general.php?page=spamanvil&tab=setup'
+			: 'options-general.php?page=spamanvil&welcome=1';
+
+		wp_safe_redirect( admin_url( $target ) );
 		exit;
+	}
+
+	/**
+	 * Whether the current request is the first-run wizard, which is kept free of the
+	 * plugin's own admin notices.
+	 *
+	 * @return bool
+	 */
+	private static function is_setup_screen() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only screen check.
+		return isset( $_GET['page'], $_GET['tab'] )
+			&& 'spamanvil' === $_GET['page']
+			&& 'setup' === $_GET['tab'];
+		// phpcs:enable
 	}
 
 	/**
@@ -57,6 +77,12 @@ class SpamAnvil_Admin {
 	 */
 	public function maybe_show_health_notice() {
 		if ( ! current_user_can( 'manage_options' ) || '1' !== get_option( 'spamanvil_enabled', '1' ) ) {
+			return;
+		}
+
+		// On the wizard the notice would tell them to do exactly what the screen in
+		// front of them is for.
+		if ( self::is_setup_screen() ) {
 			return;
 		}
 
@@ -128,14 +154,22 @@ class SpamAnvil_Admin {
 
 		echo '<div class="notice notice-error"><p><strong>SpamAnvil:</strong> ';
 		if ( ! empty( $health['no_prov'] ) ) {
+			// Send them to the wizard, not the six-provider tab: this notice reaches
+			// people who never finished setup, and one field beats one decision.
 			esc_html_e( 'no AI provider is configured, so comments are not being classified.', 'spamanvil' );
-		} else {
 			printf(
-				/* translators: %d: number of comments stuck in failed/max-retries */
-				esc_html__( '%d comment(s) could not be classified (failed or max retries) — check the provider configuration and API key.', 'spamanvil' ),
-				(int) $health['stuck']
+				' <a href="%s">%s</a></p></div>',
+				esc_url( admin_url( 'options-general.php?page=spamanvil&tab=setup' ) ),
+				esc_html__( 'Finish setup — it takes a minute', 'spamanvil' )
 			);
+			return;
 		}
+
+		printf(
+			/* translators: %d: number of comments stuck in failed/max-retries */
+			esc_html__( '%d comment(s) could not be classified (failed or max retries) — check the provider configuration and API key.', 'spamanvil' ),
+			(int) $health['stuck']
+		);
 		printf( ' <a href="%s">%s</a></p></div>', esc_url( $logs_url ), esc_html__( 'View SpamAnvil logs', 'spamanvil' ) );
 	}
 
@@ -208,7 +242,7 @@ class SpamAnvil_Admin {
 	 * any admin screen without depending on the plugin's JS being enqueued there.
 	 */
 	public function maybe_show_review_notice() {
-		if ( ! $this->should_show_review_notice() ) {
+		if ( self::is_setup_screen() || ! $this->should_show_review_notice() ) {
 			return;
 		}
 
@@ -334,6 +368,9 @@ class SpamAnvil_Admin {
 			'has_provider' => ( '' !== get_option( 'spamanvil_primary_provider', '' ) ),
 			'providers_url' => admin_url( 'options-general.php?page=spamanvil&tab=providers' ),
 			'strings'  => array(
+				'setup_testing'   => __( 'Checking your key…', 'spamanvil' ),
+				'setup_paste_key' => __( 'Paste your API key first.', 'spamanvil' ),
+				'setup_network'   => __( 'Could not reach your site to run the test. Please try again.', 'spamanvil' ),
 				'testing'      => __( 'Testing...', 'spamanvil' ),
 			'add_to_chain' => __( 'Add to model chain', 'spamanvil' ),
 				'success'    => __( 'Connection successful!', 'spamanvil' ),
@@ -376,6 +413,14 @@ class SpamAnvil_Admin {
 		}
 
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab navigation.
+
+		// The wizard is a full-screen view on this same page, not a tab: it deliberately
+		// hides the six-tab surface until the one thing that matters is done.
+		if ( 'setup' === $active_tab ) {
+			$this->render_setup_wizard();
+			return;
+		}
+
 		$tabs       = array(
 			'general'    => __( 'General', 'spamanvil' ),
 			'providers'  => __( 'Providers', 'spamanvil' ),
@@ -410,7 +455,7 @@ class SpamAnvil_Admin {
 						<?php esc_html_e( 'Thank you for installing SpamAnvil. To get started, configure an AI provider below.', 'spamanvil' ); ?>
 					</p>
 					<p>
-						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=providers' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Configure a Provider', 'spamanvil' ); ?></a>
+						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=setup' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Set up in a minute', 'spamanvil' ); ?></a>
 						<a href="https://software.amato.com.br/spamanvil-antispam-plugin-for-wordpress/" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'Read the Docs', 'spamanvil' ); ?></a>
 					</p>
 				</div>
@@ -423,7 +468,7 @@ class SpamAnvil_Admin {
 						<?php esc_html_e( 'Comments cannot be analyzed until you configure at least one AI provider.', 'spamanvil' ); ?>
 					</p>
 					<p>
-						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=providers' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Configure a Provider', 'spamanvil' ); ?></a>
+						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=setup' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Set up in a minute', 'spamanvil' ); ?></a>
 					</p>
 				</div>
 			<?php endif; ?>
@@ -457,6 +502,80 @@ class SpamAnvil_Admin {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * First-run wizard: one screen, one field.
+	 *
+	 * SpamAnvil is inert until an API key exists, and the Providers tab asks people to
+	 * choose among six providers before they know what any of them is — which is where
+	 * most fresh installs stopped. This asks for a free OpenRouter key, verifies it with
+	 * a real classification, and only then writes anything to the database.
+	 */
+	public function render_setup_wizard() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$configured   = '' !== (string) get_option( 'spamanvil_primary_provider', '' );
+		$settings_url = admin_url( 'options-general.php?page=spamanvil' );
+
+		include SPAMANVIL_PLUGIN_DIR . 'admin/views/setup-wizard.php';
+	}
+
+	/**
+	 * Wizard submit: test the pasted key, and save the configuration only if it works.
+	 *
+	 * Testing before writing matters — a typo'd key stored as the site's provider is
+	 * exactly the silent-failure state the health notice exists to clean up after.
+	 */
+	public function ajax_setup_finish() {
+		check_ajax_referer( 'spamanvil_ajax', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		$slug   = isset( $_POST['provider'] ) ? sanitize_text_field( wp_unslash( $_POST['provider'] ) ) : 'openrouter';
+		$config = SpamAnvil_Provider_Factory::get_provider_config( $slug );
+
+		if ( empty( $config ) ) {
+			wp_send_json_error( __( 'Unknown provider.', 'spamanvil' ) );
+		}
+
+		$api_key = isset( $_POST['api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) : '';
+
+		if ( '' === $api_key ) {
+			wp_send_json_error( __( 'Paste your API key first.', 'spamanvil' ) );
+		}
+
+		$provider = $this->provider_factory->create( $slug, array( 'api_key' => $api_key ) );
+
+		if ( is_wp_error( $provider ) ) {
+			wp_send_json_error( $provider->get_error_message() );
+		}
+
+		$result = $provider->test_connection();
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( $result->get_error_message() );
+		}
+
+		update_option( $config['option_key'], $this->encryptor->encrypt( $api_key ) );
+		update_option( 'spamanvil_primary_provider', $slug );
+		update_option( 'spamanvil_enabled', '1' );
+		// A green test proves the AI is reachable, which also releases items parked
+		// after a provider outage (1.14.0).
+		update_option( 'spamanvil_last_llm_success', time(), false );
+		update_option( 'spamanvil_dismiss_setup', '1' );
+		delete_transient( 'spamanvil_health_check' );
+
+		wp_send_json_success(
+			array(
+				'message'      => __( 'Connection verified. SpamAnvil is protecting your comments.', 'spamanvil' ),
+				'settings_url' => admin_url( 'options-general.php?page=spamanvil' ),
+			)
+		);
 	}
 
 	private function handle_save_settings() {

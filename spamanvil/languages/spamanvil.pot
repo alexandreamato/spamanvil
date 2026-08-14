@@ -2,23 +2,23 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.14.0\n"
+"Project-Id-Version: SpamAnvil 1.15.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/spamanvil\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-09T14:13:35+00:00\n"
+"POT-Creation-Date: 2026-08-14T15:25:21+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: spamanvil\n"
 
 #. Plugin Name of the plugin
 #: spamanvil.php
-#: admin/class-spamanvil-admin.php:270
-#: admin/class-spamanvil-admin.php:271
-#: admin/class-spamanvil-admin.php:851
+#: admin/class-spamanvil-admin.php:319
+#: admin/class-spamanvil-admin.php:320
+#: admin/class-spamanvil-admin.php:992
 msgid "SpamAnvil"
 msgstr ""
 
@@ -42,333 +42,362 @@ msgstr ""
 msgid "https://amato.com.br"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:99
+#: admin/class-spamanvil-admin.php:125
 msgid "comment classification is paused because of a configuration error. Fix the provider settings and processing resumes automatically."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:103
-#: admin/class-spamanvil-admin.php:111
+#: admin/class-spamanvil-admin.php:129
+#: admin/class-spamanvil-admin.php:137
 msgid "Open the Providers tab"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:110
+#: admin/class-spamanvil-admin.php:136
 msgid "a saved API key can no longer be decrypted — your site security keys (AUTH_SALT) likely changed. Re-enter the API key so classification can resume."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:118
+#: admin/class-spamanvil-admin.php:144
 msgid "comments are waiting in the queue but WP-Cron has not run recently."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:121
+#: admin/class-spamanvil-admin.php:147
 msgid "DISABLE_WP_CRON is enabled on this site — make sure a real (system) cron job calls wp-cron.php regularly, or comments will never be classified."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:123
+#: admin/class-spamanvil-admin.php:149
 msgid "Low-traffic sites may need a real (system) cron job calling wp-cron.php, or use the \"Process Queue Now\" button on the Logs tab."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:131
+#: admin/class-spamanvil-admin.php:159
 msgid "no AI provider is configured, so comments are not being classified."
 msgstr ""
 
+#: admin/class-spamanvil-admin.php:163
+msgid "Finish setup — it takes a minute"
+msgstr ""
+
 #. translators: %d: number of comments stuck in failed/max-retries
-#: admin/class-spamanvil-admin.php:135
+#: admin/class-spamanvil-admin.php:170
 #, php-format
 msgid "%d comment(s) could not be classified (failed or max retries) — check the provider configuration and API key."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:139
+#: admin/class-spamanvil-admin.php:173
 msgid "View SpamAnvil logs"
 msgstr ""
 
 #. translators: %s: number of comments checked
-#: admin/class-spamanvil-admin.php:225
+#: admin/class-spamanvil-admin.php:259
 #, php-format
 msgid "SpamAnvil has checked %s comments on your site. If it has been useful, an honest review helps other people find it — and keeps the plugin free."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:231
+#: admin/class-spamanvil-admin.php:265
 msgid "Leave a review ★★★★★"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:232
+#: admin/class-spamanvil-admin.php:266
 msgid "Maybe later"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:233
+#: admin/class-spamanvil-admin.php:267
 msgid "I already did / don't ask again"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:322
+#: admin/class-spamanvil-admin.php:371
+msgid "Checking your key…"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:372
+#: admin/class-spamanvil-admin.php:549
+msgid "Paste your API key first."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:373
+msgid "Could not reach your site to run the test. Please try again."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:374
 msgid "Testing..."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:323
+#: admin/class-spamanvil-admin.php:375
 msgid "Add to model chain"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:324
+#: admin/class-spamanvil-admin.php:376
 msgid "Connection successful!"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:325
+#: admin/class-spamanvil-admin.php:377
 msgid "Connection failed:"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:326
+#: admin/class-spamanvil-admin.php:378
 msgid "Unblocking..."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:327
+#: admin/class-spamanvil-admin.php:379
 msgid "IP unblocked successfully"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:328
+#: admin/class-spamanvil-admin.php:380
 msgid "Are you sure?"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:329
+#: admin/class-spamanvil-admin.php:381
 msgid "Applied! Save to confirm."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:330
+#: admin/class-spamanvil-admin.php:382
 msgid "Scanning..."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:331
+#: admin/class-spamanvil-admin.php:383
 msgid "Scan complete!"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:332
+#: admin/class-spamanvil-admin.php:384
 msgid "Processing..."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:333
+#: admin/class-spamanvil-admin.php:385
 msgid "Done!"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:334
+#: admin/class-spamanvil-admin.php:386
 msgid "Processing batch..."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:335
+#: admin/class-spamanvil-admin.php:387
 #: admin/views/settings-general.php:113
 msgid "Stop"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:336
+#: admin/class-spamanvil-admin.php:388
 msgid "Stopping..."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:337
+#: admin/class-spamanvil-admin.php:389
 msgid "Stopped."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:338
+#: admin/class-spamanvil-admin.php:390
 msgid "Connection error, retrying..."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:339
+#: admin/class-spamanvil-admin.php:391
 msgid "Failed after multiple retries."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:340
+#: admin/class-spamanvil-admin.php:392
 msgid "items/min"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:341
+#: admin/class-spamanvil-admin.php:393
 #: admin/views/settings-stats.php:186
 msgid "Spam"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:342
+#: admin/class-spamanvil-admin.php:394
 msgid "Ham"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:343
+#: admin/class-spamanvil-admin.php:395
 msgid "Are you sure you want to delete this API key?"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:344
+#: admin/class-spamanvil-admin.php:396
 #: admin/views/settings-providers.php:148
 msgid "Enter API key"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:345
+#: admin/class-spamanvil-admin.php:397
 msgid "This will merge an extended spam word list into your current list. Continue?"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:346
+#: admin/class-spamanvil-admin.php:398
 msgid "new words added. Save to confirm."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:347
+#: admin/class-spamanvil-admin.php:399
 msgid "Extended list loaded. Save to confirm."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:348
+#: admin/class-spamanvil-admin.php:400
 msgid "No provider configured."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:349
-#: admin/class-spamanvil-admin.php:398
-#: admin/class-spamanvil-admin.php:411
+#: admin/class-spamanvil-admin.php:401
 msgid "Configure a Provider"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:350
+#: admin/class-spamanvil-admin.php:402
 msgid "Batch failed — check Logs tab for details."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:351
+#: admin/class-spamanvil-admin.php:403
 msgid "Loading models…"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:352
+#: admin/class-spamanvil-admin.php:404
 msgid "Could not load models:"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:353
+#: admin/class-spamanvil-admin.php:405
 msgid "No models match your search."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:365
+#: admin/class-spamanvil-admin.php:425
 msgid "General"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:366
+#: admin/class-spamanvil-admin.php:426
 msgid "Providers"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:367
+#: admin/class-spamanvil-admin.php:427
 msgid "Prompt"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:368
+#: admin/class-spamanvil-admin.php:428
 msgid "IP Management"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:369
-#: admin/class-spamanvil-admin.php:879
+#: admin/class-spamanvil-admin.php:429
+#: admin/class-spamanvil-admin.php:1020
 msgid "Statistics"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:370
+#: admin/class-spamanvil-admin.php:430
 msgid "Logs"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:389
+#: admin/class-spamanvil-admin.php:449
 msgid "SpamAnvil Settings"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:394
+#: admin/class-spamanvil-admin.php:454
 msgid "Welcome to SpamAnvil!"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:395
+#: admin/class-spamanvil-admin.php:455
 msgid "Thank you for installing SpamAnvil. To get started, configure an AI provider below."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:399
+#: admin/class-spamanvil-admin.php:458
+#: admin/class-spamanvil-admin.php:471
+msgid "Set up in a minute"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:459
 msgid "Read the Docs"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:407
+#: admin/class-spamanvil-admin.php:467
 msgid "SpamAnvil is enabled but no provider is configured."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:408
+#: admin/class-spamanvil-admin.php:468
 msgid "Comments cannot be analyzed until you configure at least one AI provider."
 msgstr ""
 
 #. translators: %s: sponsor link
-#: admin/class-spamanvil-admin.php:438
+#: admin/class-spamanvil-admin.php:498
 #, php-format
 msgid "What's the next WordPress problem I'll solve and make free? I'm tired of expensive solutions for simple problems. %s"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:439
+#: admin/class-spamanvil-admin.php:499
 msgid "Buy me a beer ☕"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:476
-msgid "Settings saved."
-msgstr ""
-
-#: admin/class-spamanvil-admin.php:592
-#: admin/class-spamanvil-admin.php:641
-#: admin/class-spamanvil-admin.php:683
-#: admin/class-spamanvil-admin.php:714
-#: admin/class-spamanvil-admin.php:757
-#: admin/class-spamanvil-admin.php:775
-#: admin/class-spamanvil-admin.php:799
+#: admin/class-spamanvil-admin.php:536
+#: admin/class-spamanvil-admin.php:729
+#: admin/class-spamanvil-admin.php:782
+#: admin/class-spamanvil-admin.php:824
+#: admin/class-spamanvil-admin.php:855
+#: admin/class-spamanvil-admin.php:898
+#: admin/class-spamanvil-admin.php:916
+#: admin/class-spamanvil-admin.php:940
 msgid "Permission denied."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:598
-#: admin/class-spamanvil-admin.php:646
+#: admin/class-spamanvil-admin.php:543
+msgid "Unknown provider."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:575
+msgid "Connection verified. SpamAnvil is protecting your comments."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:610
+msgid "Settings saved."
+msgstr ""
+
+#: admin/class-spamanvil-admin.php:735
+#: admin/class-spamanvil-admin.php:787
 msgid "No provider specified."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:668
+#: admin/class-spamanvil-admin.php:809
 #: includes/providers/class-spamanvil-openai-compatible.php:112
 msgid "This provider does not support listing models."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:718
+#: admin/class-spamanvil-admin.php:859
 msgid "No provider configured. Go to the Providers tab to set one up."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:763
+#: admin/class-spamanvil-admin.php:904
 msgid "Invalid IP ID."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:768
+#: admin/class-spamanvil-admin.php:909
 msgid "IP unblocked."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:782
+#: admin/class-spamanvil-admin.php:923
 msgid "Invalid provider."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:786
+#: admin/class-spamanvil-admin.php:927
 msgid "Key is defined in wp-config.php and cannot be cleared from here."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:792
+#: admin/class-spamanvil-admin.php:933
 msgid "API key cleared."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:807
+#: admin/class-spamanvil-admin.php:948
 msgid "Invalid notice."
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:865
+#: admin/class-spamanvil-admin.php:1006
 #: admin/views/settings-general.php:32
 #: admin/views/settings-stats.php:20
 msgid "Spam Comments Blocked"
 msgstr ""
 
 #. translators: 1: LLM spam count, 2: heuristic count, 3: IP blocked count
-#: admin/class-spamanvil-admin.php:870
+#: admin/class-spamanvil-admin.php:1011
 #: admin/views/settings-general.php:37
 #: admin/views/settings-stats.php:25
 #, php-format
 msgid "%1$s by AI  |  %2$s by Heuristics  |  %3$s by IP Blocking"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:878
-#: includes/class-spamanvil.php:137
+#: admin/class-spamanvil-admin.php:1019
+#: includes/class-spamanvil.php:139
 msgid "Settings"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:881
-#: includes/class-spamanvil.php:144
+#: admin/class-spamanvil-admin.php:1022
+#: includes/class-spamanvil.php:146
 msgid "Rate ★★★★★"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:883
-#: includes/class-spamanvil.php:154
+#: admin/class-spamanvil-admin.php:1024
+#: includes/class-spamanvil.php:156
 msgid "Sponsor ☕"
 msgstr ""
 
@@ -1015,6 +1044,102 @@ msgstr ""
 msgid "No statistics available yet."
 msgstr ""
 
+#: admin/views/setup-wizard.php:19
+msgid "Set up SpamAnvil"
+msgstr ""
+
+#: admin/views/setup-wizard.php:21
+msgid "One API key is all SpamAnvil needs. It takes about a minute, and the free option costs nothing."
+msgstr ""
+
+#: admin/views/setup-wizard.php:28
+msgid "SpamAnvil is already configured."
+msgstr ""
+
+#: admin/views/setup-wizard.php:29
+msgid "You can run through this again to replace the key, or go straight to the settings."
+msgstr ""
+
+#: admin/views/setup-wizard.php:32
+#: admin/views/setup-wizard.php:99
+msgid "Go to settings"
+msgstr ""
+
+#: admin/views/setup-wizard.php:42
+msgid "Get a free API key"
+msgstr ""
+
+#: admin/views/setup-wizard.php:44
+msgid "SpamAnvil asks an AI model to judge each comment, so it needs access to one. OpenRouter offers free models: create an account, click \"Create key\", and copy it. Free usage is rate-limited, which is plenty for a normal blog — a busy site can add credit later."
+msgstr ""
+
+#: admin/views/setup-wizard.php:47
+msgid "Open openrouter.ai/keys"
+msgstr ""
+
+#: admin/views/setup-wizard.php:56
+msgid "Paste it here"
+msgstr ""
+
+#: admin/views/setup-wizard.php:57
+msgid "OpenRouter API key"
+msgstr ""
+
+#: admin/views/setup-wizard.php:64
+msgid "sk-or-v1-…"
+msgstr ""
+
+#: admin/views/setup-wizard.php:67
+msgid "The key is encrypted before it is stored, and it never leaves your site except to call the provider."
+msgstr ""
+
+#: admin/views/setup-wizard.php:75
+#: admin/views/setup-wizard.php:79
+msgid "Test and finish"
+msgstr ""
+
+#: admin/views/setup-wizard.php:76
+msgid "SpamAnvil classifies one sample comment to prove the key works. Nothing is saved unless it does."
+msgstr ""
+
+#: admin/views/setup-wizard.php:90
+msgid "SpamAnvil is protecting your comments"
+msgstr ""
+
+#: admin/views/setup-wizard.php:91
+msgid "Every new comment now goes through these layers, in this order:"
+msgstr ""
+
+#: admin/views/setup-wizard.php:93
+msgid "Honeypot and time trap — catch bots for free, before any API call"
+msgstr ""
+
+#: admin/views/setup-wizard.php:94
+msgid "Per-IP rate limiting and repeat-offender blocking"
+msgstr ""
+
+#: admin/views/setup-wizard.php:95
+msgid "Heuristics — links, spam wording, prompt-injection attempts"
+msgstr ""
+
+#: admin/views/setup-wizard.php:96
+msgid "The AI verdict, for everything that survives the cheap checks"
+msgstr ""
+
+#: admin/views/setup-wizard.php:100
+msgid "See the evaluation log"
+msgstr ""
+
+#. translators: %s: link to the Providers tab
+#: admin/views/setup-wizard.php:108
+#, php-format
+msgid "Prefer OpenAI, Anthropic Claude, Gemini, or your own endpoint? %s"
+msgstr ""
+
+#: admin/views/setup-wizard.php:109
+msgid "Advanced setup"
+msgstr ""
+
 #: includes/class-spamanvil-comment-processor.php:43
 msgid "Your comment has been blocked. If you believe this is an error, please contact the site administrator."
 msgstr ""
@@ -1105,35 +1230,35 @@ msgstr ""
 msgid "The stored API key for \"%1$s\" could not be decrypted — %2$s. Re-enter the API key on the Providers tab, or define it in wp-config.php."
 msgstr ""
 
-#: includes/class-spamanvil-provider-factory.php:384
+#: includes/class-spamanvil-provider-factory.php:387
 msgid "OpenAI"
 msgstr ""
 
-#: includes/class-spamanvil-provider-factory.php:385
+#: includes/class-spamanvil-provider-factory.php:388
 msgid "OpenRouter"
 msgstr ""
 
-#: includes/class-spamanvil-provider-factory.php:386
+#: includes/class-spamanvil-provider-factory.php:389
 msgid "Featherless.ai"
 msgstr ""
 
-#: includes/class-spamanvil-provider-factory.php:387
+#: includes/class-spamanvil-provider-factory.php:390
 msgid "Anthropic Claude"
 msgstr ""
 
-#: includes/class-spamanvil-provider-factory.php:388
+#: includes/class-spamanvil-provider-factory.php:391
 msgid "Google Gemini"
 msgstr ""
 
-#: includes/class-spamanvil-provider-factory.php:389
+#: includes/class-spamanvil-provider-factory.php:392
 msgid "Generic OpenAI-Compatible"
 msgstr ""
 
-#: includes/class-spamanvil.php:128
+#: includes/class-spamanvil.php:130
 msgid "Every 5 Minutes"
 msgstr ""
 
-#: includes/class-spamanvil.php:149
+#: includes/class-spamanvil.php:151
 msgid "Docs"
 msgstr ""
 

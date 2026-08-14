@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.4
+Stable tag: 1.15.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,6 +19,7 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 
 = Why SpamAnvil? =
 
+* **Set up in about a minute** - Activation opens a wizard that asks for one API key and verifies it before saving. Nothing is stored unless the test passes.
 * **100% Free** - No premium tier, no subscription, no hidden costs. Bring your own API key (free options available).
 * **Smarter Than Rules** - AI understands context. A comment about "buying a new home" won't be flagged just because it contains "buy".
 * **Defense in Depth** - Honeypot, time trap, per-IP rate limit and heuristics block obvious bots for free, so the AI is only spent on the subtle cases.
@@ -120,27 +121,25 @@ When using the "Generic OpenAI-Compatible" option, data is sent to the URL you c
 1. Go to **Plugins > Add New** in your WordPress admin
 2. Search for **SpamAnvil**
 3. Click **Install Now** and then **Activate**
-4. Go to **Settings > SpamAnvil**
-5. Choose an AI provider and enter your API key
-6. Done! Comments will now be analyzed for spam.
+4. Activation opens the setup wizard - paste an API key and click **Test and finish**
+5. Done. Comments are analyzed from that moment on.
 
 = Manual Installation =
 
 1. Download the plugin zip file
 2. Go to **Plugins > Add New > Upload Plugin**
 3. Upload the zip file and click **Install Now**
-4. Activate the plugin
-5. Configure your AI provider in **Settings > SpamAnvil**
+4. Activate the plugin and follow the setup wizard
 
 = Getting a Free API Key =
 
-Want to use SpamAnvil for completely free? Here's how:
+The setup wizard walks you through this, but in full:
 
-1. Go to [OpenRouter.ai](https://openrouter.ai/) and create a free account
-2. Generate an API key
-3. In SpamAnvil settings, select **OpenRouter** as your primary provider
-4. Paste your API key
-5. The default model (`meta-llama/llama-3.3-70b-instruct:free`) is free to use!
+1. Create an account at [OpenRouter.ai](https://openrouter.ai/) and generate an API key
+2. Paste it into the wizard, or into the OpenRouter card under **Settings > SpamAnvil > Providers**
+3. The default model setting is OpenRouter's free router chain (`openrouter/free, openrouter/auto`), so free models are tried first
+
+OpenRouter rate-limits free usage, which is plenty for a normal blog; a busy site can add credit to raise the limits.
 
 = Optional: Define API keys in wp-config.php =
 
@@ -231,15 +230,22 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Screenshots ==
 
-1. General settings - Enable/disable, processing mode, spam threshold slider, queue status
-2. Providers tab - Configure multiple AI providers with API keys and models
-3. Prompt tab - Customize the AI prompts with prompt injection defense info
-4. IP Management - View and manage blocked IPs with escalation levels
-5. Statistics dashboard - Daily activity, spam caught, heuristic blocks, API usage
-6. Evaluation logs - Full audit trail with scores, reasons, providers, and response times
-7. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
+1. First-run setup - One API key, tested before it is saved. The free option costs nothing
+2. Statistics dashboard - All-time spam blocked, 30-day counters and daily activity
+3. Evaluation logs - Full audit trail: score, heuristics, provider, model, the AI's reason and response time
+4. General settings - Enable/disable, processing mode, spam threshold, queue status
+5. Providers tab - Chain several AI providers with per-provider models and Test Connection
+6. Prompt tab - Editable system and user prompts, with the prompt-injection defense built in
+7. IP Management - Visitor IP source, rate limiting and blocked IPs with escalation levels
+8. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.15.0 =
+* New: **Setup wizard.** Activating SpamAnvil now opens a single screen that asks for one thing — an API key — with a direct link to a free OpenRouter key. It classifies a sample comment to prove the key works, and saves nothing unless it does. Until now, activation left you on the plugins list with a plugin that cannot act until a provider is configured, and the screen you eventually found asked you to choose between six providers before explaining any of them.
+* Fix: The all-time "Spam Comments Blocked" figure was shrinking. Daily statistics are pruned after 90 days and the total was summed from the surviving rows, so any install older than three months quietly lost a day of history every day — including the count that decides when the plugin asks for a review. Pruned counters are now banked and added back, so the number only grows. History deleted by earlier versions cannot be recovered.
+* Fix: The post-activation redirect never actually happened: the plugin had read a flag since 1.0 that nothing ever set.
+* Also: the plugin's own admin notices stay off the wizard screen, and the Installation instructions no longer name a default OpenRouter model that stopped being the default in 1.13.1.
 
 = 1.14.4 =
 * Maintenance: Shortened the 1.10.0 upgrade notice further. Plugin Check measures that field HTML-escaped, where every quote expands to six characters, so the 1.14.3 trim was still over the 300-character limit.

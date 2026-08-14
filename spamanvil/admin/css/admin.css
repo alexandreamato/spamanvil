@@ -576,3 +576,122 @@
 	vertical-align: text-bottom;
 	margin-right: 2px;
 }
+
+/* ---------------------------------------------------------------- Setup wizard
+   First-run screen (options-general.php?page=spamanvil&tab=setup). Deliberately
+   narrow and vertical: one column, one decision per step. */
+
+.spamanvil-setup {
+	max-width: 760px;
+}
+
+.spamanvil-setup-head h1 {
+	margin-bottom: 6px;
+}
+
+.spamanvil-setup-lead {
+	font-size: 15px;
+	color: #50575e;
+	margin-top: 0;
+}
+
+.spamanvil-setup-configured {
+	margin: 16px 0 8px;
+}
+
+.spamanvil-steps {
+	list-style: none;
+	margin: 24px 0 0;
+	padding: 0;
+	counter-reset: spamanvil-step;
+}
+
+.spamanvil-step {
+	display: flex;
+	gap: 16px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	padding: 20px 24px;
+	margin-bottom: 14px;
+}
+
+.spamanvil-step-num {
+	flex: 0 0 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: #1d2327;
+	color: #fff;
+	font-weight: 600;
+	font-size: 15px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.spamanvil-step-body {
+	flex: 1 1 auto;
+}
+
+.spamanvil-step-body h2 {
+	margin: 2px 0 8px;
+	font-size: 16px;
+}
+
+.spamanvil-step-body p {
+	margin-top: 0;
+	color: #50575e;
+}
+
+.spamanvil-setup-key {
+	font-family: Menlo, Consolas, monospace;
+}
+
+.spamanvil-setup-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 0;
+}
+
+.spamanvil-setup-spinner {
+	float: none;
+	margin: 0;
+}
+
+.spamanvil-setup-result {
+	margin-top: 12px;
+	font-weight: 600;
+}
+
+.spamanvil-setup-result.success {
+	color: #00a32a;
+}
+
+.spamanvil-setup-result.error {
+	color: #d63638;
+}
+
+.spamanvil-setup-done {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-left: 4px solid #00a32a;
+	border-radius: 6px;
+	padding: 20px 24px;
+	margin-top: 24px;
+}
+
+.spamanvil-setup-done h2 {
+	margin-top: 0;
+}
+
+.spamanvil-setup-layers {
+	list-style: disc;
+	margin: 0 0 16px 20px;
+	color: #50575e;
+}
+
+.spamanvil-setup-alt {
+	margin-top: 20px;
+	color: #646970;
+}

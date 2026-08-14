@@ -13,6 +13,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class SpamAnvil_Stats {
 
+	/**
+	 * Counters banked from stat rows the 90-day purge removed, so all-time totals
+	 * survive it. Autoload is off: it is only read on the stats screens.
+	 */
+	const ARCHIVED_TOTALS_OPTION = 'spamanvil_archived_totals';
+
 	private $stats_table;
 	private $logs_table;
 
@@ -40,15 +46,32 @@ class SpamAnvil_Stats {
 		);
 	}
 
+	/**
+	 * All-time total for a counter.
+	 *
+	 * The stats table only keeps 90 days (see cleanup_old_logs()), so the live rows
+	 * alone are a rolling window, not a total: the "Spam Comments Blocked" hero and
+	 * the dashboard widget used to shrink a little every day on any install older
+	 * than three months. Whatever the purge removes is banked in
+	 * `spamanvil_archived_totals` first and added back here, so the number only ever
+	 * grows.
+	 *
+	 * @param string $key Stat key.
+	 * @return int
+	 */
 	public function get_total( $key ) {
 		global $wpdb;
 
-		return (int) $wpdb->get_var(
+		$live = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COALESCE(SUM(stat_value), 0) FROM {$this->stats_table} WHERE stat_key = %s",
 				$key
 			)
 		);
+
+		$archived = get_option( self::ARCHIVED_TOTALS_OPTION, array() );
+
+		return $live + ( isset( $archived[ $key ] ) ? (int) $archived[ $key ] : 0 );
 	}
 
 	public function get_summary( $days = 30 ) {
@@ -292,8 +315,11 @@ class SpamAnvil_Stats {
 			)
 		);
 
-		// Also clean up old stats beyond 90 days.
+		// Also clean up old stats beyond 90 days — but bank the counters first, or the
+		// all-time figures reported by get_total() would silently lose a day every day.
 		$stats_cutoff = gmdate( 'Y-m-d', strtotime( '-90 days' ) );
+
+		$this->archive_totals_before( $stats_cutoff );
 
 		$wpdb->query(
 			$wpdb->prepare(
@@ -301,5 +327,43 @@ class SpamAnvil_Stats {
 				$stats_cutoff
 			)
 		);
+	}
+
+	/**
+	 * Add everything older than $cutoff to the archived all-time totals.
+	 *
+	 * Must run immediately before the matching DELETE: it sums the rows that are
+	 * about to disappear, so calling it without deleting them double-counts.
+	 *
+	 * @param string $cutoff Y-m-d date; rows strictly older are archived.
+	 */
+	private function archive_totals_before( $cutoff ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT stat_key, SUM(stat_value) AS total
+				FROM {$this->stats_table}
+				WHERE stat_date < %s
+				GROUP BY stat_key",
+				$cutoff
+			)
+		);
+
+		if ( empty( $rows ) ) {
+			return;
+		}
+
+		$archived = get_option( self::ARCHIVED_TOTALS_OPTION, array() );
+		if ( ! is_array( $archived ) ) {
+			$archived = array();
+		}
+
+		foreach ( $rows as $row ) {
+			$key              = (string) $row->stat_key;
+			$archived[ $key ] = ( isset( $archived[ $key ] ) ? (int) $archived[ $key ] : 0 ) + (int) $row->total;
+		}
+
+		update_option( self::ARCHIVED_TOTALS_OPTION, $archived, false );
 	}
 }

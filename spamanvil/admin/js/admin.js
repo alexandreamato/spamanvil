@@ -14,7 +14,68 @@
         initScanPending();
         initProcessQueue();
         initDismissNotice();
+        initSetupWizard();
     });
+
+    /**
+     * First-run wizard: verify the pasted key, then reveal the success panel.
+     * The key is only stored server-side if the test classification succeeds.
+     */
+    function initSetupWizard() {
+        var $btn = $('#spamanvil-setup-finish');
+        if (!$btn.length) {
+            return;
+        }
+
+        var $key = $('#spamanvil-setup-key');
+        var $result = $('#spamanvil-setup-result');
+        var $spinner = $('.spamanvil-setup-spinner');
+
+        function finish() {
+            var apiKey = $.trim($key.val() || '');
+
+            if (!apiKey) {
+                $result.removeClass('success').addClass('error').text(spamAnvil.strings.setup_paste_key);
+                $key.trigger('focus');
+                return;
+            }
+
+            $btn.prop('disabled', true);
+            $spinner.addClass('is-active');
+            $result.removeClass('success error').text(spamAnvil.strings.setup_testing);
+
+            $.post(spamAnvil.ajax_url, {
+                action: 'spamanvil_setup_finish',
+                nonce: spamAnvil.nonce,
+                provider: 'openrouter',
+                api_key: apiKey
+            }, function(response) {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+
+                if (response.success) {
+                    $result.addClass('success').text(response.data.message);
+                    $('#spamanvil-setup-steps').attr('hidden', true);
+                    $('.spamanvil-setup-alt').attr('hidden', true);
+                    $('#spamanvil-setup-done').removeAttr('hidden');
+                } else {
+                    $result.addClass('error').text(response.data);
+                }
+            }).fail(function() {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+                $result.addClass('error').text(spamAnvil.strings.setup_network);
+            });
+        }
+
+        $btn.on('click', finish);
+        $key.on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                finish();
+            }
+        });
+    }
 
     /**
      * Range slider live value display.

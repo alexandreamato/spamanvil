@@ -423,6 +423,16 @@ A WordPress admin dashboard widget (`spamanvil_dashboard_widget`) shows the tota
 
 `SpamAnvil_Admin::maybe_show_review_notice()` (hooked to `admin_notices`) is a **global**, dismissible "leave a review" ask shown on any admin screen — not just the plugin's settings page. The pure gate `review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now, $min_checked = 50, $min_age_seconds = 604800 )` (static, unit-tested in `tests/unit/ReviewNoticeTest.php`) only returns true after value is delivered (`comments_checked >= $min_checked`) AND the plugin has been installed `>= $min_age_seconds`, where both thresholds are filterable (`spamanvil_review_min_checked` / `spamanvil_review_min_age_seconds`, applied in `should_show_review_notice()`), and never when dismissed (`spamanvil_dismiss_review`) or snoozed (`spamanvil_review_snooze_until`). The three buttons are nonce'd links handled by `maybe_handle_review_action()` (`admin_init`): **Leave a review** (marks dismissed, redirects to WordPress.org), **Maybe later** (snoozes 14 days), **don't ask again** (permanent dismiss). Nonce'd links (not JS) so it works on admin screens where the plugin's JS isn't enqueued.
 
+## Setup Wizard (1.15.0)
+
+`SpamAnvil_Admin::render_setup_wizard()` renders `admin/views/setup-wizard.php` at `options-general.php?page=spamanvil&tab=setup`. It is **not** a tab — `render_settings_page()` intercepts `tab=setup` before the tab whitelist and returns, so the wizard is a full-screen view with no tab nav; `is_setup_screen()` also keeps the plugin's own health and review notices off it.
+
+`ajax_setup_finish()` (nonce + `manage_options`) **tests before it writes**: it builds the provider with the pasted key as an override, runs `test_connection()`, and only on success stores the encrypted key, sets `spamanvil_primary_provider`, records `spamanvil_last_llm_success` and clears the health transient. A wrong key therefore never becomes the site's configuration.
+
+`SpamAnvil_Activator::activate()` sets the `spamanvil_activation_redirect` transient — `maybe_redirect_after_activation()` had read it since 1.0 but nothing ever set it, so activation silently returned to the plugins list. Unconfigured installs land on the wizard; configured ones keep the old `&welcome=1` destination.
+
+**All-time stat totals (1.15.0):** `cleanup_old_logs()` prunes `spamanvil_stats` to 90 days, but `get_total()` feeds the "all-time" hero, the dashboard widget and the review gate. It now banks the counters it is about to delete into `SpamAnvil_Stats::ARCHIVED_TOTALS_OPTION` (`spamanvil_archived_totals`, not autoloaded) and `get_total()` adds them back. The archive must stay tied to the rows actually deleted — archiving without deleting double-counts. Covered by `tests/integration/StatsRetentionTest.php`.
+
 ## Extensibility Hooks
 
 **Filters:** `spamanvil_prompt`, `spamanvil_threshold`, `spamanvil_heuristic_score`, `spamanvil_review_min_checked` (default 50), `spamanvil_review_min_age_seconds` (default 604800 = 7 days)
