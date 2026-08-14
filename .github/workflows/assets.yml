@@ -46,7 +46,9 @@ jobs:
           cd svn-wporg/assets
           svn add --force --parents --depth infinity . -q
           # Anything removed from .wordpress-org/ is removed from SVN too.
-          svn status | grep '^!' | sed 's/^![[:space:]]*//' | while read -r f; do svn rm "$f"; done
+          # `|| true`: grep exits 1 when nothing was deleted, which under pipefail
+          # would abort the whole sync.
+          svn status | { grep '^!' || true; } | sed 's/^![[:space:]]*//' | while read -r f; do svn rm "$f"; done
 
           if [ -z "$(svn status)" ]; then
             echo "No asset changes to publish."
