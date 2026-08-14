@@ -334,7 +334,9 @@ Dev tooling lives at the **repo root** (never shipped in the plugin ZIP — the 
 
 **Version gate:** `php bin/check-version.php [X.Y.Z]` asserts the version matches across all 4 places + has a changelog entry. Runs in CI and (with the tag) during deploy.
 
-**CI** (`.github/workflows/ci.yml`, on push/PR to `main`): unit + version check (PHP 7.4/8.3), advisory phpcs, integration matrix (PHP 7.4–8.3, WP latest, MariaDB).
+**Plugin Check:** `wordpress/plugin-check-action` runs on every push (advisory, like phpcs) — the same tool WordPress.org uses to scan plugin updates. Baseline since 1.14.4: **0 errors, 1 warning** (`mismatched_plugin_name` — the readme's long SEO title differs from the `Plugin Name` header; kept deliberately). Two gotchas: `phpcs:ignore` annotations are honoured, including for the tool's own `PluginCheck.*` sniffs, and `upgrade_notice_limit` measures the notice **HTML-escaped**, so quotes and apostrophes expand (284 visible chars measured 309 and still failed).
+
+**CI** (`.github/workflows/ci.yml`, on push/PR to `main`): unit + version check (PHP 7.4/8.3), advisory phpcs, advisory Plugin Check, integration matrix (PHP 7.4–8.3, WP latest, MariaDB).
 
 ### Automated release (preferred over the manual SVN steps above)
 
