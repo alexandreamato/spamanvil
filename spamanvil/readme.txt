@@ -3,9 +3,9 @@ Contributors: aamato
 Donate link: https://github.com/sponsors/alexandreamato
 Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.1
+Stable tag: 1.14.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,10 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 7. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.14.2 =
+* Compatibility: Tested with WordPress 7.1. No code changes were needed — SpamAnvil ships no block-editor assets, no media handling, no jQuery UI dependency and no toolbar items, so none of the 7.1 editor, components or media changes affect it.
+* Maintenance: The build now runs the official Plugin Check tool on every push, so directory-compliance issues surface before a release instead of after it.
 
 = 1.14.1 =
 * Security fix: The 1.12.0 prompt-security migration (which isolates commenter metadata inside a <commenter_data> boundary) silently skipped any site where the admin had ever pressed Save on the Prompt tab: browsers submit textareas with CRLF line endings, so the unmodified default hashed differently from the plugin's source string. Hash comparison and saving are now line-ending-normalized, and the migration re-runs on upgrade — reaching those sites. Customized prompts are still never touched. (Field audit N1: 4 of 7 audited sites were affected.)

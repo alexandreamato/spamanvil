@@ -54,6 +54,21 @@ jobs:
         continue-on-error: true
         run: composer lint
 
+  plugin-check:
+    name: Plugin Check (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Plugin Check
+        # The same tool WordPress.org runs against plugin updates. Advisory for
+        # now so findings are visible without blocking merges; the shipped code
+        # predates it (see the phpcs job). Only the spamanvil/ subfolder ships.
+        continue-on-error: true
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: './spamanvil'
+
   integration:
     name: Integration tests (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})
     runs-on: ubuntu-latest
