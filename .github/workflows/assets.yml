@@ -1,11 +1,15 @@
 name: Deploy WordPress.org assets
 
 # The plugin page's icons, banners and screenshots live in .wordpress-org/ and are
-# published to the SVN `assets/` directory, which is versioned independently of the
-# plugin itself: updating a screenshot must not require a release.
+# published to the SVN `assets/` directory, which WordPress.org versions independently
+# of the plugin: updating a screenshot must not require a release.
 #
-# Runs on any push to main that touches that directory. The tagged release workflow
-# (deploy.yml) also syncs the same directory, so the two never disagree.
+# Runs on any push to main that touches that directory.
+#
+# This syncs assets/ by hand rather than using 10up/action-wordpress-plugin-asset-update,
+# which assumes the plugin sits at the repository root. Here it lives in spamanvil/, so
+# that action rewrites trunk/ with the repo root (dev tooling, tests and all). It aborts
+# on its own safety check instead of committing, but it can never succeed for this layout.
 
 on:
   push:
@@ -23,12 +27,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy assets
-        uses: 10up/action-wordpress-plugin-asset-update@stable
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
+      - name: Sync assets to WordPress.org
         env:
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
-          SLUG: spamanvil
-          ASSETS_DIR: .wordpress-org
-          # The shippable plugin (and its readme) lives in the spamanvil/ subfolder.
-          README_NAME: spamanvil/readme.txt
+        run: |
+          set -euo pipefail
+
+          # Shallow checkout: only assets/ is fetched, never trunk/ or tags/.
+          svn checkout --depth immediates "https://plugins.svn.wordpress.org/spamanvil" svn-wporg
+          svn update --set-depth infinity svn-wporg/assets
+
+          rsync -a --delete --exclude '.svn' .wordpress-org/ svn-wporg/assets/
+
+          cd svn-wporg/assets
+          svn add --force --parents --depth infinity . -q
+          # Anything removed from .wordpress-org/ is removed from SVN too.
+          svn status | grep '^!' | sed 's/^![[:space:]]*//' | while read -r f; do svn rm "$f"; done
+
+          if [ -z "$(svn status)" ]; then
+            echo "No asset changes to publish."
+            exit 0
+          fi
+
+          svn status
+          svn commit -m "Update WordPress.org assets" \
+            --username "$SVN_USERNAME" --password "$SVN_PASSWORD" \
+            --non-interactive --no-auth-cache
