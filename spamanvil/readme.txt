@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.2
+Stable tag: 1.14.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -241,6 +241,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Changelog ==
 
+= 1.14.3 =
+* Maintenance: Cleared the findings reported by the official Plugin Check tool, which WordPress.org is about to run against every plugin update. No behaviour changes — the review link now goes through the validated redirect helper, two safe-but-unannotated SQL statements are documented as such, and the 1.10.0 upgrade notice was trimmed to the 300-character limit.
+
 = 1.14.2 =
 * Compatibility: Tested with WordPress 7.1. No code changes were needed — SpamAnvil ships no block-editor assets, no media handling, no jQuery UI dependency and no toolbar items, so none of the 7.1 editor, components or media changes affect it.
 * Maintenance: The build now runs the official Plugin Check tool on every push, so directory-compliance issues surface before a release instead of after it.
@@ -444,7 +447,7 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 == Upgrade Notice ==
 
 = 1.10.0 =
-Security update. If your site is behind a proxy or CDN (e.g. Cloudflare), open Settings → IP Management after updating and set "Visitor IP source" to the header your edge provides (Cloudflare → CF-Connecting-IP) — otherwise IP blocking and rate limiting will see your proxy's IP instead of the visitor's. Direct-hosted sites need no action.
+Security update. Behind a proxy or CDN? After updating, open Settings → IP Management and set "Visitor IP source" to your edge's header (Cloudflare → CF-Connecting-IP) — otherwise IP blocking and rate limiting see the proxy's IP, not the visitor's. Direct-hosted sites need no action.
 
 = 1.0.0 =
 First release of SpamAnvil. Install, configure an AI provider, and let AI handle your comment spam!

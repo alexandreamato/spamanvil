@@ -397,6 +397,7 @@ class SpamAnvil_Queue {
 		$placeholders = implode( ',', array_fill( 0, count( $claimed ), '%d' ) );
 		return $wpdb->get_results(
 			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- $placeholders is a generated list of %d, one per claimed id; the sniff cannot see placeholders built at runtime.
 				"SELECT * FROM {$this->table} WHERE id IN ($placeholders) ORDER BY created_at ASC",
 				$claimed
 			)

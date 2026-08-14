@@ -88,7 +88,7 @@ class SpamAnvil_Activator {
 		$table     = $wpdb->prefix . 'spamanvil_blocked_ips';
 		$max_until = gmdate( 'Y-m-d H:i:s', time() + ( SpamAnvil_IP_Manager::block_hours_for_level( 6 ) * 3600 ) );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $table is built from $wpdb->prefix and never from user input; a one-time upgrade migration has nothing to cache.
 		$wpdb->query(
 			$wpdb->prepare( "UPDATE {$table} SET blocked_until = %s WHERE blocked_until > %s", $max_until, $max_until ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);

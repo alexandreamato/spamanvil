@@ -264,7 +264,10 @@ class SpamAnvil_Comment_Processor {
 			return false;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- reading the comment payload during comment submission; no nonce is available here.
+		// The value is never stored, printed or compared — only measured for emptiness —
+		// and sanitizing it would be actively harmful: sanitize_text_field() reduces a
+		// tag-only bot payload ('<script>') to '', turning a caught bot into a miss.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- reading the comment payload during comment submission; no nonce is available here, and see above for the deliberate lack of sanitization.
 		$value = isset( $_POST['spamanvil_hp'] ) ? trim( (string) wp_unslash( $_POST['spamanvil_hp'] ) ) : '';
 
 		return '' !== $value;

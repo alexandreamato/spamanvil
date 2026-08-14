@@ -257,12 +257,27 @@ class SpamAnvil_Admin {
 		} elseif ( 'review' === $action ) {
 			// Assume they're about to review — stop asking, then send them to WordPress.org.
 			update_option( 'spamanvil_dismiss_review', '1' );
-			wp_redirect( 'https://wordpress.org/support/plugin/spamanvil/reviews/#new-post' );
+			// wp_safe_redirect() only permits the site's own host, so allow this one
+			// hardcoded destination for this request instead of using wp_redirect().
+			add_filter( 'allowed_redirect_hosts', array( $this, 'allow_wporg_redirect_host' ) );
+			wp_safe_redirect( 'https://wordpress.org/support/plugin/spamanvil/reviews/#new-post' );
 			exit;
 		}
 
 		wp_safe_redirect( remove_query_arg( array( 'spamanvil_review', '_wpnonce' ) ) );
 		exit;
+	}
+
+	/**
+	 * Allow the single external destination the plugin ever redirects to (the
+	 * WordPress.org review form) through wp_safe_redirect()'s host allowlist.
+	 *
+	 * @param array $hosts Allowed redirect hosts.
+	 * @return array
+	 */
+	public function allow_wporg_redirect_host( $hosts ) {
+		$hosts[] = 'wordpress.org';
+		return $hosts;
 	}
 
 	public function add_menu_page() {
