@@ -428,11 +428,69 @@ class SpamAnvil_Provider_Factory {
 	 */
 	public function pick_free_model( array $models, $exclude = '' ) {
 		foreach ( $models as $m ) {
-			if ( ! empty( $m['free'] ) && ! empty( $m['id'] ) && $m['id'] !== $exclude ) {
-				return (string) $m['id'];
+			if ( empty( $m['free'] ) || empty( $m['id'] ) || $m['id'] === $exclude ) {
+				continue;
 			}
+			if ( ! self::is_plausible_chat_model( $m['id'] ) ) {
+				continue;
+			}
+			return (string) $m['id'];
 		}
 		return '';
+	}
+
+	/**
+	 * Whether a model id looks like a general-purpose chat model, i.e. one that could
+	 * plausibly answer a classification prompt with JSON.
+	 *
+	 * A provider's free pool is not all chat models: it carries safety classifiers,
+	 * code, embedding, vision, speech and media models. This is not academic —
+	 * OpenRouter's `openrouter/free` router sent a real classification to
+	 * `nvidia/nemotron-3.5-content-safety:free`, whose entire reply is
+	 * "User Safety: safe". Unparseable, so the comment fell through to the paid router.
+	 *
+	 * Deliberately conservative: it only rejects ids that name a task-specific family,
+	 * because a false rejection merely skips one candidate while a false acceptance
+	 * burns an API call and a retry cycle. Pure and static, so it is unit-tested
+	 * without a WordPress bootstrap.
+	 *
+	 * @param string $id Model id, e.g. "google/gemma-4-31b-it:free".
+	 * @return bool
+	 */
+	public static function is_plausible_chat_model( $id ) {
+		$id = strtolower( trim( (string) $id ) );
+
+		if ( '' === $id ) {
+			return false;
+		}
+
+		return ! preg_match(
+			'/(content-safety|guardrail|\bguard\b|moderation|embed|rerank|whisper|\btts\b|speech|audio|image|video|diffusion|\bclip\b|lyria|-vl\b|vision|\bocr\b|coder?\b)/',
+			$id
+		);
+	}
+
+	/**
+	 * Whether a provider error means "your credentials are wrong" rather than
+	 * "this model could not answer".
+	 *
+	 * The setup wizard uses this to stop immediately on a bad key instead of probing
+	 * alternative models with a key that can never work. Pure and static.
+	 *
+	 * @param WP_Error|mixed $error Error returned by a provider.
+	 * @return bool
+	 */
+	public static function is_auth_error( $error ) {
+		if ( ! is_wp_error( $error ) ) {
+			return false;
+		}
+
+		$msg = strtolower( $error->get_error_message() );
+
+		return (bool) preg_match(
+			'/http 401|http 403|unauthorized|forbidden|invalid api key|incorrect api key|no api key|api key not valid|authentication/i',
+			$msg
+		);
 	}
 
 	/**

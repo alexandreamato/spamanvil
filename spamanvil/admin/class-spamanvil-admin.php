@@ -11,6 +11,10 @@ class SpamAnvil_Admin {
 	private const REVIEW_MIN_AGE_SECONDS = 604800;  // 7 days.
 	private const REVIEW_SNOOZE_SECONDS  = 1209600; // 14 days ("Maybe later").
 
+	// How many alternative models the setup wizard may try when the configured one
+	// cannot answer. Each probe is a real API round-trip, and the user is waiting.
+	private const SETUP_MODEL_PROBES = 3;
+
 	private $encryptor;
 	private $provider_factory;
 	private $stats;
@@ -549,16 +553,16 @@ class SpamAnvil_Admin {
 			wp_send_json_error( __( 'Paste your API key first.', 'spamanvil' ) );
 		}
 
-		$provider = $this->provider_factory->create( $slug, array( 'api_key' => $api_key ) );
+		$probe = $this->probe_working_model( $slug, $api_key );
 
-		if ( is_wp_error( $provider ) ) {
-			wp_send_json_error( $provider->get_error_message() );
+		if ( is_wp_error( $probe ) ) {
+			wp_send_json_error( $probe->get_error_message() );
 		}
 
-		$result = $provider->test_connection();
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( $result->get_error_message() );
+		// A model discovered by probing replaces the configured chain, with the original
+		// chain kept behind it so the install still recovers when that model goes stale.
+		if ( ! empty( $probe['chain'] ) ) {
+			update_option( $config['model_option'], $probe['chain'] );
 		}
 
 		update_option( $config['option_key'], $this->encryptor->encrypt( $api_key ) );
@@ -576,6 +580,101 @@ class SpamAnvil_Admin {
 				'settings_url' => admin_url( 'options-general.php?page=spamanvil' ),
 			)
 		);
+	}
+
+	/**
+	 * Find a model that can actually answer, and say which chain to store.
+	 *
+	 * The configured default for OpenRouter is `openrouter/free`, which is a *router*,
+	 * not a model: it picks a different free model per call, and part of that pool
+	 * cannot do this job at all (a real run was routed to a content-safety classifier
+	 * whose entire reply is "User Safety: safe"). Roughly 4 in 10 observed calls came
+	 * back unusable, and the chain then fell through to the paid `openrouter/auto`.
+	 *
+	 * So the wizard does not just check the key: it finds a model that answers, and
+	 * puts it in front of the chain. The router stays behind it as the fallback that
+	 * never goes stale.
+	 *
+	 * @param string $slug    Provider slug.
+	 * @param string $api_key Key as typed in the wizard.
+	 * @return array|WP_Error array( 'model' => id, 'chain' => string|'' ), or the error
+	 *                        to show the user.
+	 */
+	private function probe_working_model( $slug, $api_key ) {
+		$configured = $this->provider_factory->get_model_chain( $slug );
+		$first      = ! empty( $configured ) ? $configured[0] : '';
+
+		// 1. Try what is configured. If it answers, change nothing.
+		$provider = $this->provider_factory->create( $slug, array( 'api_key' => $api_key ) );
+
+		if ( is_wp_error( $provider ) ) {
+			return $provider;
+		}
+
+		$result = $provider->test_connection();
+
+		if ( ! is_wp_error( $result ) ) {
+			return array( 'model' => $first, 'chain' => '' );
+		}
+
+		// 2. A rejected key can never work — do not spend probes on it.
+		if ( SpamAnvil_Provider_Factory::is_auth_error( $result ) ) {
+			return $result;
+		}
+
+		// 3. Otherwise the model, not the key, is the problem. Ask the provider what
+		//    else is free and try the plausible candidates in order.
+		if ( ! method_exists( $provider, 'list_models' ) ) {
+			return $result;
+		}
+
+		$models = $provider->list_models();
+
+		if ( is_wp_error( $models ) || empty( $models ) ) {
+			return $result;
+		}
+
+		$tried = 0;
+		foreach ( $models as $model ) {
+			if ( empty( $model['free'] ) || empty( $model['id'] ) || $model['id'] === $first ) {
+				continue;
+			}
+			if ( ! SpamAnvil_Provider_Factory::is_plausible_chat_model( $model['id'] ) ) {
+				continue;
+			}
+			if ( $tried >= self::SETUP_MODEL_PROBES ) {
+				break; // Bounded: the wizard must answer while the user is still looking at it.
+			}
+			++$tried;
+
+			$candidate = $this->provider_factory->create(
+				$slug,
+				array( 'api_key' => $api_key, 'model' => $model['id'] )
+			);
+
+			if ( is_wp_error( $candidate ) ) {
+				continue;
+			}
+
+			$attempt = $candidate->test_connection();
+
+			if ( is_wp_error( $attempt ) ) {
+				if ( SpamAnvil_Provider_Factory::is_auth_error( $attempt ) ) {
+					return $attempt;
+				}
+				continue;
+			}
+
+			$chain = array_values( array_unique( array_merge( array( $model['id'] ), $configured ) ) );
+
+			return array(
+				'model' => $model['id'],
+				'chain' => implode( ', ', $chain ),
+			);
+		}
+
+		// Nothing answered: report the original failure, which is the more useful one.
+		return $result;
 	}
 
 	private function handle_save_settings() {

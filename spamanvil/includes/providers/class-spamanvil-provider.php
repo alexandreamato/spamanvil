@@ -80,7 +80,17 @@ abstract class SpamAnvil_Provider {
 		// path as production (HTTP + parsing). A model that returns HTTP 200 but output
 		// this plugin can't parse (e.g. a reasoning model emitting <think> blocks) will
 		// correctly fail here instead of showing a false "green".
-		$system = 'You are a spam detection system. Respond with ONLY a JSON object of the form {"score": <integer 0-100>, "reason": "<short text>"}. Output no other text.';
+		// Use the prompt production actually sends, not a simplified one. A weak model
+		// can follow a 200-character instruction and still fail on the ~6 KB default
+		// prompt — which is the same false green this test was introduced to prevent.
+		$system = '';
+		if ( class_exists( 'SpamAnvil_Activator' ) && function_exists( 'get_option' ) ) {
+			$system = trim( (string) get_option( 'spamanvil_system_prompt', SpamAnvil_Activator::get_default_system_prompt() ) );
+		}
+
+		if ( '' === $system ) {
+			$system = 'You are a spam detection system. Respond with ONLY a JSON object of the form {"score": <integer 0-100>, "reason": "<short text>"}. Output no other text.';
+		}
 		$user   = "Evaluate this blog comment and respond with the JSON only:\n<comment_data>\nGreat article! Visit my site http://cheap-deals.example for amazing offers.\n</comment_data>";
 
 		$result = $this->analyze( $system, $user );

@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.16.0
+Stable tag: 1.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,11 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 8. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.17.0 =
+* Fix: the setup wizard could reject a perfectly good API key, and new installs were left on a model that fails roughly 4 calls in 10. OpenRouter's `openrouter/free` is a *router*, not a model: it picks a different free model per call, and part of that pool cannot do this job at all — one real run was routed to a content-safety classifier whose entire reply is "User Safety: safe", which no JSON parser can rescue. The wizard now checks whether the configured model actually answers; if it does not, it asks the provider what else is free, skips the ones that cannot answer (safety classifiers, code, embedding, vision, speech and media models), and stores the first that works — keeping the router behind it as the fallback that never goes stale. A rejected key still fails immediately, without probing alternatives.
+* Fix: the automatic free-model fallback (1.9.0) took the first free model in the provider's list, which today is a code model. It now applies the same filter.
+* Fix: Test Connection ran a simplified prompt, so a model could pass it and still fail on the ~6 KB prompt production sends. It now tests with the site's real system prompt — the false green it was introduced to prevent.
 
 = 1.16.0 =
 * **Accuracy fix: the default prompt was marking real comments as spam.** Measured against a labeled set on two different free models, 3 of 7 genuine comments were auto-spammed — every one of them because the prompt stated that "a comment in a different language than the site language is highly suspicious. Score 75+". A detailed, on-topic Portuguese comment on an English-language site scored 78 and 85 on the two models. That rule is gone: language is no longer a signal at all. Generic praise on its own (no link, no author URL, nothing else) now scores 45-60 instead of 70+, and reaching 70 — the score that hides a comment — now requires a real promotional or deceptive signal: a promoted link, monetization keywords, a brand-name author, an injection attempt, or an identity that does not add up. Spam detection did not suffer: 0 false negatives before and after, with spam scores higher than before.
