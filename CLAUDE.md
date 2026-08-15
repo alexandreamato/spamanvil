@@ -423,6 +423,21 @@ A WordPress admin dashboard widget (`spamanvil_dashboard_widget`) shows the tota
 
 `SpamAnvil_Admin::maybe_show_review_notice()` (hooked to `admin_notices`) is a **global**, dismissible "leave a review" ask shown on any admin screen — not just the plugin's settings page. The pure gate `review_notice_due( $dismissed, $snooze_until, $comments_checked, $activated_at, $now, $min_checked = 50, $min_age_seconds = 604800 )` (static, unit-tested in `tests/unit/ReviewNoticeTest.php`) only returns true after value is delivered (`comments_checked >= $min_checked`) AND the plugin has been installed `>= $min_age_seconds`, where both thresholds are filterable (`spamanvil_review_min_checked` / `spamanvil_review_min_age_seconds`, applied in `should_show_review_notice()`), and never when dismissed (`spamanvil_dismiss_review`) or snoozed (`spamanvil_review_snooze_until`). The three buttons are nonce'd links handled by `maybe_handle_review_action()` (`admin_init`): **Leave a review** (marks dismissed, redirects to WordPress.org), **Maybe later** (snoozes 14 days), **don't ask again** (permanent dismiss). Nonce'd links (not JS) so it works on admin screens where the plugin's JS isn't enqueued.
 
+## Classification Prompt — measured, not guessed (1.16.0)
+
+The default system prompt decides what gets deleted, so **change it only against a labeled evaluation**, never by intuition. `SpamAnvil_Activator::get_default_system_prompt()` was rewritten in 1.16.0 after a run against a real OpenRouter key showed the shipped default auto-spamming **3 of 7 genuine comments** on two independent free models. Two rules caused it:
+
+- *"LANGUAGE MISMATCH. A comment in a different language than the site language is highly suspicious. Score 75+"* — a detailed, on-topic Portuguese comment on an English-locale site scored 78 and 85. Note how common the trigger is: any site publishing in one language with wp-admin in another flags **every** reader comment. Replaced by "LANGUAGE IS NOT A SIGNAL".
+- *"GENERIC PRAISE … Score 70+ even without a URL"* — praise plus a concrete detail is how satisfied readers write. Now 45–60 on its own, 85+ with a link, and it does not apply when the comment references something specific.
+
+The organizing principle added in 1.16.0 is **SCORING DISCIPLINE**: reaching 70 (the score that hides a comment) requires at least one *promotional or deceptive* signal — a promoted link, monetization keywords, a brand-name author, an injection attempt, an identity that does not add up. Short, vague, polite or foreign-language is none of those. Result on the same set: 3 false positives → 1, false negatives 0 → 0 (spam scores rose).
+
+Also from that run: reasoning models spent the whole budget thinking and returned no JSON, so `max_tokens` for OpenAI-compatible providers is **800** (was 400) and the prompt forbids reasoning out loud — 3 parse failures in 14 → 0.
+
+**When changing the default prompt again:** record the outgoing default's `md5( normalize_prompt( … ) )` in `LEGACY_SYSTEM_PROMPT_HASHES` or existing installs stay on the old text forever; `tests/integration/ActivatorMigrationTest.php` guards this (including that the *current* default is never in the list) with the outgoing text kept in `tests/fixtures/system-prompt-1.12.0.txt`.
+
+**`openrouter/free` is a router, not a model.** It picks a different free model per call, and some of them cannot do this job at all — one run routed to `nvidia/nemotron-3.5-content-safety:free`, whose entire reply is `User Safety: safe`. Roughly 4 in 10 observed calls were unusable, and the chain then falls through to `openrouter/auto`, which costs money. Not yet fixed; the candidate fix is to have the wizard discover and persist a free model that provably answers.
+
 ## Setup Wizard (1.15.0)
 
 `SpamAnvil_Admin::render_setup_wizard()` renders `admin/views/setup-wizard.php` at `options-general.php?page=spamanvil&tab=setup`. It is **not** a tab — `render_settings_page()` intercepts `tab=setup` before the tab whitelist and returns, so the wizard is a full-screen view with no tab nav; `is_setup_screen()` also keeps the plugin's own health and review notices off it.

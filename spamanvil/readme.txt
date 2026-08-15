@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.0
+Stable tag: 1.16.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -241,6 +241,11 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Changelog ==
 
+= 1.16.0 =
+* **Accuracy fix: the default prompt was marking real comments as spam.** Measured against a labeled set on two different free models, 3 of 7 genuine comments were auto-spammed — every one of them because the prompt stated that "a comment in a different language than the site language is highly suspicious. Score 75+". A detailed, on-topic Portuguese comment on an English-language site scored 78 and 85 on the two models. That rule is gone: language is no longer a signal at all. Generic praise on its own (no link, no author URL, nothing else) now scores 45-60 instead of 70+, and reaching 70 — the score that hides a comment — now requires a real promotional or deceptive signal: a promoted link, monetization keywords, a brand-name author, an injection attempt, or an identity that does not add up. Spam detection did not suffer: 0 false negatives before and after, with spam scores higher than before.
+* Fix: reasoning models could spend the whole token budget thinking and return no JSON at all ("Could not parse a score from the response"). `max_tokens` for OpenAI-compatible providers is now 800 instead of 400, and the prompt tells the model not to reason out loud. Parse failures over the same 14 evaluations: 3 before, 0 after.
+* Installs still running an unmodified previous default prompt are migrated automatically on upgrade. Customized prompts are never touched.
+
 = 1.15.0 =
 * New: **Setup wizard.** Activating SpamAnvil now opens a single screen that asks for one thing — an API key — with a direct link to a free OpenRouter key. It classifies a sample comment to prove the key works, and saves nothing unless it does. Until now, activation left you on the plugins list with a plugin that cannot act until a provider is configured, and the screen you eventually found asked you to choose between six providers before explaining any of them.
 * Fix: The all-time "Spam Comments Blocked" figure was shrinking. Daily statistics are pruned after 90 days and the total was summed from the surviving rows, so any install older than three months quietly lost a day of history every day — including the count that decides when the plugin asks for a review. Pruned counters are now banked and added back, so the number only grows. History deleted by earlier versions cannot be recovered.
@@ -454,6 +459,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 * GDPR/LGPD privacy-first design
 
 == Upgrade Notice ==
+
+= 1.16.0 =
+Accuracy fix. The default prompt was auto-marking genuine comments as spam when they were written in another language, or were short and polite. Unmodified default prompts are updated automatically on upgrade; customized prompts are left alone.
 
 = 1.10.0 =
 Security update for sites behind a proxy or CDN. After updating, open Settings → IP Management and set the Visitor IP source to the header your edge sends (Cloudflare → CF-Connecting-IP), so IP blocking and rate limiting see the visitor, not the proxy.

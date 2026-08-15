@@ -44,6 +44,59 @@ Pre-analysis score: {heuristic_score}/100
 		);
 	}
 
+	/**
+	 * The 1.12.0–1.15.0 default system prompt scored any comment in a language other
+	 * than the site's at 75+, and generic praise at 70+ — so polite, short or simply
+	 * non-English comments from real readers were auto-marked as spam (measured at
+	 * 3 false positives in 7 across two models before 1.16.0 changed the rules).
+	 * Installs still running that default must be migrated by the upgrade.
+	 */
+	public function test_pre_116_system_prompt_is_recognised_as_a_legacy_default() {
+		$legacy = file_get_contents( dirname( __DIR__ ) . '/fixtures/system-prompt-1.12.0.txt' );
+
+		$this->assertContains(
+			md5( SpamAnvil_Activator::normalize_prompt( $legacy ) ),
+			SpamAnvil_Activator::LEGACY_SYSTEM_PROMPT_HASHES,
+			'Precondition: the fixture must be the real 1.12.0–1.15.0 default.'
+		);
+	}
+
+	public function test_pre_116_system_prompt_migrates_on_upgrade() {
+		$legacy = file_get_contents( dirname( __DIR__ ) . '/fixtures/system-prompt-1.12.0.txt' );
+
+		// Both as shipped (LF) and as a browser would have re-saved it (CRLF).
+		foreach ( array( $legacy, str_replace( "\n", "\r\n", $legacy ) ) as $stored ) {
+			update_option( 'spamanvil_system_prompt', $stored );
+			SpamAnvil_Activator::activate();
+
+			$this->assertSame(
+				SpamAnvil_Activator::get_default_system_prompt(),
+				get_option( 'spamanvil_system_prompt' ),
+				'An unmodified pre-1.16.0 default must be replaced by the current one.'
+			);
+		}
+	}
+
+	public function test_current_default_is_not_listed_as_legacy() {
+		// Guards the release checklist: shipping a new default without recording the
+		// outgoing one would leave every existing install on the old prompt forever.
+		$this->assertNotContains(
+			md5( SpamAnvil_Activator::normalize_prompt( SpamAnvil_Activator::get_default_system_prompt() ) ),
+			SpamAnvil_Activator::LEGACY_SYSTEM_PROMPT_HASHES,
+			'The current default must never be in the legacy list — it would migrate to itself.'
+		);
+	}
+
+	public function test_customized_system_prompt_is_never_touched() {
+		$custom = file_get_contents( dirname( __DIR__ ) . '/fixtures/system-prompt-1.12.0.txt' )
+			. "\n\nExtra house rule: approve anything from our staff.";
+
+		update_option( 'spamanvil_system_prompt', $custom );
+		SpamAnvil_Activator::activate();
+
+		$this->assertSame( $custom, get_option( 'spamanvil_system_prompt' ) );
+	}
+
 	public function test_crlf_saved_default_prompt_still_migrates() {
 		// The field-audit N1 scenario: the admin once pressed Save on the Prompt tab,
 		// so the browser stored the unmodified default with CRLF line endings.
