@@ -425,6 +425,11 @@ class SpamAnvil_Admin {
 			return;
 		}
 
+		if ( 'recovery' === $active_tab ) {
+			$this->render_recovery_screen();
+			return;
+		}
+
 		$tabs       = array(
 			'general'    => __( 'General', 'spamanvil' ),
 			'providers'  => __( 'Providers', 'spamanvil' ),
@@ -580,6 +585,141 @@ class SpamAnvil_Admin {
 				'settings_url' => admin_url( 'options-general.php?page=spamanvil' ),
 			)
 		);
+	}
+
+	/**
+	 * Tell the admin, once, that comments may be sitting in spam because of the
+	 * pre-1.16.0 prompt — and that WordPress will delete them on its own.
+	 *
+	 * The candidate count is cached for 12 hours: this runs on every admin screen and
+	 * the query joins the comments table.
+	 */
+	public function maybe_show_recovery_notice() {
+		if ( ! current_user_can( 'manage_options' ) || get_option( 'spamanvil_dismiss_recovery' ) ) {
+			return;
+		}
+
+		if ( self::is_setup_screen() || self::is_recovery_screen() ) {
+			return;
+		}
+
+		$count = get_transient( 'spamanvil_recovery_count' );
+
+		if ( false === $count ) {
+			$count = count( $this->stats->find_probable_false_positives( 100 ) );
+			set_transient( 'spamanvil_recovery_count', $count, 12 * HOUR_IN_SECONDS );
+		}
+
+		if ( (int) $count < 1 ) {
+			return;
+		}
+
+		$review_url  = admin_url( 'options-general.php?page=spamanvil&tab=recovery' );
+		$dismiss_url = wp_nonce_url( add_query_arg( 'spamanvil_recovery', 'dismiss' ), 'spamanvil_recovery_action' );
+
+		echo '<div class="notice notice-warning"><p><strong>SpamAnvil:</strong> ';
+		printf(
+			/* translators: %d: number of comments that may have been wrongly flagged */
+			esc_html( _n(
+				'%d comment in your spam folder may have been flagged by mistake, by a prompt rule this plugin has since removed.',
+				'%d comments in your spam folder may have been flagged by mistake, by a prompt rule this plugin has since removed.',
+				(int) $count,
+				'spamanvil'
+			) ),
+			(int) $count
+		);
+		echo ' ';
+		esc_html_e( 'WordPress deletes spam older than 30 days on its own.', 'spamanvil' );
+		printf(
+			' <a href="%s">%s</a> | <a href="%s">%s</a></p></div>',
+			esc_url( $review_url ),
+			esc_html__( 'Review them', 'spamanvil' ),
+			esc_url( $dismiss_url ),
+			esc_html__( 'Dismiss', 'spamanvil' )
+		);
+	}
+
+	/**
+	 * Whether the current request is the recovery screen.
+	 *
+	 * @return bool
+	 */
+	private static function is_recovery_screen() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only screen check.
+		return isset( $_GET['page'], $_GET['tab'] )
+			&& 'spamanvil' === $_GET['page']
+			&& 'recovery' === $_GET['tab'];
+		// phpcs:enable
+	}
+
+	/**
+	 * Screen listing comments the pre-1.16.0 prompt may have flagged by mistake.
+	 *
+	 * Deliberately a full-screen view rather than a seventh tab: it is a one-off
+	 * cleanup, not a permanent part of the settings.
+	 */
+	public function render_recovery_screen() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$candidates = $this->stats->find_probable_false_positives( 100 );
+		$restored   = isset( $_GET['restored'] ) ? absint( $_GET['restored'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only count for the confirmation message.
+		$logs_url   = admin_url( 'options-general.php?page=spamanvil&tab=logs' );
+
+		include SPAMANVIL_PLUGIN_DIR . 'admin/views/recovery.php';
+	}
+
+	/**
+	 * Restore the comments selected on the recovery screen.
+	 *
+	 * Approves them outright rather than calling wp_unspam_comment(): the admin has
+	 * just read them and said they are legitimate, and their pre-spam status was
+	 * "pending" for most of them anyway.
+	 */
+	public function maybe_handle_recovery_action() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// Dismissing the notice is a nonce'd link, not JS: the notice is global and the
+		// plugin's script is only enqueued on its own screens.
+		if ( isset( $_GET['spamanvil_recovery'] ) && 'dismiss' === $_GET['spamanvil_recovery'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce checked immediately below.
+			check_admin_referer( 'spamanvil_recovery_action' );
+			update_option( 'spamanvil_dismiss_recovery', '1' );
+			wp_safe_redirect( remove_query_arg( array( 'spamanvil_recovery', '_wpnonce' ) ) );
+			exit;
+		}
+
+		if ( ! isset( $_POST['spamanvil_restore_comments'] ) ) {
+			return;
+		}
+
+		check_admin_referer( 'spamanvil_recovery' );
+
+		$ids = isset( $_POST['spamanvil_restore'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['spamanvil_restore'] ) ) : array();
+
+		$restored = 0;
+		foreach ( $ids as $id ) {
+			if ( $id > 0 && wp_set_comment_status( $id, 'approve' ) ) {
+				++$restored;
+			}
+		}
+
+		// The notice's cached count is now wrong.
+		delete_transient( 'spamanvil_recovery_count' );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'     => 'spamanvil',
+					'tab'      => 'recovery',
+					'restored' => $restored,
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
+		exit;
 	}
 
 	/**

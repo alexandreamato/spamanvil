@@ -695,3 +695,56 @@
 	margin-top: 20px;
 	color: #646970;
 }
+
+/* ------------------------------------------------------------- Recovery screen
+   One-off cleanup of comments the pre-1.16.0 prompt flagged by mistake. */
+
+.spamanvil-recovery-intro {
+	max-width: 900px;
+	margin: 12px 0 20px;
+}
+
+.spamanvil-recovery-intro p {
+	font-size: 14px;
+	color: #50575e;
+}
+
+.spamanvil-recovery-deadline {
+	border-left: 4px solid #dba617;
+	background: #fff;
+	padding: 10px 14px;
+	margin-top: 14px;
+}
+
+.spamanvil-recovery-table {
+	margin-top: 8px;
+}
+
+.spamanvil-recovery-table .check-column {
+	width: 2.2em;
+	padding: 8px 0 8px 8px;
+	vertical-align: top;
+}
+
+.spamanvil-recovery-content {
+	max-width: 40%;
+}
+
+.spamanvil-recovery-reason {
+	color: #50575e;
+	font-size: 12px;
+	max-width: 25%;
+}
+
+.spamanvil-logs-heading {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.spamanvil-recovery-link {
+	font-size: 13px;
+	font-weight: 400;
+}

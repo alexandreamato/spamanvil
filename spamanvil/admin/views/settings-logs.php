@@ -10,7 +10,12 @@ $page_num = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ign
 $logs     = $this->stats->get_logs( $page_num, 25 );
 ?>
 
-<h2><?php esc_html_e( 'Evaluation Logs', 'spamanvil' ); ?></h2>
+<h2 class="spamanvil-logs-heading">
+	<?php esc_html_e( 'Evaluation Logs', 'spamanvil' ); ?>
+	<a class="spamanvil-recovery-link" href="<?php echo esc_url( admin_url( 'options-general.php?page=spamanvil&tab=recovery' ) ); ?>">
+		<?php esc_html_e( 'Review comments that may have been wrongly flagged', 'spamanvil' ); ?>
+	</a>
+</h2>
 
 <?php if ( empty( $logs['items'] ) ) : ?>
 	<p><?php esc_html_e( 'No evaluation logs yet.', 'spamanvil' ); ?></p>

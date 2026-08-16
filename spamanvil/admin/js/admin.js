@@ -15,7 +15,21 @@
         initProcessQueue();
         initDismissNotice();
         initSetupWizard();
+        initRecoverySelectAll();
     });
+
+    /**
+     * Recovery screen: the header checkbox ticks every row.
+     */
+    function initRecoverySelectAll() {
+        var $all = $('#spamanvil-recovery-all');
+        if (!$all.length) {
+            return;
+        }
+        $all.on('change', function() {
+            $('input[name="spamanvil_restore[]"]').prop('checked', $(this).is(':checked'));
+        });
+    }
 
     /**
      * First-run wizard: verify the pasted key, then reveal the success panel.

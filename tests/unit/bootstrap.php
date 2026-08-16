@@ -123,3 +123,6 @@ require_once $plugin_includes . '/class-spamanvil-provider-factory.php';
 require_once $plugin_includes . '/class-spamanvil-queue.php';
 require_once $plugin_includes . '/class-spamanvil-notifier.php';
 require_once $plugin_includes . '/class-spamanvil-activator.php';
+// Only the pure static helpers are exercised (looks_like_false_positive); the class
+// itself needs $wpdb, which unit tests never instantiate.
+require_once $plugin_includes . '/class-spamanvil-stats.php';

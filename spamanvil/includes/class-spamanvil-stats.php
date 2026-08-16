@@ -185,6 +185,105 @@ class SpamAnvil_Stats {
 	}
 
 	/**
+	 * Providers whose verdict is deterministic and not worth re-reviewing: the form
+	 * traps only fire when a bot fills a field no human sees or submits impossibly
+	 * fast, and the heuristic auto-block is a local regex decision.
+	 */
+	const DETERMINISTIC_PROVIDERS = array( 'honeypot', 'timetrap', 'heuristic', 'ratelimit' );
+
+	/**
+	 * Whether a spam verdict looks like it may have been the prompt's fault rather
+	 * than actual spam.
+	 *
+	 * The 1.12.0–1.15.0 default prompt scored any comment in another language at 75+,
+	 * and generic praise at 70+, so real readers were auto-spammed (see the changelog
+	 * for 1.16.0). Spam, on the other hand, almost always carries the link it exists to
+	 * promote — the absence of any link, plus a score in the band just above the
+	 * threshold, is what separates the two.
+	 *
+	 * Pure and static so it is unit-testable and so the rule is stated in exactly one
+	 * place.
+	 *
+	 * @param int    $score      Score the LLM returned.
+	 * @param string $content    Comment body.
+	 * @param string $author_url Comment author URL.
+	 * @param string $provider   Provider recorded on the log row.
+	 * @param int    $threshold  The site's spam threshold.
+	 * @return bool
+	 */
+	public static function looks_like_false_positive( $score, $content, $author_url, $provider, $threshold = 70 ) {
+		$provider = strtolower( trim( (string) $provider ) );
+
+		foreach ( self::DETERMINISTIC_PROVIDERS as $deterministic ) {
+			if ( false !== strpos( $provider, $deterministic ) ) {
+				return false;
+			}
+		}
+
+		$score = (int) $score;
+
+		// Below the threshold it was never marked spam by score; far above it, the model
+		// was confident for reasons the language rule alone would not produce.
+		if ( $score < (int) $threshold || $score >= 90 ) {
+			return false;
+		}
+
+		// The link is the point of spam. Anything promoting one is not a false positive.
+		if ( '' !== trim( (string) $author_url ) ) {
+			return false;
+		}
+
+		return ! preg_match( '#(https?://|www\.)#i', (string) $content );
+	}
+
+	/**
+	 * Comments marked as spam that may have been wrongly flagged by the pre-1.16.0
+	 * prompt, newest first.
+	 *
+	 * Time-sensitive: WordPress deletes spam comments older than 30 days on its own
+	 * (wp_scheduled_delete), so anything recoverable is only recoverable for a while.
+	 *
+	 * @param int $limit Maximum rows to return.
+	 * @return array Rows with comment_ID, author, content, score, reason, date.
+	 */
+	public function find_probable_false_positives( $limit = 100 ) {
+		global $wpdb;
+
+		$threshold = (int) get_option( 'spamanvil_threshold', 70 );
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT c.comment_ID, c.comment_author, c.comment_author_url, c.comment_content,
+				        c.comment_date, l.score, l.reason, l.provider, l.model
+				FROM {$this->logs_table} l
+				INNER JOIN {$wpdb->comments} c ON l.comment_id = c.comment_ID
+				WHERE c.comment_approved = 'spam'
+				  AND l.score IS NOT NULL
+				ORDER BY l.created_at DESC
+				LIMIT %d",
+				max( 1, (int) $limit ) * 5 // Over-fetch: the real filter is applied in PHP.
+			)
+		);
+
+		if ( ! $rows ) {
+			return array();
+		}
+
+		$candidates = array();
+		foreach ( $rows as $row ) {
+			if ( ! self::looks_like_false_positive( $row->score, $row->comment_content, $row->comment_author_url, $row->provider, $threshold ) ) {
+				continue;
+			}
+			$candidates[] = $row;
+			if ( count( $candidates ) >= (int) $limit ) {
+				break;
+			}
+		}
+
+		return $candidates;
+	}
+
+	/**
 	 * Analyze historical data and suggest an optimal spam threshold.
 	 *
 	 * Cross-references log scores with actual comment statuses (spam vs approved)

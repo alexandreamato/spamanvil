@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.17.0\n"
+"Project-Id-Version: SpamAnvil 1.18.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/spamanvil\n"
-"POT-Creation-Date: 2026-08-14T15:25:21+00:00\n"
+"POT-Creation-Date: 2026-08-16T23:02:48+00:00\n"
 "PO-Revision-Date: 2026-02-14 19:00-0300\n"
 "Last-Translator: Alexandre Amato <alex@amato.com.br>\n"
 "Language-Team: Portuguese (Brazil)\n"
@@ -18,8 +18,8 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #. Plugin Name of the plugin
-#: spamanvil.php admin/class-spamanvil-admin.php:319
-#: admin/class-spamanvil-admin.php:320 admin/class-spamanvil-admin.php:992
+#: spamanvil.php admin/class-spamanvil-admin.php:323
+#: admin/class-spamanvil-admin.php:324 admin/class-spamanvil-admin.php:1231
 msgid "SpamAnvil"
 msgstr "SpamAnvil"
 
@@ -33,7 +33,9 @@ msgstr ""
 msgid ""
 "Blocks comment spam using AI/LLM services with support for multiple "
 "providers, async processing, and intelligent heuristics."
-msgstr "Bloqueia spam em comentários usando serviços de IA/LLM, com suporte a vários provedores, processamento assíncrono e heurísticas inteligentes."
+msgstr ""
+"Bloqueia spam em comentários usando serviços de IA/LLM, com suporte a vários "
+"provedores, processamento assíncrono e heurísticas inteligentes."
 
 #. Author of the plugin
 #: spamanvil.php
@@ -45,7 +47,7 @@ msgstr ""
 msgid "https://amato.com.br"
 msgstr ""
 
-#: admin/class-spamanvil-admin.php:125
+#: admin/class-spamanvil-admin.php:129
 msgid ""
 "comment classification is paused because of a configuration error. Fix the "
 "provider settings and processing resumes automatically."
@@ -54,11 +56,11 @@ msgstr ""
 "Corrija as configurações do provedor e o processamento retoma "
 "automaticamente."
 
-#: admin/class-spamanvil-admin.php:129 admin/class-spamanvil-admin.php:137
+#: admin/class-spamanvil-admin.php:133 admin/class-spamanvil-admin.php:141
 msgid "Open the Providers tab"
 msgstr "Abrir a aba Provedores"
 
-#: admin/class-spamanvil-admin.php:136
+#: admin/class-spamanvil-admin.php:140
 msgid ""
 "a saved API key can no longer be decrypted — your site security keys "
 "(AUTH_SALT) likely changed. Re-enter the API key so classification can "
@@ -68,12 +70,12 @@ msgstr ""
 "segurança do site (AUTH_SALT) provavelmente mudaram. Insira a chave de API "
 "novamente para que a classificação seja retomada."
 
-#: admin/class-spamanvil-admin.php:144
+#: admin/class-spamanvil-admin.php:148
 msgid "comments are waiting in the queue but WP-Cron has not run recently."
 msgstr ""
 "há comentários aguardando na fila, mas o WP-Cron não roda há um bom tempo."
 
-#: admin/class-spamanvil-admin.php:147
+#: admin/class-spamanvil-admin.php:151
 msgid ""
 "DISABLE_WP_CRON is enabled on this site — make sure a real (system) cron job "
 "calls wp-cron.php regularly, or comments will never be classified."
@@ -81,7 +83,7 @@ msgstr ""
 "DISABLE_WP_CRON está ativo neste site — garanta que um cron de sistema chame "
 "o wp-cron.php regularmente, ou os comentários nunca serão classificados."
 
-#: admin/class-spamanvil-admin.php:149
+#: admin/class-spamanvil-admin.php:153
 msgid ""
 "Low-traffic sites may need a real (system) cron job calling wp-cron.php, or "
 "use the \"Process Queue Now\" button on the Logs tab."
@@ -89,28 +91,32 @@ msgstr ""
 "Sites de baixo tráfego podem precisar de um cron de sistema chamando o wp-"
 "cron.php, ou use o botão \"Processar Fila Agora\" na aba Logs."
 
-#: admin/class-spamanvil-admin.php:159
-msgid "no AI provider is configured, so comments are not being classified."
-msgstr "nenhum provedor de IA está configurado, então os comentários não estão sendo classificados."
-
 #: admin/class-spamanvil-admin.php:163
+msgid "no AI provider is configured, so comments are not being classified."
+msgstr ""
+"nenhum provedor de IA está configurado, então os comentários não estão sendo "
+"classificados."
+
+#: admin/class-spamanvil-admin.php:167
 msgid "Finish setup — it takes a minute"
 msgstr "Conclua a configuração — leva um minuto"
 
 #. translators: %d: number of comments stuck in failed/max-retries
-#: admin/class-spamanvil-admin.php:170
+#: admin/class-spamanvil-admin.php:174
 #, php-format
 msgid ""
 "%d comment(s) could not be classified (failed or max retries) — check the "
 "provider configuration and API key."
-msgstr "%d comentário(s) não puderam ser classificados (falha ou limite de tentativas) — confira a configuração do provedor e a chave de API."
+msgstr ""
+"%d comentário(s) não puderam ser classificados (falha ou limite de "
+"tentativas) — confira a configuração do provedor e a chave de API."
 
-#: admin/class-spamanvil-admin.php:173
+#: admin/class-spamanvil-admin.php:177
 msgid "View SpamAnvil logs"
 msgstr "Ver os registros do SpamAnvil"
 
 #. translators: %s: number of comments checked
-#: admin/class-spamanvil-admin.php:259
+#: admin/class-spamanvil-admin.php:263
 #, php-format
 msgid ""
 "SpamAnvil has checked %s comments on your site. If it has been useful, an "
@@ -120,194 +126,195 @@ msgstr ""
 "avaliação honesta ajuda outras pessoas a encontrá-lo — e mantém o plugin "
 "gratuito."
 
-#: admin/class-spamanvil-admin.php:265
+#: admin/class-spamanvil-admin.php:269
 msgid "Leave a review ★★★★★"
 msgstr "Avaliar ★★★★★"
 
-#: admin/class-spamanvil-admin.php:266
+#: admin/class-spamanvil-admin.php:270
 msgid "Maybe later"
 msgstr "Mais tarde"
 
-#: admin/class-spamanvil-admin.php:267
+#: admin/class-spamanvil-admin.php:271
 msgid "I already did / don't ask again"
 msgstr "Já avaliei / não perguntar de novo"
 
-#: admin/class-spamanvil-admin.php:371
+#: admin/class-spamanvil-admin.php:375
 msgid "Checking your key…"
 msgstr "Verificando sua chave…"
 
-#: admin/class-spamanvil-admin.php:372 admin/class-spamanvil-admin.php:549
+#: admin/class-spamanvil-admin.php:376 admin/class-spamanvil-admin.php:558
 msgid "Paste your API key first."
 msgstr "Cole sua chave de API primeiro."
 
-#: admin/class-spamanvil-admin.php:373
+#: admin/class-spamanvil-admin.php:377
 msgid "Could not reach your site to run the test. Please try again."
-msgstr "Não foi possível acessar seu site para executar o teste. Tente novamente."
+msgstr ""
+"Não foi possível acessar seu site para executar o teste. Tente novamente."
 
-#: admin/class-spamanvil-admin.php:374
+#: admin/class-spamanvil-admin.php:378
 msgid "Testing..."
 msgstr "Testando..."
 
-#: admin/class-spamanvil-admin.php:375
+#: admin/class-spamanvil-admin.php:379
 msgid "Add to model chain"
 msgstr "Adicionar à cadeia de modelos"
 
-#: admin/class-spamanvil-admin.php:376
+#: admin/class-spamanvil-admin.php:380
 msgid "Connection successful!"
 msgstr "Conexão bem-sucedida!"
 
-#: admin/class-spamanvil-admin.php:377
+#: admin/class-spamanvil-admin.php:381
 msgid "Connection failed:"
 msgstr "Conexão falhou:"
 
-#: admin/class-spamanvil-admin.php:378
+#: admin/class-spamanvil-admin.php:382
 msgid "Unblocking..."
 msgstr "Desbloqueando..."
 
-#: admin/class-spamanvil-admin.php:379
+#: admin/class-spamanvil-admin.php:383
 msgid "IP unblocked successfully"
 msgstr "IP desbloqueado com sucesso"
 
-#: admin/class-spamanvil-admin.php:380
+#: admin/class-spamanvil-admin.php:384
 msgid "Are you sure?"
 msgstr "Tem certeza?"
 
-#: admin/class-spamanvil-admin.php:381
+#: admin/class-spamanvil-admin.php:385
 msgid "Applied! Save to confirm."
 msgstr "Aplicado! Salve para confirmar."
 
-#: admin/class-spamanvil-admin.php:382
+#: admin/class-spamanvil-admin.php:386
 msgid "Scanning..."
 msgstr "Escaneando..."
 
-#: admin/class-spamanvil-admin.php:383
+#: admin/class-spamanvil-admin.php:387
 msgid "Scan complete!"
 msgstr "Escaneamento concluído!"
 
-#: admin/class-spamanvil-admin.php:384
+#: admin/class-spamanvil-admin.php:388
 msgid "Processing..."
 msgstr "Processando..."
 
-#: admin/class-spamanvil-admin.php:385
+#: admin/class-spamanvil-admin.php:389
 msgid "Done!"
 msgstr "Concluído!"
 
-#: admin/class-spamanvil-admin.php:386
+#: admin/class-spamanvil-admin.php:390
 msgid "Processing batch..."
 msgstr "Processando lote..."
 
-#: admin/class-spamanvil-admin.php:387 admin/views/settings-general.php:113
+#: admin/class-spamanvil-admin.php:391 admin/views/settings-general.php:113
 msgid "Stop"
 msgstr "Parar"
 
-#: admin/class-spamanvil-admin.php:388
+#: admin/class-spamanvil-admin.php:392
 msgid "Stopping..."
 msgstr "Parando..."
 
-#: admin/class-spamanvil-admin.php:389
+#: admin/class-spamanvil-admin.php:393
 msgid "Stopped."
 msgstr "Parado."
 
-#: admin/class-spamanvil-admin.php:390
+#: admin/class-spamanvil-admin.php:394
 msgid "Connection error, retrying..."
 msgstr "Erro de conexão, tentando novamente..."
 
-#: admin/class-spamanvil-admin.php:391
+#: admin/class-spamanvil-admin.php:395
 msgid "Failed after multiple retries."
 msgstr "Falhou após múltiplas tentativas."
 
-#: admin/class-spamanvil-admin.php:392
+#: admin/class-spamanvil-admin.php:396
 msgid "items/min"
 msgstr "itens/min"
 
-#: admin/class-spamanvil-admin.php:393 admin/views/settings-stats.php:186
+#: admin/class-spamanvil-admin.php:397 admin/views/settings-stats.php:186
 msgid "Spam"
 msgstr "Spam"
 
-#: admin/class-spamanvil-admin.php:394
+#: admin/class-spamanvil-admin.php:398
 msgid "Ham"
 msgstr "Legítimo"
 
-#: admin/class-spamanvil-admin.php:395
+#: admin/class-spamanvil-admin.php:399
 msgid "Are you sure you want to delete this API key?"
 msgstr "Tem certeza de que deseja excluir esta chave da API?"
 
-#: admin/class-spamanvil-admin.php:396 admin/views/settings-providers.php:148
+#: admin/class-spamanvil-admin.php:400 admin/views/settings-providers.php:148
 msgid "Enter API key"
 msgstr "Insira a chave da API"
 
-#: admin/class-spamanvil-admin.php:397
+#: admin/class-spamanvil-admin.php:401
 msgid ""
 "This will merge an extended spam word list into your current list. Continue?"
 msgstr ""
 "Isso irá mesclar uma lista estendida de palavras de spam com a sua lista "
 "atual. Continuar?"
 
-#: admin/class-spamanvil-admin.php:398
+#: admin/class-spamanvil-admin.php:402
 msgid "new words added. Save to confirm."
 msgstr "novas palavras adicionadas. Salve para confirmar."
 
-#: admin/class-spamanvil-admin.php:399
+#: admin/class-spamanvil-admin.php:403
 msgid "Extended list loaded. Save to confirm."
 msgstr "Lista estendida carregada. Salve para confirmar."
 
-#: admin/class-spamanvil-admin.php:400
+#: admin/class-spamanvil-admin.php:404
 msgid "No provider configured."
 msgstr "Nenhum provedor configurado."
 
-#: admin/class-spamanvil-admin.php:401
+#: admin/class-spamanvil-admin.php:405
 msgid "Configure a Provider"
 msgstr "Configurar um Provedor"
 
-#: admin/class-spamanvil-admin.php:402
+#: admin/class-spamanvil-admin.php:406
 msgid "Batch failed — check Logs tab for details."
 msgstr "Lote falhou — verifique a aba Registros para detalhes."
 
-#: admin/class-spamanvil-admin.php:403
+#: admin/class-spamanvil-admin.php:407
 msgid "Loading models…"
 msgstr "Carregando modelos…"
 
-#: admin/class-spamanvil-admin.php:404
+#: admin/class-spamanvil-admin.php:408
 msgid "Could not load models:"
 msgstr "Não foi possível carregar os modelos:"
 
-#: admin/class-spamanvil-admin.php:405
+#: admin/class-spamanvil-admin.php:409
 msgid "No models match your search."
 msgstr "Nenhum modelo corresponde à sua busca."
 
-#: admin/class-spamanvil-admin.php:425
+#: admin/class-spamanvil-admin.php:434
 msgid "General"
 msgstr "Geral"
 
-#: admin/class-spamanvil-admin.php:426
+#: admin/class-spamanvil-admin.php:435
 msgid "Providers"
 msgstr "Provedores"
 
-#: admin/class-spamanvil-admin.php:427
+#: admin/class-spamanvil-admin.php:436
 msgid "Prompt"
 msgstr "Prompt"
 
-#: admin/class-spamanvil-admin.php:428
+#: admin/class-spamanvil-admin.php:437
 msgid "IP Management"
 msgstr "Gerenciamento de IP"
 
-#: admin/class-spamanvil-admin.php:429 admin/class-spamanvil-admin.php:1020
+#: admin/class-spamanvil-admin.php:438 admin/class-spamanvil-admin.php:1259
 msgid "Statistics"
 msgstr "Estatísticas"
 
-#: admin/class-spamanvil-admin.php:430
+#: admin/class-spamanvil-admin.php:439
 msgid "Logs"
 msgstr "Registros"
 
-#: admin/class-spamanvil-admin.php:449
+#: admin/class-spamanvil-admin.php:458
 msgid "SpamAnvil Settings"
 msgstr "Configurações do SpamAnvil"
 
-#: admin/class-spamanvil-admin.php:454
+#: admin/class-spamanvil-admin.php:463
 msgid "Welcome to SpamAnvil!"
 msgstr "Bem-vindo ao SpamAnvil!"
 
-#: admin/class-spamanvil-admin.php:455
+#: admin/class-spamanvil-admin.php:464
 msgid ""
 "Thank you for installing SpamAnvil. To get started, configure an AI provider "
 "below."
@@ -315,19 +322,19 @@ msgstr ""
 "Obrigado por instalar o SpamAnvil. Para começar, configure um provedor de IA "
 "abaixo."
 
-#: admin/class-spamanvil-admin.php:458 admin/class-spamanvil-admin.php:471
+#: admin/class-spamanvil-admin.php:467 admin/class-spamanvil-admin.php:480
 msgid "Set up in a minute"
 msgstr "Configurar em um minuto"
 
-#: admin/class-spamanvil-admin.php:459
+#: admin/class-spamanvil-admin.php:468
 msgid "Read the Docs"
 msgstr "Ler a Documentação"
 
-#: admin/class-spamanvil-admin.php:467
+#: admin/class-spamanvil-admin.php:476
 msgid "SpamAnvil is enabled but no provider is configured."
 msgstr "O SpamAnvil está ativado, mas nenhum provedor está configurado."
 
-#: admin/class-spamanvil-admin.php:468
+#: admin/class-spamanvil-admin.php:477
 msgid ""
 "Comments cannot be analyzed until you configure at least one AI provider."
 msgstr ""
@@ -335,7 +342,7 @@ msgstr ""
 "provedor de IA."
 
 #. translators: %s: sponsor link
-#: admin/class-spamanvil-admin.php:498
+#: admin/class-spamanvil-admin.php:507
 #, php-format
 msgid ""
 "What's the next WordPress problem I'll solve and make free? I'm tired of "
@@ -344,90 +351,195 @@ msgstr ""
 "Qual é o próximo problema do WordPress que vou resolver e disponibilizar de "
 "graça? Estou cansado de soluções caras para problemas simples. %s"
 
-#: admin/class-spamanvil-admin.php:499
+#: admin/class-spamanvil-admin.php:508
 msgid "Buy me a beer ☕"
 msgstr "Me pague uma cerveja ☕"
 
-#: admin/class-spamanvil-admin.php:536 admin/class-spamanvil-admin.php:729
-#: admin/class-spamanvil-admin.php:782 admin/class-spamanvil-admin.php:824
-#: admin/class-spamanvil-admin.php:855 admin/class-spamanvil-admin.php:898
-#: admin/class-spamanvil-admin.php:916 admin/class-spamanvil-admin.php:940
+#: admin/class-spamanvil-admin.php:545 admin/class-spamanvil-admin.php:968
+#: admin/class-spamanvil-admin.php:1021 admin/class-spamanvil-admin.php:1063
+#: admin/class-spamanvil-admin.php:1094 admin/class-spamanvil-admin.php:1137
+#: admin/class-spamanvil-admin.php:1155 admin/class-spamanvil-admin.php:1179
 msgid "Permission denied."
 msgstr "Permissão negada."
 
-#: admin/class-spamanvil-admin.php:543
+#: admin/class-spamanvil-admin.php:552
 msgid "Unknown provider."
 msgstr "Provedor desconhecido."
 
-#: admin/class-spamanvil-admin.php:575
+#: admin/class-spamanvil-admin.php:584
 msgid "Connection verified. SpamAnvil is protecting your comments."
 msgstr "Conexão verificada. O SpamAnvil está protegendo seus comentários."
 
-#: admin/class-spamanvil-admin.php:610
+#. translators: %d: number of comments that may have been wrongly flagged
+#: admin/class-spamanvil-admin.php:623
+#, php-format
+msgid ""
+"%d comment in your spam folder may have been flagged by mistake, by a prompt "
+"rule this plugin has since removed."
+msgid_plural ""
+"%d comments in your spam folder may have been flagged by mistake, by a "
+"prompt rule this plugin has since removed."
+msgstr[0] "%d comentário na sua pasta de spam pode ter sido marcado por engano, por uma regra de prompt que este plugin já removeu."
+msgstr[1] "%d comentários na sua pasta de spam podem ter sido marcados por engano, por uma regra de prompt que este plugin já removeu."
+
+#: admin/class-spamanvil-admin.php:632
+msgid "WordPress deletes spam older than 30 days on its own."
+msgstr "O WordPress apaga sozinho os comentários de spam com mais de 30 dias."
+
+#: admin/class-spamanvil-admin.php:636
+msgid "Review them"
+msgstr "Revisar"
+
+#: admin/class-spamanvil-admin.php:638
+msgid "Dismiss"
+msgstr "Dispensar"
+
+#: admin/class-spamanvil-admin.php:849
 msgid "Settings saved."
 msgstr "Configurações salvas."
 
-#: admin/class-spamanvil-admin.php:735 admin/class-spamanvil-admin.php:787
+#: admin/class-spamanvil-admin.php:974 admin/class-spamanvil-admin.php:1026
 msgid "No provider specified."
 msgstr "Nenhum provedor especificado."
 
-#: admin/class-spamanvil-admin.php:809
+#: admin/class-spamanvil-admin.php:1048
 #: includes/providers/class-spamanvil-openai-compatible.php:112
 msgid "This provider does not support listing models."
 msgstr "Este provedor não permite listar modelos."
 
-#: admin/class-spamanvil-admin.php:859
+#: admin/class-spamanvil-admin.php:1098
 msgid "No provider configured. Go to the Providers tab to set one up."
 msgstr ""
 "Nenhum provedor configurado. Vá para a aba Provedores para configurar um."
 
-#: admin/class-spamanvil-admin.php:904
+#: admin/class-spamanvil-admin.php:1143
 msgid "Invalid IP ID."
 msgstr "ID de IP inválido."
 
-#: admin/class-spamanvil-admin.php:909
+#: admin/class-spamanvil-admin.php:1148
 msgid "IP unblocked."
 msgstr "IP desbloqueado."
 
-#: admin/class-spamanvil-admin.php:923
+#: admin/class-spamanvil-admin.php:1162
 msgid "Invalid provider."
 msgstr "Provedor inválido."
 
-#: admin/class-spamanvil-admin.php:927
+#: admin/class-spamanvil-admin.php:1166
 msgid "Key is defined in wp-config.php and cannot be cleared from here."
 msgstr "A chave está definida no wp-config.php e não pode ser removida daqui."
 
-#: admin/class-spamanvil-admin.php:933
+#: admin/class-spamanvil-admin.php:1172
 msgid "API key cleared."
 msgstr "Chave da API removida."
 
-#: admin/class-spamanvil-admin.php:948
+#: admin/class-spamanvil-admin.php:1187
 msgid "Invalid notice."
 msgstr "Aviso inválido."
 
-#: admin/class-spamanvil-admin.php:1006 admin/views/settings-general.php:32
+#: admin/class-spamanvil-admin.php:1245 admin/views/settings-general.php:32
 #: admin/views/settings-stats.php:20
 msgid "Spam Comments Blocked"
 msgstr "Comentários de Spam Bloqueados"
 
 #. translators: 1: LLM spam count, 2: heuristic count, 3: IP blocked count
-#: admin/class-spamanvil-admin.php:1011 admin/views/settings-general.php:37
+#: admin/class-spamanvil-admin.php:1250 admin/views/settings-general.php:37
 #: admin/views/settings-stats.php:25
 #, php-format
 msgid "%1$s by AI  |  %2$s by Heuristics  |  %3$s by IP Blocking"
 msgstr "%1$s por IA  |  %2$s por Heurística  |  %3$s por Bloqueio de IP"
 
-#: admin/class-spamanvil-admin.php:1019 includes/class-spamanvil.php:139
+#: admin/class-spamanvil-admin.php:1258 includes/class-spamanvil.php:141
 msgid "Settings"
 msgstr "Configurações"
 
-#: admin/class-spamanvil-admin.php:1022 includes/class-spamanvil.php:146
+#: admin/class-spamanvil-admin.php:1261 includes/class-spamanvil.php:148
 msgid "Rate ★★★★★"
 msgstr "Avaliar ★★★★★"
 
-#: admin/class-spamanvil-admin.php:1024 includes/class-spamanvil.php:156
+#: admin/class-spamanvil-admin.php:1263 includes/class-spamanvil.php:158
 msgid "Sponsor ☕"
 msgstr "Apoie ☕"
+
+#: admin/views/recovery.php:19 admin/views/settings-logs.php:16
+msgid "Review comments that may have been wrongly flagged"
+msgstr "Revisar comentários que podem ter sido marcados por engano"
+
+#. translators: %d: number of comments restored
+#: admin/views/recovery.php:27
+#, php-format
+msgid "%d comment restored and published."
+msgid_plural "%d comments restored and published."
+msgstr[0] "%d comentário restaurado e publicado."
+msgstr[1] "%d comentários restaurados e publicados."
+
+#: admin/views/recovery.php:37
+msgid ""
+"Until version 1.16.0, the default AI prompt told the model that a comment "
+"written in a language other than the site language was \"highly suspicious\" "
+"and that generic praise was spam on its own. Both rules are gone, but "
+"comments flagged under them are still in your spam folder."
+msgstr "Até a versão 1.16.0, o prompt padrão dizia ao modelo que um comentário escrito em idioma diferente do idioma do site era \"altamente suspeito\" e que elogio genérico já era spam por si só. As duas regras foram removidas, mas os comentários marcados por elas continuam na sua pasta de spam."
+
+#: admin/views/recovery.php:40
+msgid ""
+"Listed below are spam-flagged comments that carry no link and no author "
+"website, and whose score sits just above your threshold — the shape a "
+"wrongly flagged reader has, and the shape real spam almost never has. Read "
+"them, tick the genuine ones, and restore them."
+msgstr "Abaixo estão os comentários marcados como spam que não trazem nenhum link nem site do autor, e cuja pontuação ficou logo acima do seu limiar — o perfil de um leitor marcado por engano, e o perfil que spam de verdade quase nunca tem. Leia, marque os legítimos e restaure."
+
+#: admin/views/recovery.php:43
+msgid "Worth doing sooner than later:"
+msgstr "Melhor fazer logo:"
+
+#: admin/views/recovery.php:44
+msgid ""
+"WordPress permanently deletes spam comments older than 30 days on its own, "
+"so anything recoverable stays recoverable only for a while."
+msgstr "O WordPress apaga em definitivo os comentários de spam com mais de 30 dias, então o que dá para recuperar só dá para recuperar por um tempo."
+
+#: admin/views/recovery.php:52
+msgid "Nothing to review."
+msgstr "Nada para revisar."
+
+#: admin/views/recovery.php:53
+msgid "No spam-flagged comment on this site matches that pattern."
+msgstr "Nenhum comentário marcado como spam neste site tem esse perfil."
+
+#: admin/views/recovery.php:56 admin/views/recovery.php:94
+msgid "Back to the logs"
+msgstr "Voltar aos registros"
+
+#: admin/views/recovery.php:67 admin/views/settings-logs.php:27
+msgid "Comment"
+msgstr "Comentário"
+
+#: admin/views/recovery.php:68 admin/views/settings-logs.php:28
+msgid "Author"
+msgstr "Autor"
+
+#: admin/views/recovery.php:69
+msgid "Score"
+msgstr "Pontuação"
+
+#: admin/views/recovery.php:70
+msgid "Why it was flagged"
+msgstr "Por que foi marcado"
+
+#: admin/views/recovery.php:71 admin/views/settings-logs.php:34
+#: admin/views/settings-stats.php:184
+msgid "Date"
+msgstr "Data"
+
+#: admin/views/recovery.php:92
+msgid "Restore selected comments"
+msgstr "Restaurar os comentários selecionados"
+
+#: admin/views/recovery.php:98
+msgid ""
+"Restoring publishes the comment. If the commenter's IP was blocked after "
+"repeated flags, clear it on the IP Management tab as well."
+msgstr "Restaurar publica o comentário. Se o IP de quem comentou foi bloqueado após marcações repetidas, libere-o também na aba Gerenciamento de IP."
 
 #: admin/views/settings-general.php:52
 msgid "Queue Status"
@@ -579,7 +691,15 @@ msgid ""
 "(honeypot, time trap, rate limit, heuristics, AI) do the filtering "
 "invisibly. Trade-off: on low-traffic sites, subtle spam may be visible for a "
 "few minutes until it is evaluated — enable Sync mode above for zero delay."
-msgstr "Remove as barreiras de comentário do WordPress: nome/e-mail deixam de ser obrigatórios (anônimos permitidos), sem login e sem retenção do primeiro comentário para moderação. Os comentários aparecem na hora e o SpamAnvil remove o spam em segundo plano. As camadas anti-spam (armadilha oculta, armadilha de tempo, limite por IP, heurísticas, IA) filtram de forma invisível. Contrapartida: em sites de pouco tráfego, um spam sutil pode ficar visível por alguns minutos até ser avaliado — ative o modo Síncrono acima para não ter atraso."
+msgstr ""
+"Remove as barreiras de comentário do WordPress: nome/e-mail deixam de ser "
+"obrigatórios (anônimos permitidos), sem login e sem retenção do primeiro "
+"comentário para moderação. Os comentários aparecem na hora e o SpamAnvil "
+"remove o spam em segundo plano. As camadas anti-spam (armadilha oculta, "
+"armadilha de tempo, limite por IP, heurísticas, IA) filtram de forma "
+"invisível. Contrapartida: em sites de pouco tráfego, um spam sutil pode "
+"ficar visível por alguns minutos até ser avaliado — ative o modo Síncrono "
+"acima para não ter atraso."
 
 #: admin/views/settings-general.php:209
 msgid "Anvil Mode"
@@ -684,7 +804,10 @@ msgstr "Armadilha oculta"
 msgid ""
 "Add a hidden field to comment forms and instantly mark submissions that fill "
 "it as spam (blocks bots for free, before any AI call)"
-msgstr "Adiciona um campo oculto ao formulário de comentários e marca como spam, na hora, quem o preencher (bloqueia robôs de graça, antes de qualquer chamada de IA)"
+msgstr ""
+"Adiciona um campo oculto ao formulário de comentários e marca como spam, na "
+"hora, quem o preencher (bloqueia robôs de graça, antes de qualquer chamada "
+"de IA)"
 
 #: admin/views/settings-general.php:327
 msgid "Time Trap"
@@ -694,7 +817,9 @@ msgstr "Armadilha de tempo"
 msgid ""
 "Mark comments submitted faster than a human could plausibly write them as "
 "spam"
-msgstr "Marca como spam os comentários enviados mais rápido do que um humano conseguiria escrever"
+msgstr ""
+"Marca como spam os comentários enviados mais rápido do que um humano "
+"conseguiria escrever"
 
 #: admin/views/settings-general.php:335
 msgid "Minimum seconds before submit:"
@@ -813,7 +938,9 @@ msgstr "Limite de frequência"
 msgid ""
 "Throttle rapid repeat comments from the same IP (blocks floods before any AI "
 "call)"
-msgstr "Limita comentários repetidos em sequência do mesmo IP (barra enxurradas antes de qualquer chamada de IA)"
+msgstr ""
+"Limita comentários repetidos em sequência do mesmo IP (barra enxurradas "
+"antes de qualquer chamada de IA)"
 
 #: admin/views/settings-ip.php:96
 msgid "Max"
@@ -871,51 +998,39 @@ msgstr "Expirado"
 msgid "Remove"
 msgstr "Remover"
 
-#: admin/views/settings-logs.php:13
+#: admin/views/settings-logs.php:14
 msgid "Evaluation Logs"
 msgstr "Registros de Avaliação"
 
-#: admin/views/settings-logs.php:16
+#: admin/views/settings-logs.php:21
 msgid "No evaluation logs yet."
 msgstr "Nenhum registro de avaliação ainda."
 
-#: admin/views/settings-logs.php:21
+#: admin/views/settings-logs.php:26
 msgid "ID"
 msgstr "ID"
 
-#: admin/views/settings-logs.php:22
-msgid "Comment"
-msgstr "Comentário"
-
-#: admin/views/settings-logs.php:23
-msgid "Author"
-msgstr "Autor"
-
-#: admin/views/settings-logs.php:24
+#: admin/views/settings-logs.php:29
 msgid "LLM Score"
 msgstr "Pontuação LLM"
 
-#: admin/views/settings-logs.php:25 admin/views/settings-stats.php:188
+#: admin/views/settings-logs.php:30 admin/views/settings-stats.php:188
 msgid "Heuristic"
 msgstr "Heurística"
 
-#: admin/views/settings-logs.php:26
+#: admin/views/settings-logs.php:31
 msgid "Provider"
 msgstr "Provedor"
 
-#: admin/views/settings-logs.php:27
+#: admin/views/settings-logs.php:32
 msgid "Reason"
 msgstr "Motivo"
 
-#: admin/views/settings-logs.php:28
+#: admin/views/settings-logs.php:33
 msgid "Time (ms)"
 msgstr "Tempo (ms)"
 
-#: admin/views/settings-logs.php:29 admin/views/settings-stats.php:184
-msgid "Date"
-msgstr "Data"
-
-#: admin/views/settings-logs.php:52
+#: admin/views/settings-logs.php:57
 msgid "[deleted]"
 msgstr "[excluído]"
 
@@ -1018,7 +1133,9 @@ msgstr "Troca automática de modelo gratuito"
 msgid ""
 "If the configured model becomes unavailable, automatically switch to another "
 "free model from the provider"
-msgstr "Se o modelo configurado ficar indisponível, trocar automaticamente por outro modelo gratuito do mesmo provedor"
+msgstr ""
+"Se o modelo configurado ficar indisponível, trocar automaticamente por outro "
+"modelo gratuito do mesmo provedor"
 
 #: admin/views/settings-providers.php:109
 msgid ""
@@ -1026,7 +1143,11 @@ msgid ""
 "stops working, SpamAnvil finds a working free model, switches to it, and "
 "saves the change — so spam checking keeps running without manual "
 "intervention."
-msgstr "Modelos gratuitos (especialmente no OpenRouter) são descontinuados com frequência. Quando um para de funcionar, o SpamAnvil procura um modelo gratuito que funcione, troca para ele e salva a mudança — assim a checagem de spam continua sem intervenção manual."
+msgstr ""
+"Modelos gratuitos (especialmente no OpenRouter) são descontinuados com "
+"frequência. Quando um para de funcionar, o SpamAnvil procura um modelo "
+"gratuito que funcione, troca para ele e salva a mudança — assim a checagem "
+"de spam continua sem intervenção manual."
 
 #: admin/views/settings-providers.php:130
 msgid "Get API Key"
@@ -1224,7 +1345,9 @@ msgstr "Configurar o SpamAnvil"
 msgid ""
 "One API key is all SpamAnvil needs. It takes about a minute, and the free "
 "option costs nothing."
-msgstr "Uma chave de API é tudo de que o SpamAnvil precisa. Leva cerca de um minuto, e a opção gratuita não custa nada."
+msgstr ""
+"Uma chave de API é tudo de que o SpamAnvil precisa. Leva cerca de um minuto, "
+"e a opção gratuita não custa nada."
 
 #: admin/views/setup-wizard.php:28
 msgid "SpamAnvil is already configured."
@@ -1234,7 +1357,9 @@ msgstr "O SpamAnvil já está configurado."
 msgid ""
 "You can run through this again to replace the key, or go straight to the "
 "settings."
-msgstr "Você pode refazer este passo a passo para trocar a chave, ou ir direto para as configurações."
+msgstr ""
+"Você pode refazer este passo a passo para trocar a chave, ou ir direto para "
+"as configurações."
 
 #: admin/views/setup-wizard.php:32 admin/views/setup-wizard.php:99
 msgid "Go to settings"
@@ -1250,7 +1375,12 @@ msgid ""
 "OpenRouter offers free models: create an account, click \"Create key\", and "
 "copy it. Free usage is rate-limited, which is plenty for a normal blog — a "
 "busy site can add credit later."
-msgstr "O SpamAnvil pede a um modelo de IA que julgue cada comentário, então precisa de acesso a um. O OpenRouter oferece modelos gratuitos: crie uma conta, clique em \"Create key\" e copie a chave. O uso gratuito tem limite de requisições, o que é suficiente para um blog comum — um site movimentado pode adicionar crédito depois."
+msgstr ""
+"O SpamAnvil pede a um modelo de IA que julgue cada comentário, então precisa "
+"de acesso a um. O OpenRouter oferece modelos gratuitos: crie uma conta, "
+"clique em \"Create key\" e copie a chave. O uso gratuito tem limite de "
+"requisições, o que é suficiente para um blog comum — um site movimentado "
+"pode adicionar crédito depois."
 
 #: admin/views/setup-wizard.php:47
 msgid "Open openrouter.ai/keys"
@@ -1272,7 +1402,9 @@ msgstr "sk-or-v1-…"
 msgid ""
 "The key is encrypted before it is stored, and it never leaves your site "
 "except to call the provider."
-msgstr "A chave é criptografada antes de ser armazenada e só sai do seu site para chamar o provedor."
+msgstr ""
+"A chave é criptografada antes de ser armazenada e só sai do seu site para "
+"chamar o provedor."
 
 #: admin/views/setup-wizard.php:75 admin/views/setup-wizard.php:79
 msgid "Test and finish"
@@ -1282,7 +1414,9 @@ msgstr "Testar e concluir"
 msgid ""
 "SpamAnvil classifies one sample comment to prove the key works. Nothing is "
 "saved unless it does."
-msgstr "O SpamAnvil classifica um comentário de exemplo para provar que a chave funciona. Nada é salvo se não funcionar."
+msgstr ""
+"O SpamAnvil classifica um comentário de exemplo para provar que a chave "
+"funciona. Nada é salvo se não funcionar."
 
 #: admin/views/setup-wizard.php:90
 msgid "SpamAnvil is protecting your comments"
@@ -1294,7 +1428,9 @@ msgstr "Cada novo comentário passa agora por estas camadas, nesta ordem:"
 
 #: admin/views/setup-wizard.php:93
 msgid "Honeypot and time trap — catch bots for free, before any API call"
-msgstr "Armadilha oculta e armadilha de tempo — pegam robôs de graça, antes de qualquer chamada de API"
+msgstr ""
+"Armadilha oculta e armadilha de tempo — pegam robôs de graça, antes de "
+"qualquer chamada de API"
 
 #: admin/views/setup-wizard.php:94
 msgid "Per-IP rate limiting and repeat-offender blocking"
@@ -1302,7 +1438,8 @@ msgstr "Limite de frequência por IP e bloqueio de reincidentes"
 
 #: admin/views/setup-wizard.php:95
 msgid "Heuristics — links, spam wording, prompt-injection attempts"
-msgstr "Heurísticas — links, vocabulário de spam, tentativas de injeção de prompt"
+msgstr ""
+"Heurísticas — links, vocabulário de spam, tentativas de injeção de prompt"
 
 #: admin/views/setup-wizard.php:96
 msgid "The AI verdict, for everything that survives the cheap checks"
@@ -1336,7 +1473,8 @@ msgstr "Comentário Bloqueado"
 
 #: includes/class-spamanvil-comment-processor.php:82
 msgid "You are commenting too quickly. Please wait a moment and try again."
-msgstr "Você está comentando rápido demais. Aguarde um momento e tente novamente."
+msgstr ""
+"Você está comentando rápido demais. Aguarde um momento e tente novamente."
 
 #: includes/class-spamanvil-comment-processor.php:83
 msgid "Slow down"
@@ -1455,11 +1593,11 @@ msgstr "Google Gemini"
 msgid "Generic OpenAI-Compatible"
 msgstr "Genérico Compatível com OpenAI"
 
-#: includes/class-spamanvil.php:130
+#: includes/class-spamanvil.php:132
 msgid "Every 5 Minutes"
 msgstr "A Cada 5 Minutos"
 
-#: includes/class-spamanvil.php:151
+#: includes/class-spamanvil.php:153
 msgid "Docs"
 msgstr "Documentação"
 
@@ -1483,7 +1621,8 @@ msgstr "Formato inesperado na resposta da API"
 #: includes/providers/class-spamanvil-openai-compatible.php:134
 #, php-format
 msgid "Model list request failed (HTTP %d). Check the API key."
-msgstr "A busca pela lista de modelos falhou (HTTP %d). Confira a chave de API."
+msgstr ""
+"A busca pela lista de modelos falhou (HTTP %d). Confira a chave de API."
 
 #: includes/providers/class-spamanvil-openai-compatible.php:182
 msgid "Unexpected model list format from the provider."
@@ -1496,13 +1635,13 @@ msgid "API returned HTTP %1$d: %2$s"
 msgstr "A API retornou HTTP %1$d: %2$s"
 
 #. translators: %s: raw response content
-#: includes/providers/class-spamanvil-provider.php:144
+#: includes/providers/class-spamanvil-provider.php:154
 #, php-format
 msgid "Could not parse a score from the response: %s"
 msgstr "Não foi possível extrair uma pontuação da resposta: %s"
 
 #. translators: %d: the invalid score
-#: includes/providers/class-spamanvil-provider.php:157
+#: includes/providers/class-spamanvil-provider.php:167
 #, php-format
 msgid "Score %d is out of range (0-100)"
 msgstr "A pontuação %d está fora do intervalo (0-100)"

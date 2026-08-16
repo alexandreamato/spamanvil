@@ -438,6 +438,14 @@ Also from that run: reasoning models spent the whole budget thinking and returne
 
 **`openrouter/free` is a router, not a model.** It picks a different free model per call, and some of them cannot do this job at all — one run routed to `nvidia/nemotron-3.5-content-safety:free`, whose entire reply is `User Safety: safe`. Roughly 4 in 10 observed calls were unusable, and the chain then fell through to the paid `openrouter/auto`. Fixed in 1.17.0: `SpamAnvil_Admin::probe_working_model()` (wizard) tests the configured model, and on a non-auth failure lists the provider's free models, skips anything `SpamAnvil_Provider_Factory::is_plausible_chat_model()` rejects (safety/code/embedding/vision/speech/media families — unit-tested), and persists `<winner>, <original chain>` so the router stays as the never-stale fallback. Probes are capped at `SETUP_MODEL_PROBES` (3) because the user is waiting; an auth error short-circuits before any probe. `pick_free_model()` applies the same filter, and `test_connection()` now runs the site's real system prompt instead of a simplified one.
 
+## Recovery Screen (1.18.0)
+
+Fixing the prompt in 1.16.0 stopped the bleeding; it did not return the comments already in the spam folder — and WordPress deletes spam older than 30 days by itself (`wp_scheduled_delete`), so the window is finite.
+
+`SpamAnvil_Stats::looks_like_false_positive( $score, $content, $author_url, $provider, $threshold )` is the whole rule, pure and unit-tested (`tests/unit/FalsePositiveDetectionTest.php`): score inside `[threshold, 90)`, no URL anywhere in the body, no author URL, and not a deterministic verdict (`DETERMINISTIC_PROVIDERS` — honeypot/timetrap/heuristic/ratelimit, matched by substring so `"openrouter (cached)"` still counts as an LLM verdict). The reasoning: the link is the point of spam, so its absence plus a score in the band the language rule produced is what separates a wronged reader from a spammer. `find_probable_false_positives()` over-fetches 5× and applies that filter in PHP.
+
+UI: `?page=spamanvil&tab=recovery` (a full-screen view like the wizard, not a seventh tab), a permanent link on the Logs tab, and `maybe_show_recovery_notice()` — a dismissible global notice whose count is cached for 12h because it joins the comments table on every admin screen. Restoring approves outright (`wp_set_comment_status`) rather than `wp_unspam_comment()`, since the admin has just read the comment, and clears the cached count.
+
 ## Setup Wizard (1.15.0)
 
 `SpamAnvil_Admin::render_setup_wizard()` renders `admin/views/setup-wizard.php` at `options-general.php?page=spamanvil&tab=setup`. It is **not** a tab — `render_settings_page()` intercepts `tab=setup` before the tab whitelist and returns, so the wizard is a full-screen view with no tab nav; `is_setup_screen()` also keeps the plugin's own health and review notices off it.

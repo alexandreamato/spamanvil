@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.0
+Stable tag: 1.18.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -241,6 +241,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Changelog ==
 
+= 1.18.0 =
+* New: **a screen to get back the comments that were flagged by mistake.** The prompt rules removed in 1.16.0 had been auto-marking real readers as spam — a comment written in another language scored 75+, generic praise 70+. Fixing the rules does not bring those comments back, and WordPress deletes spam older than 30 days on its own, so they are recoverable only for a while. Settings → SpamAnvil → Logs now links to a review screen listing the spam-flagged comments that carry no link and no author website and whose score sits just above your threshold — the shape a wrongly flagged reader has, and the shape real spam almost never has. Each row shows the AI's own reason for flagging it, and ticking a comment restores and publishes it. A dismissible notice points there while there is something to review. Verdicts from the honeypot, time trap, rate limit and heuristics are never listed: those are deterministic, and were never the prompt's doing.
+
 = 1.17.0 =
 * Fix: the setup wizard could reject a perfectly good API key, and new installs were left on a model that fails roughly 4 calls in 10. OpenRouter's `openrouter/free` is a *router*, not a model: it picks a different free model per call, and part of that pool cannot do this job at all — one real run was routed to a content-safety classifier whose entire reply is "User Safety: safe", which no JSON parser can rescue. The wizard now checks whether the configured model actually answers; if it does not, it asks the provider what else is free, skips the ones that cannot answer (safety classifiers, code, embedding, vision, speech and media models), and stores the first that works — keeping the router behind it as the fallback that never goes stale. A rejected key still fails immediately, without probing alternatives.
 * Fix: the automatic free-model fallback (1.9.0) took the first free model in the provider's list, which today is a code model. It now applies the same filter.
@@ -464,6 +467,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 * GDPR/LGPD privacy-first design
 
 == Upgrade Notice ==
+
+= 1.18.0 =
+Includes a review screen for comments the pre-1.16.0 prompt may have marked as spam by mistake. Worth a look soon: WordPress deletes spam older than 30 days on its own.
 
 = 1.16.0 =
 Accuracy fix. The default prompt was auto-marking genuine comments as spam when they were written in another language, or were short and polite. Unmodified default prompts are updated automatically on upgrade; customized prompts are left alone.
