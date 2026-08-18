@@ -27,8 +27,20 @@ class SpamAnvil {
 
 	public function init() {
 		$this->instantiate_components();
-		$this->check_db_version();
 		$this->define_hooks();
+
+		// Deferred to `init`. Both of these reach wp_schedule_event(), which applies the
+		// `cron_schedules` filter, where add_cron_interval() translates its label. Doing
+		// that on plugins_loaded loads the text domain before `init` and WordPress logs
+		// "Translation loading was triggered too early" (6.7+) on every such request.
+		add_action( 'init', array( $this, 'run_deferred_setup' ) );
+	}
+
+	/**
+	 * Schema check and cron scheduling, run once WordPress is ready for translations.
+	 */
+	public function run_deferred_setup() {
+		$this->check_db_version();
 		$this->ensure_cron_scheduled();
 	}
 

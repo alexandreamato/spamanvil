@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.0
+Stable tag: 1.18.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -241,6 +241,12 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Changelog ==
 
+= 1.18.1 =
+* Fix: on sites with `WP_DEBUG` enabled, WordPress logged "Translation loading for the spamanvil domain was triggered too early" whenever the plugin had to (re)schedule its cron events. Scheduling runs on `plugins_loaded` and reaches the `cron_schedules` filter, where the interval's label is translated — before WordPress is ready for translations. Schema check and cron scheduling now run on `init` instead. Verified against WordPress 7.1-RC4: the notice is gone and the events still schedule.
+* Fix: 1.15.0 added a second `set_transient( 'spamanvil_activation_redirect' )` inside the activator, which also runs on a database-version change — so a future schema bump would have redirected people to the settings screen out of nowhere. Removed; the activation hook has always set it.
+* **Correction to the 1.15.0 release notes.** They stated that the post-activation redirect "never actually happened" because nothing set the flag it reads. That was wrong: `spamanvil.php` has set that transient since 1.1.1, and the redirect did fire. What 1.15.0 genuinely changed was its destination — unconfigured installs now land on the setup wizard instead of the settings page.
+* Compatibility: WordPress 7.1 verified end to end on RC4 rather than by code review — activation, all admin screens, the comment form's honeypot and signed time trap, an anonymous comment reaching the queue, a bot caught by the honeypot, per-IP rate limiting, and cron scheduling. No PHP notices, warnings or deprecations from the plugin.
+
 = 1.18.0 =
 * New: **a screen to get back the comments that were flagged by mistake.** The prompt rules removed in 1.16.0 had been auto-marking real readers as spam — a comment written in another language scored 75+, generic praise 70+. Fixing the rules does not bring those comments back, and WordPress deletes spam older than 30 days on its own, so they are recoverable only for a while. Settings → SpamAnvil → Logs now links to a review screen listing the spam-flagged comments that carry no link and no author website and whose score sits just above your threshold — the shape a wrongly flagged reader has, and the shape real spam almost never has. Each row shows the AI's own reason for flagging it, and ticking a comment restores and publishes it. A dismissible notice points there while there is something to review. Verdicts from the honeypot, time trap, rate limit and heuristics are never listed: those are deterministic, and were never the prompt's doing.
 
@@ -257,7 +263,7 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 = 1.15.0 =
 * New: **Setup wizard.** Activating SpamAnvil now opens a single screen that asks for one thing — an API key — with a direct link to a free OpenRouter key. It classifies a sample comment to prove the key works, and saves nothing unless it does. Until now, activation left you on the plugins list with a plugin that cannot act until a provider is configured, and the screen you eventually found asked you to choose between six providers before explaining any of them.
 * Fix: The all-time "Spam Comments Blocked" figure was shrinking. Daily statistics are pruned after 90 days and the total was summed from the surviving rows, so any install older than three months quietly lost a day of history every day — including the count that decides when the plugin asks for a review. Pruned counters are now banked and added back, so the number only grows. History deleted by earlier versions cannot be recovered.
-* Fix: The post-activation redirect never actually happened: the plugin had read a flag since 1.0 that nothing ever set.
+* Fix: Unconfigured installs are sent to the setup wizard after activation instead of the settings page. (Correction, added in 1.18.1: the original note here claimed the redirect never fired because nothing set the flag it reads. That was wrong — spamanvil.php has set it since 1.1.1.)
 * Also: the plugin's own admin notices stay off the wizard screen, and the Installation instructions no longer name a default OpenRouter model that stopped being the default in 1.13.1.
 
 = 1.14.4 =

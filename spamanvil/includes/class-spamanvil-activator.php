@@ -12,12 +12,6 @@ class SpamAnvil_Activator {
 		self::maybe_upgrade_default_models();
 		self::maybe_cap_legacy_ip_blocks();
 		self::schedule_cron();
-
-		// Hand the user straight to the setup wizard. SpamAnvil_Admin has read this
-		// transient since 1.0 but nothing ever set it, so activation silently dropped
-		// people back on the plugins list with a plugin that cannot work until a
-		// provider is configured.
-		set_transient( 'spamanvil_activation_redirect', 1, 60 );
 	}
 
 	/**
