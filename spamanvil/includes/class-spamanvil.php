@@ -229,7 +229,7 @@ class SpamAnvil {
 		}
 
 		$content = '<p>' . esc_html( SpamAnvil_Comment_Processor::privacy_notice_text() ) . ' '
-			. esc_html__( 'The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. Visitor IP addresses used for spam blocking are stored only as salted, keyed hashes.', 'spamanvil' )
+			. esc_html__( 'The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. To block repeat spammers, visitor IP addresses are stored as salted, keyed hashes together with a partly masked form shown to administrators. When the site is behind a proxy or CDN, the visitor IP is also kept with the comment, as WordPress does for every comment.', 'spamanvil' )
 			. '</p>';
 
 		wp_add_privacy_policy_content( 'SpamAnvil', wp_kses_post( $content ) );

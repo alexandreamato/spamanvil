@@ -355,6 +355,37 @@ class SpamAnvil_Provider_Factory {
 	}
 
 	/**
+	 * Whether a custom endpoint would send comments unencrypted over the internet.
+	 *
+	 * Plain http:// is fine for a model on the same machine or local network (a
+	 * common setup for self-hosted models) and a leak anywhere else: the request
+	 * carries the API key and every commenter's name, email and text.
+	 *
+	 * @param string $url Configured endpoint.
+	 * @return bool
+	 */
+	public static function is_insecure_remote_url( $url ) {
+		$url = trim( (string) $url );
+		if ( 0 !== stripos( $url, 'http://' ) ) {
+			return false;
+		}
+
+		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		$host = trim( $host, '[]' );
+		if ( '' === $host || 'localhost' === $host || '.local' === substr( $host, -6 ) || '.localhost' === substr( $host, -10 ) ) {
+			return false;
+		}
+
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			// Private and loopback ranges fail this validation; public addresses pass.
+			$public = filter_var( $host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+			return false !== $public;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Fingerprint of the provider configuration the queue depends on.
 	 *
 	 * Changes whenever the chain, any chained provider's model list, or any stored
@@ -378,6 +409,11 @@ class SpamAnvil_Provider_Factory {
 			// The raw encrypted value (not the decrypted key) is enough: re-saving a
 			// key re-encrypts with a fresh IV, so the value — and the hash — changes.
 			$parts[] = defined( $config['constant_key'] ) ? 'const' : md5( (string) get_option( $config['option_key'], '' ) );
+			// A different endpoint is a different model server, even with the same
+			// model name and key — its verdicts must not come from the old one's cache.
+			if ( isset( $config['url_option'] ) ) {
+				$parts[] = (string) get_option( $config['url_option'], '' );
+			}
 		}
 
 		return md5( implode( '|', $parts ) );

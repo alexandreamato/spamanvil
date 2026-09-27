@@ -32,7 +32,14 @@ if ( preg_match( '/Project-Id-Version:\s*SpamAnvil\s+([0-9]+\.[0-9]+\.[0-9]+)/i'
 	$sources['pt_BR.po Project-Id-Version'] = $m[1];
 }
 
-$expected_places = array( 'spamanvil.php header', 'SPAMANVIL_VERSION constant', 'readme.txt Stable tag', 'pt_BR.po Project-Id-Version' );
+// The GitHub README badge (not shipped, but it regressed twice when only the four
+// plugin files were checked).
+$readme_md = @file_get_contents( $root . '/README.md' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+if ( false !== $readme_md && preg_match( '#badge/version-([0-9]+\.[0-9]+\.[0-9]+)-#', $readme_md, $m ) ) {
+	$sources['README.md badge'] = $m[1];
+}
+
+$expected_places = array( 'spamanvil.php header', 'SPAMANVIL_VERSION constant', 'readme.txt Stable tag', 'pt_BR.po Project-Id-Version', 'README.md badge' );
 $errors          = array();
 
 foreach ( $expected_places as $place ) {

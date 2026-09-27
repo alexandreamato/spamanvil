@@ -80,7 +80,7 @@ WordPress never runs the activation hook on update. `SpamAnvil::check_db_version
 - `SpamAnvil_Queue::human_decided( $status, $expects_approved, $moderated )` (pure, unit-tested): the mark or spam/trash always win; `approved` alone counts only when the plugin would have held the comment (not Open Mode, not Sync). `process_single()` checks it before the LLM call and again right before applying — an overruled verdict is logged but not applied or cached.
 - **Read moderation state from the DB, never through the object cache.** `fresh_moderation_state()` queries `comment_approved` and the mark directly. 1.19.0 used `wp_get_comment_status()`, which reads the per-request cache the cron run filled at load time — a moderator acting in another request was invisible. Tests of this must write the DB *without* `clean_comment_cache()` (see `test_moderation_in_another_request_is_seen_before_applying`), or they pass without proving anything.
 - Plugin-initiated status changes (verdicts, traps, heuristics) go through `SpamAnvil_Queue::as_plugin( $callback )` so they are not recorded as moderation. Any new `wp_spam_comment()`/`wp_set_comment_status()` the plugin makes on its own must be wrapped too.
-- Known limit: in Open Mode a moderator "approving" an already-published comment changes nothing, so it cannot be detected; spam/trash/pending always are.
+- Known limits: in Open Mode a moderator "approving" an already-published comment changes nothing, so it cannot be detected. And the final fresh read and the status write are two steps, not a compare-and-swap: a moderation landing between them (milliseconds) can still be overwritten. Do not claim "always" in user-facing text.
 - Prompt defaults for "Reset to Default" come from PHP via `wp_localize_script` (`spamAnvil.default_prompts`) — never duplicate them in `admin.js` again.
 
 ## Time Budget, Visitor IP, Local Time (1.20.0)
@@ -213,7 +213,7 @@ When the user says "publicar" or "release", follow ALL steps below in order:
 
 #### Step 1 — Version Bump (in code)
 
-Update the version string in **all 4 places** (must match):
+Update the version string in **all 4 places** (must match) — plus the `README.md` badge, which `bin/check-version.php` also checks since 1.20.0 (it regressed in 1.19.1 and 1.20.0):
 
 | File | Location |
 |------|----------|
@@ -379,7 +379,7 @@ Dev tooling lives at the **repo root** (never shipped in the plugin ZIP — the 
 
 **Coding standards:** `composer lint` (WPCS + PHPCompatibility). **Advisory** in CI for now — the shipped code predates WPCS (~300 mostly auto-fixable findings); clean incrementally with `composer lint:fix`, don't gate merges on it yet.
 
-**Version gate:** `php bin/check-version.php [X.Y.Z]` asserts the version matches across all 4 places + has a changelog entry. Runs in CI and (with the tag) during deploy.
+**Version gate:** `php bin/check-version.php [X.Y.Z]` asserts the version matches across the 4 plugin places + the README badge, and that there is a changelog entry. Runs in CI and (with the tag) during deploy.
 
 **Plugin Check:** `wordpress/plugin-check-action` runs on every push (advisory, like phpcs) — the same tool WordPress.org uses to scan plugin updates. Baseline since 1.14.4: **0 errors, 1 warning** (`mismatched_plugin_name` — the readme's long SEO title differs from the `Plugin Name` header; kept deliberately). Two gotchas: `phpcs:ignore` annotations are honoured, including for the tool's own `PluginCheck.*` sniffs, and `upgrade_notice_limit` measures the notice **HTML-escaped**, so quotes and apostrophes expand (284 visible chars measured 309 and still failed).
 
@@ -434,7 +434,7 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 
 **Privacy notice (1.19.1):** `render_privacy_notice()` (filter `comment_form_submit_field`) prints one disclosure line above the submit button when `spamanvil_privacy_notice` is on (default `'1'`), SpamAnvil is on, a provider is configured and the visitor is not a skipped moderator. Same text (`privacy_notice_text()`) is offered to the site's privacy policy via `wp_add_privacy_policy_content()`. The option existed since 1.0 but rendered nothing until 1.19.1.
 
-**Verdict cache (1.2.9, re-keyed 1.19.0):** `process_single()` reuses a recent LLM verdict for an identical classification request, skipping the API call. Since 1.19.0 the key is `SpamAnvil_Queue::verdict_cache_key( $system_prompt, $user_prompt )` (pure, unit-tested) — a hash of the exact prompts sent, so post, author name/email/URL, site language and prompt templates are all part of it (the old content + author URL key reused verdicts across posts, authors and prompt fixes). The provider config hash (`get_config_hash()`) is part of the key since 1.19.1, so switching model does not serve the old model's verdicts. The key that decided a comment is stored in comment meta `_spamanvil_verdict_key`; a moderator's correction evicts it. Uninstall (with Delete data) removes both comment metas and all `_transient_spamanvil_*` rows. Only raw `score`/`reason`/`provider`/`model` are cached; the threshold is applied per-read. Anvil Mode never uses the cache. Cache hits increment the `cache_hits` stat and are marked `provider (cached)` in the logs.
+**Verdict cache (1.2.9, re-keyed 1.19.0):** `process_single()` reuses a recent LLM verdict for an identical classification request, skipping the API call. Since 1.19.0 the key is `SpamAnvil_Queue::verdict_cache_key( $system_prompt, $user_prompt )` (pure, unit-tested) — a hash of the exact prompts sent, so post, author name/email/URL, site language and prompt templates are all part of it (the old content + author URL key reused verdicts across posts, authors and prompt fixes). The provider config hash (`get_config_hash()`, which includes the Generic endpoint URL since 1.20.0) is part of the key since 1.19.1, so switching model does not serve the old model's verdicts. The key that decided a comment is stored in comment meta `_spamanvil_verdict_key`; a moderator's correction evicts it. Uninstall (with Delete data) removes both comment metas and all `_transient_spamanvil_*` rows. Only raw `score`/`reason`/`provider`/`model` are cached; the threshold is applied per-read. Anvil Mode never uses the cache. Cache hits increment the `cache_hits` stat and are marked `provider (cached)` in the logs.
 
 **Atomic claim (1.2.9):** `claim_items()` claims each row with a compare-and-swap `UPDATE ... WHERE id = ? AND status = 'queued'` (checking affected-rows), so concurrent cron + manual runs can never double-claim a row and pay for a duplicate LLM call.
 

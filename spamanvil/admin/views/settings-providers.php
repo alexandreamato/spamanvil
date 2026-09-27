@@ -222,6 +222,11 @@ $signup_urls = array(
 								   value="<?php echo esc_attr( get_option( 'spamanvil_generic_api_url', '' ) ); ?>"
 								   class="regular-text"
 								   placeholder="https://your-api.example.com/v1/chat/completions">
+							<?php if ( SpamAnvil_Provider_Factory::is_insecure_remote_url( get_option( 'spamanvil_generic_api_url', '' ) ) ) : ?>
+								<p class="description" style="color: #b32d2e;">
+									<?php esc_html_e( 'This address uses http://, so your API key and every comment (with the commenter\'s name and email) travel unencrypted over the internet. Use https:// unless the model runs on this server or your local network.', 'spamanvil' ); ?>
+								</p>
+							<?php endif; ?>
 						</td>
 					</tr>
 				<?php endif; ?>

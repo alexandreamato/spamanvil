@@ -143,4 +143,19 @@ class ErrorClassificationTest extends TestCase {
 		$factory = $this->make_factory();
 		$this->assertSame( $factory->get_config_hash(), $factory->get_config_hash() );
 	}
+
+	public function test_generic_endpoint_is_part_of_the_config_hash() {
+		// 1.20.0: same model and key on another server is another classifier.
+		$GLOBALS['__spamanvil_test_options']['spamanvil_primary_provider'] = 'generic';
+		$GLOBALS['__spamanvil_test_options']['spamanvil_generic_model']    = 'llama3';
+		$GLOBALS['__spamanvil_test_options']['spamanvil_generic_api_url']  = 'https://provider-a.example/v1';
+		$a = $this->make_factory()->get_config_hash();
+
+		$GLOBALS['__spamanvil_test_options']['spamanvil_generic_api_url'] = 'https://provider-b.example/v1';
+		$b = $this->make_factory()->get_config_hash();
+
+		unset( $GLOBALS['__spamanvil_test_options']['spamanvil_primary_provider'], $GLOBALS['__spamanvil_test_options']['spamanvil_generic_model'], $GLOBALS['__spamanvil_test_options']['spamanvil_generic_api_url'] );
+
+		$this->assertNotSame( $a, $b );
+	}
 }

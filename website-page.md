@@ -2,7 +2,7 @@
 
 **Stop comment spam with AI. SpamAnvil uses ChatGPT, Claude, Gemini and other LLMs to detect spam that traditional filters miss. 100% free, no subscription.**
 
-[Download v1.0.3 from GitHub](https://github.com/alexandreamato/spamanvil/releases/tag/v1.0.3)
+[Download from WordPress.org](https://wordpress.org/plugins/spamanvil/)
 
 ## Overview
 
@@ -14,8 +14,8 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 
 - **100% Free** — No premium tier, no subscription, no hidden costs. Bring your own API key (free options available).
 - **Smarter Than Rules** — AI understands context. A comment about "buying a new home" won't be flagged just because it contains "buy".
-- **Works With Free AI Models** — Use OpenRouter's free Llama models for $0 cost, or connect premium models for maximum accuracy.
-- **Privacy-First** — Your data stays between you and your chosen AI provider. IP addresses are stored as irreversible SHA-256 hashes. GDPR/LGPD compliant by design.
+- **Works With Free AI Models** — By default SpamAnvil uses only OpenRouter's free models, at $0 cost. Connecting a paid model is your explicit choice.
+- **Privacy-First** — Your data stays between you and your chosen AI provider. IP addresses are stored as salted, keyed hashes (HMAC-SHA-256) that cannot be reversed without your site's secret. GDPR/LGPD compliant by design.
 - **No Cloud Lock-in** — Choose from 6+ AI providers. Switch anytime. Your anti-spam, your rules.
 
 ## Supported AI Providers
@@ -69,7 +69,7 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 
 ### Manual Installation
 
-1. [Download the latest release](https://github.com/alexandreamato/spamanvil/releases/tag/v1.0.3)
+1. [Download the latest version from WordPress.org](https://wordpress.org/plugins/spamanvil/)
 2. Go to **Plugins > Add New > Upload Plugin**
 3. Upload the zip file and click **Install Now**
 4. Activate the plugin
@@ -87,7 +87,7 @@ Want to use SpamAnvil for completely free? Here's how:
 
 ## Which AI Provider Should I Use?
 
-- **For free usage:** OpenRouter with the free Llama 3.3 70B model works surprisingly well for spam detection.
+- **For free usage:** OpenRouter with the default `openrouter/free` router, which picks among the free models. The setup wizard tests it and switches to a free model that answers if needed.
 - **For best accuracy:** OpenAI GPT-4o-mini offers the best quality-to-price ratio.
 - **For privacy:** Google Gemini or a self-hosted model via the Generic OpenAI-compatible option.
 - **For maximum reliability:** Configure a primary + fallback provider so spam checking never stops.
@@ -108,7 +108,7 @@ SpamAnvil follows WordPress security best practices throughout:
 ## Frequently Asked Questions
 
 **Is SpamAnvil really free?**
-Yes, 100% free and open source (GPLv2). There is no premium version. You only need an API key from an AI provider, and free options are available (e.g., OpenRouter with free Llama models).
+Yes, 100% free and open source (GPLv2). There is no premium version. You only need an API key from an AI provider, and free options are available (e.g., OpenRouter free models, the default).
 
 **How is SpamAnvil different from Akismet?**
 Akismet uses a centralized cloud service owned by Automattic. It requires a paid subscription for commercial sites, and all your comments are sent to Akismet's servers. SpamAnvil lets you choose your own AI provider, works with free models, keeps you in control of your data, and uses true AI understanding instead of statistical pattern matching.
@@ -133,20 +133,10 @@ Yes! If you run a local model with an OpenAI-compatible API (e.g., LM Studio, Ol
 
 ## Changelog
 
-### 1.0.3
-- New: Scan Pending Comments — analyze all comments already in the moderation queue with one click. Runs heuristics, auto-blocks obvious spam, and enqueues the rest for LLM analysis. Ideal for new installations on sites with existing pending comments.
-- New: Process Queue Now — trigger immediate queue processing from the admin panel instead of waiting for WP-Cron. Processes batches in sequence with real-time progress and updates the queue counters live.
-
-### 1.0.1
-- Fix: Test Connection now works without saving the page first — reads API key and model directly from form fields
-- Fix: Improved error messages on Test Connection failures
-- Fix: Updated default OpenRouter model from deprecated llama-3.1-8b to llama-3.3-70b-instruct:free
-
-### 1.0.0
-- Initial release
+The full, current changelog is on the [WordPress.org plugin page](https://wordpress.org/plugins/spamanvil/#developers).
 
 ## Links
 
 - [GitHub Repository](https://github.com/alexandreamato/spamanvil)
-- [Download Latest Release (v1.0.3)](https://github.com/alexandreamato/spamanvil/releases/tag/v1.0.3)
+- [Download from WordPress.org](https://wordpress.org/plugins/spamanvil/)
 - [Report Issues](https://github.com/alexandreamato/spamanvil/issues)

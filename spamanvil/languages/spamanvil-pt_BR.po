@@ -1688,5 +1688,9 @@ msgid "To filter spam, your comment and the name, email and website you enter ar
 msgstr "Para filtrar spam, seu comentário e o nome, e-mail e site que você informar são enviados a um serviço externo de IA para análise."
 
 #: includes/class-spamanvil.php
-msgid "The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. Visitor IP addresses used for spam blocking are stored only as salted, keyed hashes."
-msgstr "O serviço é o provedor de IA configurado no SpamAnvil, e a política de privacidade dele se aplica a esses dados. Os endereços IP de visitantes usados para bloquear spam são guardados apenas como hashes com sal e chave."
+msgid "The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. To block repeat spammers, visitor IP addresses are stored as salted, keyed hashes together with a partly masked form shown to administrators. When the site is behind a proxy or CDN, the visitor IP is also kept with the comment, as WordPress does for every comment."
+msgstr "O serviço é o provedor de IA configurado no SpamAnvil, e a política de privacidade dele se aplica a esses dados. Para bloquear quem insiste em enviar spam, os endereços IP de visitantes são guardados como hashes com sal e chave, junto com uma forma parcialmente mascarada exibida aos administradores. Quando o site está atrás de um proxy ou CDN, o IP do visitante também fica guardado com o comentário, como o WordPress faz com todo comentário."
+
+#: admin/views/settings-providers.php
+msgid "This address uses http://, so your API key and every comment (with the commenter's name and email) travel unencrypted over the internet. Use https:// unless the model runs on this server or your local network."
+msgstr "Este endereço usa http://, então sua chave de API e todos os comentários (com nome e e-mail de quem comentou) trafegam sem criptografia pela internet. Use https://, a menos que o modelo rode neste servidor ou na sua rede local."

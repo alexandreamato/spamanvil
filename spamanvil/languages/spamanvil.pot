@@ -1400,5 +1400,9 @@ msgid "To filter spam, your comment and the name, email and website you enter ar
 msgstr ""
 
 #: includes/class-spamanvil.php
-msgid "The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. Visitor IP addresses used for spam blocking are stored only as salted, keyed hashes."
+msgid "The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. To block repeat spammers, visitor IP addresses are stored as salted, keyed hashes together with a partly masked form shown to administrators. When the site is behind a proxy or CDN, the visitor IP is also kept with the comment, as WordPress does for every comment."
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "This address uses http://, so your API key and every comment (with the commenter's name and email) travel unencrypted over the internet. Use https:// unless the model runs on this server or your local network."
 msgstr ""
