@@ -111,7 +111,7 @@ jobs:
       - name: Install dependencies
         run: composer update --prefer-dist --no-progress --no-interaction
 
-      - name: Pin PHPUnit 7 for the WordPress 5.8 test suite
+      - name: Pin PHPUnit 7 and Polyfills 1.x for the WordPress 5.8 test suite
         # WordPress < 5.9 refuses PHPUnit 8+. Every PHPUnit 7.5 release carries a
         # security advisory, so Composer blocks it by default; this is a throwaway CI
         # test runner, never shipped, so the block is lifted for this job only.
@@ -119,7 +119,8 @@ jobs:
         run: |
           # The setting was renamed across Composer releases; set whichever exists.
           composer config policy.advisories.block false || composer config audit.block-insecure false || true
-          composer require --dev --no-interaction --no-progress --update-with-all-dependencies "phpunit/phpunit:^7.5"
+          # Its test case also uses Polyfills traits that 2.0 removed (AssertFileDirectory).
+          composer require --dev --no-interaction --no-progress --update-with-all-dependencies "phpunit/phpunit:^7.5" "yoast/phpunit-polyfills:^1.1"
 
       - name: Install Subversion
         # The WordPress test-suite installer fetches core test files via svn,
