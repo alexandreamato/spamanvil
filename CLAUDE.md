@@ -496,3 +496,23 @@ The activation redirect is driven by the `spamanvil_activation_redirect` transie
 ## Language
 
 The plugin author is Brazilian. Code, comments, and readme are in English. User communication may be in Portuguese (pt-BR). Privacy notice references LGPD (Brazilian data protection law) alongside GDPR.
+
+## Status and Backlog (as of 1.20.1, 2026-09-27)
+
+1.19.0 → 1.20.1 shipped in one day, each release driven by external code reviews (pasted into the session). Decision at the end: **pause releases for a few days** and watch 1.20.1 in production before the next feature.
+
+**Watch after 1.20.1:**
+- Logs tab: evaluations completing, not a growing queue (effect of free-only OpenRouter + per-call time budget).
+- Recovery screen: comments wrongly spammed by the pre-1.16.0 prompt — sites that only updated got the fixed prompt in 1.19.0, so their spam folder may still hold real readers (WordPress purges spam after 30 days).
+- WordPress.org support forum: "comment took long" (free models only; failures wait in the queue) or "text appeared in my comment form" (privacy notice, on by default since 1.19.1).
+
+**Next feature (agreed, not started) — measure quality independently:**
+- A labeled comment set: Portuguese, other languages, short praise, legitimate links, prompt-injection attempts. Plus a script (outside the shipped plugin) that runs the current prompt/model against it and reports false positives/negatives — the method used ad hoc for 1.16.0, made repeatable.
+- Observation mode: log verdicts without changing comment status, so a new site can see what SpamAnvil would do before letting it act.
+- Split the `_spamanvil_moderated` mark by source (a person vs another plugin such as Akismet), so `get_threshold_suggestion()` can use real human labels instead of statuses the plugin itself set.
+
+**Minor leftovers:** UI for `spamanvil_cache_enabled`/`_ttl_days`; hardcoded English strings in `admin.js`; escaping in plugin action links; Settings API; `.po` entries without line numbers (regenerate with `wp i18n make-pot`); tests for the Gemini provider and admin/AJAX; coverage measurement; making phpcs/Plugin Check blocking; queries without LIMIT in stats/queue. The check-then-write window when applying a verdict is documented, not fixed (see Master Switch and Human Decisions).
+
+**How these releases were done (keep doing it):** verify every review claim in code before acting — some were already fixed or wrong (e.g. "DB version stuck at 1.0.0"). Every fix gets a regression test that is **run against the previous version and shown to fail** (stash `spamanvil/`, keep `tests/`). Push to `main`, wait for CI (all jobs, including WP 5.8.9), then tag — the tag deploys to WordPress.org. Two lessons: a test that changes state inside the same request can pass without proving anything (1.19.0 moderation re-check), and a time-budget change must be tested with a model that really hangs (1.20.0 starved the fallback).
+
+**Local integration testing without Docker:** `brew install mariadb`, then `mariadb-install-db --datadir=<scratch>/db` and run `mariadbd --datadir=<scratch>/db --socket=/tmp/<short>.sock --port=3399` (a long socket path fails: "Can't create UNIX socket"). Install the WP test lib with `TMPDIR=<scratch> bin/install-wp-tests.sh wp_tests root root 127.0.0.1:3399 latest`, run with `WP_TESTS_DIR=<scratch>/wordpress-tests-lib`. Drop and recreate the DB between runs — `activate()` does DDL, which commits rows past the per-test transaction and leaks them into the next run. The WP 5.8 + PHPUnit 7 combination cannot run on PHP 8; only CI checks it.
