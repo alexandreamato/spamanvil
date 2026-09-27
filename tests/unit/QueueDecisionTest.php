@@ -82,6 +82,34 @@ class QueueDecisionTest extends TestCase {
 		);
 	}
 
+	// --- call_timeout() (1.20.0) -------------------------------------------------
+
+	public function test_no_deadline_uses_the_default_timeout() {
+		$this->assertSame( 60, SpamAnvil_Queue::call_timeout( null ) );
+	}
+
+	public function test_timeout_shrinks_to_the_time_left() {
+		// 50s batch, 38.7s already spent: the next call may take 11s, not 60.
+		$this->assertSame( 11, SpamAnvil_Queue::call_timeout( 11.3 ) );
+		$this->assertSame( 60, SpamAnvil_Queue::call_timeout( 300.0 ) );
+	}
+
+	public function test_no_call_is_started_without_enough_time() {
+		$this->assertSame( 0, SpamAnvil_Queue::call_timeout( 7.9 ) );
+		$this->assertSame( 0, SpamAnvil_Queue::call_timeout( -2.0 ) );
+		$this->assertSame( 8, SpamAnvil_Queue::call_timeout( 8.0 ) );
+	}
+
+	// --- pick_comment_ip() (1.20.0) ----------------------------------------------
+
+	public function test_resolved_ip_wins_over_the_proxy_address() {
+		$this->assertSame( '203.0.113.7', SpamAnvil_IP_Manager::pick_comment_ip( '203.0.113.7', '10.0.0.1' ) );
+	}
+
+	public function test_stored_ip_is_the_fallback() {
+		$this->assertSame( '198.51.100.2', SpamAnvil_IP_Manager::pick_comment_ip( '', '198.51.100.2' ) );
+	}
+
 	// --- needs_upgrade() --------------------------------------------------------
 
 	public function test_plugin_release_without_schema_change_still_upgrades() {

@@ -9,6 +9,21 @@ abstract class SpamAnvil_Provider {
 	protected $model;
 	protected $api_url;
 
+	/**
+	 * HTTP timeout for the classification call, in seconds. The queue lowers it to
+	 * what is left of its batch budget (see SpamAnvil_Queue::call_timeout()).
+	 *
+	 * @var int
+	 */
+	protected $timeout = 60;
+
+	/**
+	 * @param int $seconds Timeout in seconds (at least 1).
+	 */
+	public function set_timeout( $seconds ) {
+		$this->timeout = max( 1, (int) $seconds );
+	}
+
 	public function __construct( $api_key, $model, $api_url = '' ) {
 		$this->api_key = $api_key;
 		$this->model   = $model;
@@ -112,7 +127,7 @@ abstract class SpamAnvil_Provider {
 			'method'  => 'POST',
 			'headers' => $headers,
 			'body'    => wp_json_encode( $body ),
-			'timeout' => 60,
+			'timeout' => $this->timeout,
 		);
 
 		return wp_safe_remote_post( $url, $args );

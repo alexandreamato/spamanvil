@@ -83,6 +83,13 @@ WordPress never runs the activation hook on update. `SpamAnvil::check_db_version
 - Known limit: in Open Mode a moderator "approving" an already-published comment changes nothing, so it cannot be detected; spam/trash/pending always are.
 - Prompt defaults for "Reset to Default" come from PHP via `wp_localize_script` (`spamAnvil.default_prompts`) — never duplicate them in `admin.js` again.
 
+## Time Budget, Visitor IP, Local Time (1.20.0)
+
+- **The batch budget covers every model call.** `process_batch()` sets `$this->deadline`; before each `analyze()` the chain, the free-model fallback and Anvil Mode ask `call_budget()` → `SpamAnvil_Queue::call_timeout( $remaining )` (pure, unit-tested: default 60s, capped to the time left, 0 below `MIN_CALL_SECONDS` = 8) and pass it via `SpamAnvil_Provider::set_timeout()`. Out of time → `spamanvil_out_of_time`: released untouched if no model was asked yet for that item (`$calls_this_item === 0`), otherwise `handle_failure()` so a hanging model burns retries instead of cycling forever. Sync mode has no deadline.
+- **One visitor identity.** `process_new_comment()` calls `SpamAnvil_IP_Manager::remember_comment_ip()` during the submission request (the only time the trusted proxy headers exist); it stores `_spamanvil_ip` only when it differs from `comment_author_IP`. Every repeat-offender count uses `get_comment_ip()` (meta, else the stored IP) — never `get_comment_author_IP()` directly.
+- **Logs/stats are site-local, and so are their cutoffs.** `log_evaluation()` and `increment()` write local time (shown as-is in the admin); `cleanup_old_logs()` and the stats date ranges use `wp_date()`, not `gmdate()`. The queue table is the opposite (UTC) — see the timestamp convention above.
+- **CI covers WordPress 5.8.9 on PHP 7.4.** Its test suite refuses PHPUnit 8+, so that job pins PHPUnit 7.5 and lifts Composer's security-advisory block for the throwaway runner (every 7.5 release carries an advisory). PHPUnit 7 does not run on PHP 8.1+, so this combination cannot be reproduced on a PHP 8 machine — only in CI.
+
 ## Comment Processing Flow
 
 ```

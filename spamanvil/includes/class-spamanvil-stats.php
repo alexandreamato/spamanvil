@@ -77,7 +77,7 @@ class SpamAnvil_Stats {
 	public function get_summary( $days = 30 ) {
 		global $wpdb;
 
-		$since = gmdate( 'Y-m-d', strtotime( "-{$days} days" ) );
+		$since = wp_date( 'Y-m-d', strtotime( "-{$days} days" ) ); // stat_date is site-local (increment()).
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
@@ -111,7 +111,7 @@ class SpamAnvil_Stats {
 	public function get_daily( $days = 30 ) {
 		global $wpdb;
 
-		$since = gmdate( 'Y-m-d', strtotime( "-{$days} days" ) );
+		$since = wp_date( 'Y-m-d', strtotime( "-{$days} days" ) ); // stat_date is site-local (increment()).
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
@@ -405,7 +405,10 @@ class SpamAnvil_Stats {
 			return;
 		}
 
-		$cutoff = gmdate( 'Y-m-d H:i:s', strtotime( "-{$retention} days" ) );
+		// Logs and stats are written in site-local time (they are shown as-is in the
+		// admin), so the cutoffs must be site-local too. Until 1.20.0 they were UTC,
+		// and retention drifted by the site's UTC offset — up to 14 hours.
+		$cutoff = wp_date( 'Y-m-d H:i:s', strtotime( "-{$retention} days" ) );
 
 		$wpdb->query(
 			$wpdb->prepare(
@@ -416,7 +419,7 @@ class SpamAnvil_Stats {
 
 		// Also clean up old stats beyond 90 days — but bank the counters first, or the
 		// all-time figures reported by get_total() would silently lose a day every day.
-		$stats_cutoff = gmdate( 'Y-m-d', strtotime( '-90 days' ) );
+		$stats_cutoff = wp_date( 'Y-m-d', strtotime( '-90 days' ) );
 
 		$this->archive_totals_before( $stats_cutoff );
 

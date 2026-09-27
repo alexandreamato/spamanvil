@@ -57,7 +57,8 @@ $wpdb->query(
 	)
 );
 
-// Per-comment bookkeeping: which cached verdict decided a comment, and whether a
-// moderator has handled it.
+// Per-comment bookkeeping: which cached verdict decided a comment, whether a
+// moderator has handled it, and the visitor IP resolved at submission.
 delete_metadata( 'comment', 0, '_spamanvil_verdict_key', '', true );
 delete_metadata( 'comment', 0, '_spamanvil_moderated', '', true );
+delete_metadata( 'comment', 0, '_spamanvil_ip', '', true );

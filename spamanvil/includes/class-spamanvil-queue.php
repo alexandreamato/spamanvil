@@ -32,6 +32,32 @@ class SpamAnvil_Queue {
 	 */
 	private static $applying_verdict = false;
 
+	/**
+	 * Shortest HTTP timeout worth starting a model call with. Below this the call
+	 * would almost certainly be cut off, so the item waits for the next run instead.
+	 */
+	const MIN_CALL_SECONDS = 8;
+
+	/**
+	 * Default per-call HTTP timeout when the run has no deadline (sync mode).
+	 */
+	const DEFAULT_CALL_SECONDS = 60;
+
+	/**
+	 * microtime() by which the current batch must be done; 0 = no deadline.
+	 *
+	 * @var float
+	 */
+	private $deadline = 0.0;
+
+	/**
+	 * Model calls made for the item being processed (decides how running out of
+	 * time is recorded — see process_single()).
+	 *
+	 * @var int
+	 */
+	private $calls_this_item = 0;
+
 	private $table;
 	private $provider_factory;
 	private $stats;
@@ -107,6 +133,11 @@ class SpamAnvil_Queue {
 		$processed  = 0;
 		$start_time = microtime( true );
 
+		// The budget covers every model call, not just the gaps between comments: a
+		// chain of models with 60s timeouts each could otherwise run for minutes past
+		// the limit (the check used to happen only after a whole comment was done).
+		$this->deadline = $time_limit > 0 ? $start_time + $time_limit : 0.0;
+
 		try {
 			// A queue paused on a permanent configuration error (missing/undecryptable
 			// key, no provider) stays paused until the provider config changes — cron
@@ -141,7 +172,7 @@ class SpamAnvil_Queue {
 					// A permanent config error paused the queue mid-batch: put the
 					// remaining claimed items back and stop — retrying them now would
 					// only produce identical failures and identical log rows.
-					if ( 'paused' === $outcome ) {
+					if ( 'paused' === $outcome || 'out_of_time' === $outcome ) {
 						$current_index = array_search( $item, $items, true );
 						$remaining     = array_slice( $items, $current_index + 1 );
 						$remaining_ids = wp_list_pluck( $remaining, 'id' );
@@ -177,6 +208,7 @@ class SpamAnvil_Queue {
 			} while ( true );
 		} finally {
 			delete_transient( $lock_key );
+			$this->deadline = 0.0;
 		}
 
 		return $processed;
@@ -480,11 +512,29 @@ class SpamAnvil_Queue {
 		}
 
 		if ( ! $from_cache ) {
+			$this->calls_this_item = 0;
+
 			// Choose strategy: Anvil Mode (all providers) or normal chain (first success).
 			if ( $anvil_mode ) {
 				$result = $this->try_anvil_mode( $item, $comment, $system_prompt, $user_prompt );
 			} else {
 				$result = $this->try_provider_chain( $item, $comment, $system_prompt, $user_prompt );
+			}
+
+			if ( is_wp_error( $result ) && 'spamanvil_out_of_time' === $result->get_error_code() ) {
+				// The batch budget ran out. If no model was even asked, the item goes back
+				// untouched for the next run. If some were asked and none answered in time,
+				// it counts as a normal failure (retry with backoff) — otherwise a model that
+				// always hangs would keep the item cycling forever without ever using up
+				// its retries.
+				if ( 0 === $this->calls_this_item ) {
+					if ( $item->id > 0 ) {
+						$this->release_items( array( $item->id ) );
+					}
+					return 'out_of_time';
+				}
+				$this->handle_failure( $item, $result->get_error_message() );
+				return 'out_of_time';
 			}
 
 			if ( is_wp_error( $result ) ) {
@@ -578,7 +628,7 @@ class SpamAnvil_Queue {
 			$this->stats->increment( 'spam_detected' );
 
 			// Record IP spam attempt.
-			$ip = get_comment_author_IP( $item->comment_id );
+			$ip = $this->ip_manager->get_comment_ip( $item->comment_id );
 			if ( ! empty( $ip ) ) {
 				$this->ip_manager->record_spam_attempt( $ip );
 			}
@@ -664,6 +714,45 @@ class SpamAnvil_Queue {
 		}
 
 		return '1' === get_option( 'spamanvil_open_mode', '0' );
+	}
+
+	/**
+	 * HTTP timeout for the next model call given the time left in the batch.
+	 *
+	 * @param float|null $remaining Seconds left before the deadline; null = no deadline.
+	 * @param int        $default   Timeout to use when time is plentiful.
+	 * @param int        $min       Below this, do not start a call at all.
+	 * @return int Seconds to allow, or 0 when there is no time for a call.
+	 */
+	public static function call_timeout( $remaining, $default = self::DEFAULT_CALL_SECONDS, $min = self::MIN_CALL_SECONDS ) {
+		if ( null === $remaining ) {
+			return (int) $default;
+		}
+		if ( $remaining < $min ) {
+			return 0;
+		}
+		return (int) min( $default, floor( $remaining ) );
+	}
+
+	/**
+	 * call_timeout() for the current batch.
+	 *
+	 * @return int
+	 */
+	private function call_budget() {
+		return self::call_timeout( $this->deadline > 0 ? $this->deadline - microtime( true ) : null );
+	}
+
+	/**
+	 * @param string[] $errors Errors gathered so far in the chain.
+	 * @return WP_Error
+	 */
+	private function out_of_time_error( $errors ) {
+		$message = 'Batch time budget exhausted before a model answered';
+		if ( ! empty( $errors ) ) {
+			$message .= ': ' . implode( ' | ', $errors );
+		}
+		return new WP_Error( 'spamanvil_out_of_time', $message );
 	}
 
 	/**
@@ -872,10 +961,17 @@ class SpamAnvil_Queue {
 					continue 2; // Next provider.
 				}
 
+				$timeout = $this->call_budget();
+				if ( 0 === $timeout ) {
+					return $this->out_of_time_error( $errors );
+				}
+				$provider->set_timeout( $timeout );
+
 				$start_ms = microtime( true );
 				$result   = $provider->analyze( $system_prompt, $user_prompt );
 				$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
 				$this->stats->increment( 'llm_calls' );
+				++$this->calls_this_item;
 
 				if ( ! is_wp_error( $result ) ) {
 					// Success — return immediately.
@@ -942,6 +1038,12 @@ class SpamAnvil_Queue {
 			return $original_error;
 		}
 
+		// Discovery lists models over HTTP and then makes one more call; not worth
+		// starting when the batch cannot afford it.
+		if ( $this->call_budget() < 2 * self::MIN_CALL_SECONDS ) {
+			return $original_error;
+		}
+
 		$model_chain   = $this->provider_factory->get_model_chain( $slug );
 		$current_model = ! empty( $model_chain ) ? $model_chain[0] : '';
 		$alt           = $this->provider_factory->find_free_alternative( $slug, $current_model );
@@ -955,8 +1057,15 @@ class SpamAnvil_Queue {
 			return $original_error;
 		}
 
+		$timeout = $this->call_budget();
+		if ( 0 === $timeout ) {
+			return $original_error;
+		}
+		$provider->set_timeout( $timeout );
+
 		$result = $provider->analyze( $system_prompt, $user_prompt );
 		$this->stats->increment( 'llm_calls' );
+		++$this->calls_this_item;
 
 		if ( is_wp_error( $result ) ) {
 			return $original_error;
@@ -1016,6 +1125,7 @@ class SpamAnvil_Queue {
 		}
 
 		$all_permanent = true;
+		$out_of_time   = false;
 
 		foreach ( $chain as $slug ) {
 			$models = $this->provider_factory->get_model_chain( $slug );
@@ -1045,9 +1155,17 @@ class SpamAnvil_Queue {
 					continue 2; // Creation failures are per-provider — next provider.
 				}
 
+				$timeout = $this->call_budget();
+				if ( 0 === $timeout ) {
+					$out_of_time = true;
+					break 2; // Out of time: judge on the results gathered so far.
+				}
+				$provider->set_timeout( $timeout );
+
 				$start_ms = microtime( true );
 				$result   = $provider->analyze( $system_prompt, $user_prompt );
 				$elapsed  = (int) round( ( microtime( true ) - $start_ms ) * 1000 );
+				++$this->calls_this_item;
 				$this->stats->increment( 'llm_calls' );
 
 				if ( is_wp_error( $result ) ) {
@@ -1086,6 +1204,10 @@ class SpamAnvil_Queue {
 		}
 
 		if ( empty( $results ) ) {
+			if ( $out_of_time ) {
+				return $this->out_of_time_error( $errors );
+			}
+
 			$combined = implode( ' | ', $errors );
 
 			if ( $all_permanent && ! empty( $errors ) ) {
@@ -1417,7 +1539,7 @@ class SpamAnvil_Queue {
 					'heuristic_details' => $this->heuristics->format_for_prompt( $analysis ),
 				) );
 
-				$ip = get_comment_author_IP( $comment->comment_ID );
+				$ip = $this->ip_manager->get_comment_ip( $comment->comment_ID );
 				if ( ! empty( $ip ) ) {
 					$this->ip_manager->record_spam_attempt( $ip );
 				}

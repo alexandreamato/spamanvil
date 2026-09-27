@@ -156,6 +156,9 @@ class SpamAnvil_Comment_Processor {
 			return;
 		}
 
+		// Same visitor identity as the block check at submission, for every later step.
+		$this->ip_manager->remember_comment_ip( $comment_id );
+
 		// Form traps (honeypot + time-trap): catch obvious bots here, before any heuristic
 		// or LLM work, at zero cost. Marked as spam (recoverable from the Spam folder)
 		// rather than hard-blocked, in case of a rare false positive.
@@ -196,7 +199,7 @@ class SpamAnvil_Comment_Processor {
 				'heuristic_details' => $this->heuristics->format_for_prompt( $analysis ),
 			) );
 
-			$ip = get_comment_author_IP( $comment_id );
+			$ip = $this->ip_manager->get_comment_ip( $comment_id );
 			if ( ! empty( $ip ) ) {
 				$this->ip_manager->record_spam_attempt( $ip );
 			}
@@ -334,7 +337,7 @@ class SpamAnvil_Comment_Processor {
 			'heuristic_details' => '',
 		) );
 
-		$ip = get_comment_author_IP( $comment_id );
+		$ip = $this->ip_manager->get_comment_ip( $comment_id );
 		if ( ! empty( $ip ) ) {
 			$this->ip_manager->record_spam_attempt( $ip );
 		}

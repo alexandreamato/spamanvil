@@ -77,6 +77,11 @@ jobs:
       matrix:
         php: [ '7.4', '8.0', '8.1', '8.2', '8.3' ]
         wp: [ 'latest' ]
+        include:
+          # The oldest WordPress the plugin declares support for ("Requires at
+          # least: 5.8"), on the oldest PHP. Its test suite only accepts PHPUnit 7.
+          - php: '7.4'
+            wp: '5.8.9'
     services:
       database:
         image: mariadb:10.11
@@ -105,6 +110,16 @@ jobs:
 
       - name: Install dependencies
         run: composer update --prefer-dist --no-progress --no-interaction
+
+      - name: Pin PHPUnit 7 for the WordPress 5.8 test suite
+        # WordPress < 5.9 refuses PHPUnit 8+. Every PHPUnit 7.5 release carries a
+        # security advisory, so Composer blocks it by default; this is a throwaway CI
+        # test runner, never shipped, so the block is lifted for this job only.
+        if: startsWith( matrix.wp, '5.8' )
+        run: |
+          # The setting was renamed across Composer releases; set whichever exists.
+          composer config policy.advisories.block false || composer config audit.block-insecure false || true
+          composer require --dev --no-interaction --no-progress --update-with-all-dependencies "phpunit/phpunit:^7.5"
 
       - name: Install Subversion
         # The WordPress test-suite installer fetches core test files via svn,

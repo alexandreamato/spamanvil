@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.1
+Stable tag: 1.20.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,12 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 8. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.20.0 =
+* Fix: **the background job could run far past its time limit.** It allows itself 50 seconds per run, but only checked the clock after finishing a whole comment — and a single comment can go through several models, each allowed 60 seconds to answer. On a slow day one run could take minutes, pile up against the next one, or be killed by the host halfway through. Every model call is now limited to the time the run has left, and a call is not started at all when fewer than 8 seconds remain: the comment goes back to the queue untouched and is picked up on the next run. If some models were asked and none answered in time, it counts as a normal failed attempt with the usual backoff, so a model that always hangs cannot keep a comment cycling forever.
+* Fix: **behind a proxy or CDN, repeat offenders were counted by the proxy's address.** The block check at submission uses the visitor IP from the header you chose on the IP tab (1.10.0), but the repeat-offender count taken after a verdict — usually in the background job — read the address WordPress stored, which behind a proxy is the proxy's. SpamAnvil now remembers the visitor IP it resolved when the comment arrived and uses that same identity at every step. Sites not behind a proxy are unaffected and store nothing extra.
+* Fix: log and statistics retention drifted by the site's time zone. Entries are written in the site's local time, but the cleanup compared them against UTC, so on a site at UTC−3 logs were removed 3 hours early (up to 14 hours in other zones). The cutoffs, and the date ranges of the Statistics tab, now use the site's time zone.
+* Development: the test suite now also runs against WordPress 5.8 on PHP 7.4 — the oldest versions the plugin declares support for — not only the latest WordPress.
 
 = 1.19.1 =
 * Fix: **1.19.0's second check before applying a verdict did not work on most sites.** It re-read the comment's status through WordPress' in-request cache, which the background job had filled when it loaded the comment — so a moderator acting in another browser tab while the model was answering was invisible to it, and the verdict overwrote their decision anyway. The status (and the moderation mark below) is now read straight from the database. The 1.19.0 test changed the comment inside the same request, where the cache is cleared, so it passed without proving anything; the new test writes the database the way a separate request does, and fails against the 1.19.0 code.

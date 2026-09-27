@@ -125,4 +125,36 @@ class StatsRetentionTest extends WP_UnitTestCase {
 
 		update_option( 'spamanvil_log_retention', 30 );
 	}
+
+	// --- 1.20.0: retention is measured in the site's own time -----------------
+
+	public function test_log_retention_uses_site_local_time() {
+		// Logs are written in site-local time. With a UTC cutoff, a site at UTC-11
+		// purged rows ~11 hours before they were really `retention` days old.
+		global $wpdb;
+		update_option( 'timezone_string', 'Pacific/Pago_Pago' ); // UTC-11, no DST.
+		update_option( 'spamanvil_log_retention', 30 );
+		$logs = $wpdb->prefix . 'spamanvil_logs';
+
+		$wpdb->insert( $logs, array( // phpcs:ignore WordPress.DB
+			'comment_id' => 1,
+			'score'      => 10,
+			'provider'   => 'openai',
+			'created_at' => wp_date( 'Y-m-d H:i:s', time() - ( 30 * DAY_IN_SECONDS ) + HOUR_IN_SECONDS ),
+		) );
+		$young = $wpdb->insert_id;
+
+		$wpdb->insert( $logs, array( // phpcs:ignore WordPress.DB
+			'comment_id' => 2,
+			'score'      => 10,
+			'provider'   => 'openai',
+			'created_at' => wp_date( 'Y-m-d H:i:s', time() - ( 30 * DAY_IN_SECONDS ) - HOUR_IN_SECONDS ),
+		) );
+		$old = $wpdb->insert_id;
+
+		$this->stats->cleanup_old_logs();
+
+		$this->assertNotNull( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$logs} WHERE id = %d", $young ) ), 'A log 29d23h old must survive a 30-day retention.' ); // phpcs:ignore WordPress.DB
+		$this->assertNull( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$logs} WHERE id = %d", $old ) ), 'A log 30d1h old must go.' ); // phpcs:ignore WordPress.DB
+	}
 }

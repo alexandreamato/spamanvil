@@ -430,6 +430,68 @@ class QueueTest extends WP_UnitTestCase {
 		$this->assertSame( 'spam', get_comment_meta( $theirs, SpamAnvil_Queue::MODERATED_META, true ) );
 	}
 
+	// --- 1.20.0: the batch budget covers every model call ------------------------
+
+	public function test_calls_are_capped_to_the_time_left_in_the_batch() {
+		update_option( 'spamanvil_primary_provider', 'openai' );
+		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		update_option( 'spamanvil_openai_model', 'model-a, model-b, model-c' );
+		$timeouts = array();
+		add_filter( 'pre_http_request', function ( $pre, $args ) use ( &$timeouts ) {
+			$timeouts[] = $args['timeout'];
+			return new WP_Error( 'http_request_failed', 'Simulated timeout' );
+		}, 10, 2 );
+
+		$this->queue->enqueue( $this->new_comment(), 0 );
+		$this->queue->process_batch( false, 20 ); // 20s budget.
+
+		$this->assertNotEmpty( $timeouts );
+		foreach ( $timeouts as $timeout ) {
+			$this->assertLessThanOrEqual( 20, $timeout, 'No call may be allowed more than the batch has left.' );
+		}
+	}
+
+	public function test_item_goes_back_untouched_when_no_time_is_left() {
+		update_option( 'spamanvil_primary_provider', 'openai' );
+		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		$called = false;
+		add_filter( 'pre_http_request', function () use ( &$called ) {
+			$called = true;
+			return new WP_Error( 'http_request_failed', 'should not be called' );
+		} );
+
+		$comment_id = $this->new_comment();
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch( false, 5 ); // Below MIN_CALL_SECONDS: no call can start.
+
+		$this->assertFalse( $called, 'A call that cannot finish in time must not be started.' );
+		$row = $this->row_for_comment( $comment_id );
+		$this->assertSame( 'queued', $row->status );
+		$this->assertSame( 0, (int) $row->attempts, 'Running out of time before asking any model is not a failed attempt.' );
+	}
+
+	// --- 1.20.0: one visitor identity from submission to verdict ----------------
+
+	public function test_repeat_offender_count_uses_the_ip_resolved_at_submission() {
+		update_option( 'spamanvil_threshold', 70 );
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved'  => '0',
+			'comment_content'   => 'Buy cheap watches at my store!!!',
+			'comment_author_IP' => '10.0.0.1', // The proxy, as WordPress stored it.
+		) );
+		update_comment_meta( $comment_id, SpamAnvil_IP_Manager::COMMENT_IP_META, '203.0.113.7' );
+		$this->seed_verdict_cache( get_comment( $comment_id ), $this->spam_verdict() );
+
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'spamanvil_blocked_ips';
+		$ipm   = new SpamAnvil_IP_Manager();
+		$this->assertNotNull( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE ip_hash = %s", $ipm->hash_ip( '203.0.113.7' ) ) ), 'The visitor is counted.' ); // phpcs:ignore WordPress.DB
+		$this->assertNull( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE ip_hash = %s", $ipm->hash_ip( '10.0.0.1' ) ) ), 'The proxy is not.' ); // phpcs:ignore WordPress.DB
+	}
+
 	public function test_open_mode_published_comment_is_still_analyzed() {
 		update_option( 'spamanvil_open_mode', '1' );
 		update_option( 'spamanvil_threshold', 70 );

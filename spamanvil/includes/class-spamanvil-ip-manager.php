@@ -228,6 +228,52 @@ class SpamAnvil_IP_Manager {
 	 *
 	 * @return string A valid IP, or '' when none could be resolved.
 	 */
+	/**
+	 * Comment meta holding the visitor IP as SpamAnvil resolved it at submission,
+	 * when it differs from the one WordPress stored.
+	 */
+	const COMMENT_IP_META = '_spamanvil_ip';
+
+	/**
+	 * Remember the resolved visitor IP on a new comment.
+	 *
+	 * WordPress stores REMOTE_ADDR in comment_author_IP — behind a proxy or CDN that
+	 * is the proxy. The block check at submission uses the trusted header, so the
+	 * repeat-offender count taken later (often in the cron request, where no visitor
+	 * headers exist) must use the same identity, or blocking counts the proxy.
+	 * Written only when it differs, so ordinary sites add no rows.
+	 *
+	 * @param int $comment_id Comment ID (called during the submission request).
+	 */
+	public function remember_comment_ip( $comment_id ) {
+		$ip = $this->get_client_ip();
+		if ( '' !== (string) $ip && $ip !== get_comment_author_IP( $comment_id ) ) {
+			update_comment_meta( $comment_id, self::COMMENT_IP_META, $ip );
+		}
+	}
+
+	/**
+	 * The visitor IP to hold a comment's author accountable by.
+	 *
+	 * @param int $comment_id Comment ID.
+	 * @return string
+	 */
+	public function get_comment_ip( $comment_id ) {
+		return self::pick_comment_ip(
+			(string) get_comment_meta( $comment_id, self::COMMENT_IP_META, true ),
+			(string) get_comment_author_IP( $comment_id )
+		);
+	}
+
+	/**
+	 * @param string $resolved IP resolved by SpamAnvil at submission ('' if none).
+	 * @param string $stored   comment_author_IP as WordPress stored it.
+	 * @return string
+	 */
+	public static function pick_comment_ip( $resolved, $stored ) {
+		return '' !== $resolved ? $resolved : $stored;
+	}
+
 	public function get_client_ip() {
 		$source = get_option( 'spamanvil_trusted_ip_header', 'remote_addr' );
 		return self::resolve_client_ip( $source, $_SERVER ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized/validated inside resolve_client_ip().
