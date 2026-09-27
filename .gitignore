@@ -18,3 +18,7 @@ marketing/
 *.key
 *.pem
 wp-config.php
+
+# Local tool output
+graphify-out/
+.claude/

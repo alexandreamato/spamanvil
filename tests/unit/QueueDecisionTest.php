@@ -1,0 +1,80 @@
+<?php
+/**
+ * Unit tests for the 1.19.0 trust fixes that are pure logic: when a queued
+ * analysis must defer to a decision already made, how the verdict cache is keyed,
+ * and when an upgrade re-runs the migrations.
+ */
+
+use PHPUnit\Framework\TestCase;
+
+class QueueDecisionTest extends TestCase {
+
+	// --- human_decided() --------------------------------------------------------
+
+	public function test_spam_and_trash_always_win() {
+		foreach ( array( true, false ) as $expects_approved ) {
+			$this->assertTrue( SpamAnvil_Queue::human_decided( 'spam', $expects_approved ) );
+			$this->assertTrue( SpamAnvil_Queue::human_decided( 'trash', $expects_approved ) );
+		}
+	}
+
+	public function test_approval_while_held_is_a_moderator_decision() {
+		// Async mode holds every comment as pending, so an approved one was approved by someone.
+		$this->assertTrue( SpamAnvil_Queue::human_decided( 'approved', false ) );
+	}
+
+	public function test_approval_is_expected_in_open_and_sync_mode() {
+		$this->assertFalse( SpamAnvil_Queue::human_decided( 'approved', true ) );
+	}
+
+	public function test_pending_comment_is_still_ours_to_judge() {
+		$this->assertFalse( SpamAnvil_Queue::human_decided( 'unapproved', false ) );
+		$this->assertFalse( SpamAnvil_Queue::human_decided( false, false ) );
+	}
+
+	// --- verdict_cache_key() ----------------------------------------------------
+
+	public function test_identical_requests_share_a_key_despite_case_and_spacing() {
+		$this->assertSame(
+			SpamAnvil_Queue::verdict_cache_key( 'System', "Post: A\nBuy   NOW" ),
+			SpamAnvil_Queue::verdict_cache_key( 'system', 'post: a buy now' )
+		);
+	}
+
+	public function test_anything_the_model_sees_changes_the_key() {
+		// The 1.18.1 key saw only content + author URL: the same text on another post,
+		// from another author, or under a fixed prompt reused the old verdict.
+		$base = SpamAnvil_Queue::verdict_cache_key( 'rules v1', "Post: Lipedema\nAuthor: Ana\nGreat post" );
+
+		$this->assertNotSame( $base, SpamAnvil_Queue::verdict_cache_key( 'rules v1', "Post: Casino\nAuthor: Ana\nGreat post" ) );
+		$this->assertNotSame( $base, SpamAnvil_Queue::verdict_cache_key( 'rules v1', "Post: Lipedema\nAuthor: CheapPills\nGreat post" ) );
+		$this->assertNotSame( $base, SpamAnvil_Queue::verdict_cache_key( 'rules v2', "Post: Lipedema\nAuthor: Ana\nGreat post" ) );
+	}
+
+	public function test_prompt_boundary_cannot_be_shifted() {
+		// Moving text between the two prompts must not collide.
+		$this->assertNotSame(
+			SpamAnvil_Queue::verdict_cache_key( 'ab', 'c' ),
+			SpamAnvil_Queue::verdict_cache_key( 'a', 'bc' )
+		);
+	}
+
+	// --- needs_upgrade() --------------------------------------------------------
+
+	public function test_plugin_release_without_schema_change_still_upgrades() {
+		// The 1.16.0 gap: the default prompt changed, the schema version did not.
+		$this->assertTrue( SpamAnvil_Activator::needs_upgrade( '1.5.0', '1.18.1', '1.5.0', '1.19.0' ) );
+	}
+
+	public function test_install_from_before_the_version_option_upgrades_once() {
+		$this->assertTrue( SpamAnvil_Activator::needs_upgrade( '1.5.0', '', '1.5.0', '1.19.0' ) );
+	}
+
+	public function test_schema_change_upgrades() {
+		$this->assertTrue( SpamAnvil_Activator::needs_upgrade( '1.4.0', '1.19.0', '1.5.0', '1.19.0' ) );
+	}
+
+	public function test_current_install_does_nothing() {
+		$this->assertFalse( SpamAnvil_Activator::needs_upgrade( '1.5.0', '1.19.0', '1.5.0', '1.19.0' ) );
+	}
+}

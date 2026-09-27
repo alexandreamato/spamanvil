@@ -24,10 +24,11 @@ class SpamAnvil_Provider_Factory {
 			'constant_key'  => 'SPAMANVIL_OPENROUTER_API_KEY',
 			'option_key'    => 'spamanvil_openrouter_api_key',
 			'model_option'  => 'spamanvil_openrouter_model',
-			// Router chain: openrouter/free tries the free-model pool; if it fails,
-			// openrouter/auto picks a suitable paid model. Both are OpenRouter-managed
-			// routers, so this default never goes stale when individual models churn.
-			'default_model' => 'openrouter/free, openrouter/auto',
+			// Free only (1.19.0): openrouter/free routes across the free-model pool and,
+			// being a router, never goes stale when individual models churn. The paid
+			// openrouter/auto fallback that used to follow it is opt-in: a site that
+			// believes it runs for free must never be charged without knowing it.
+			'default_model' => 'openrouter/free',
 		),
 		'featherless' => array(
 			'class'         => 'SpamAnvil_OpenAI_Compatible',

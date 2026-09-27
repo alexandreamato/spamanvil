@@ -371,6 +371,12 @@ class SpamAnvil_Admin {
 			'nonce'        => wp_create_nonce( 'spamanvil_ajax' ),
 			'has_provider' => ( '' !== get_option( 'spamanvil_primary_provider', '' ) ),
 			'providers_url' => admin_url( 'options-general.php?page=spamanvil&tab=providers' ),
+			// "Reset to Default" reads the defaults from PHP. A copy kept in admin.js went
+			// stale in 1.16.0 and kept restoring the prompt that auto-spammed real readers.
+			'default_prompts' => array(
+				'system' => SpamAnvil_Activator::get_default_system_prompt(),
+				'user'   => SpamAnvil_Activator::get_default_user_prompt(),
+			),
 			'strings'  => array(
 				'setup_testing'   => __( 'Checking your key…', 'spamanvil' ),
 				'setup_paste_key' => __( 'Paste your API key first.', 'spamanvil' ),
@@ -729,7 +735,7 @@ class SpamAnvil_Admin {
 	 * not a model: it picks a different free model per call, and part of that pool
 	 * cannot do this job at all (a real run was routed to a content-safety classifier
 	 * whose entire reply is "User Safety: safe"). Roughly 4 in 10 observed calls came
-	 * back unusable, and the chain then fell through to the paid `openrouter/auto`.
+	 * back unusable, and (until 1.19.0) the chain then fell through to the paid `openrouter/auto`.
 	 *
 	 * So the wizard does not just check the key: it finds a model that answers, and
 	 * puts it in front of the chain. The router stays behind it as the fallback that
@@ -1063,6 +1069,10 @@ class SpamAnvil_Admin {
 			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
 		}
 
+		if ( ! SpamAnvil::is_enabled() ) {
+			wp_send_json_error( __( 'SpamAnvil is turned off. Turn it on in the General tab to analyze comments.', 'spamanvil' ) );
+		}
+
 		// Count pending comments before scanning for the already_queued stat.
 		$pending_count = (int) wp_count_comments()->moderated;
 
@@ -1092,6 +1102,10 @@ class SpamAnvil_Admin {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Permission denied.', 'spamanvil' ) );
+		}
+
+		if ( ! SpamAnvil::is_enabled() ) {
+			wp_send_json_error( __( 'SpamAnvil is turned off. Turn it on in the General tab to analyze comments.', 'spamanvil' ) );
 		}
 
 		if ( '' === get_option( 'spamanvil_primary_provider', '' ) ) {

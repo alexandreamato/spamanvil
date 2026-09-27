@@ -87,11 +87,14 @@ class SpamAnvil {
 		add_action( 'comment_form', array( $this->comment_processor, 'render_honeypot' ) );
 		add_action( 'comment_form', array( $this->comment_processor, 'render_time_trap' ) );
 
+		// A moderator's decision (or another plugin's) outranks a queued analysis.
+		add_action( 'transition_comment_status', array( $this->queue, 'on_comment_status_change' ), 10, 3 );
+
 		// "Crazy Open" mode: strip WordPress' comment friction (required name/email, login,
 		// moderation holds) — the invisible anti-spam layers do the filtering instead, so
 		// leaving a real (even anonymous) comment is effortless. Applied via pre_option
 		// filters so it's fully reversible and never overwrites the site's stored settings.
-		if ( '1' === get_option( 'spamanvil_open_mode', '0' ) ) {
+		if ( self::is_enabled() && '1' === get_option( 'spamanvil_open_mode', '0' ) ) {
 			add_filter( 'pre_option_require_name_email', '__return_zero' );
 			add_filter( 'pre_option_comment_registration', '__return_zero' );
 			add_filter( 'pre_option_comment_moderation', '__return_zero' );
@@ -182,11 +185,33 @@ class SpamAnvil {
 		}
 	}
 
+	/**
+	 * Run the activation routine (schema + data migrations) after any upgrade.
+	 *
+	 * WordPress never fires the activation hook on an update, so this is the only
+	 * path by which a migration reaches a site that simply clicked "Update". It used
+	 * to compare only SPAMANVIL_DB_VERSION, which is bumped for schema changes — and
+	 * 1.16.0 changed the default prompt without bumping it, so upgraded installs kept
+	 * the prompt that auto-spammed real readers. See SpamAnvil_Activator::needs_upgrade().
+	 */
 	private function check_db_version() {
-		$current = get_option( 'spamanvil_db_version', '' );
-		if ( $current !== SPAMANVIL_DB_VERSION ) {
+		if ( SpamAnvil_Activator::needs_upgrade(
+			get_option( 'spamanvil_db_version', '' ),
+			get_option( 'spamanvil_plugin_version', '' )
+		) ) {
 			SpamAnvil_Activator::activate();
 		}
+	}
+
+	/**
+	 * The master switch (General tab). Every automatic path — new-comment hooks,
+	 * the cron batch, auto-enqueue, Open Mode's option overrides — checks this one
+	 * place, so turning SpamAnvil off really stops all analysis and all API spend.
+	 *
+	 * @return bool
+	 */
+	public static function is_enabled() {
+		return '1' === get_option( 'spamanvil_enabled', '1' );
 	}
 
 	// Getters for components (useful for extensions).

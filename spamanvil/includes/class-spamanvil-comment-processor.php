@@ -221,7 +221,7 @@ class SpamAnvil_Comment_Processor {
 	}
 
 	private function is_enabled() {
-		return '1' === get_option( 'spamanvil_enabled', '1' );
+		return SpamAnvil::is_enabled();
 	}
 
 	private function should_skip_user( $user_id = null ) {

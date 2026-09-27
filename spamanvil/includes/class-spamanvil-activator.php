@@ -12,14 +12,33 @@ class SpamAnvil_Activator {
 		self::maybe_upgrade_default_models();
 		self::maybe_cap_legacy_ip_blocks();
 		self::schedule_cron();
+		update_option( 'spamanvil_plugin_version', SPAMANVIL_VERSION );
+	}
+
+	/**
+	 * Whether the stored versions call for re-running activate() on this request.
+	 *
+	 * Data migrations (default prompts, default models, legacy IP caps) ship with
+	 * plugin releases, not with schema changes, so the plugin version is compared as
+	 * well as the schema version. Every migration in activate() is idempotent, so
+	 * running it once per release costs nothing but a dbDelta.
+	 *
+	 * @param string $stored_db      Option spamanvil_db_version.
+	 * @param string $stored_plugin  Option spamanvil_plugin_version ('' before 1.19.0).
+	 * @param string $current_db     Defaults to SPAMANVIL_DB_VERSION.
+	 * @param string $current_plugin Defaults to SPAMANVIL_VERSION.
+	 * @return bool
+	 */
+	public static function needs_upgrade( $stored_db, $stored_plugin, $current_db = SPAMANVIL_DB_VERSION, $current_plugin = SPAMANVIL_VERSION ) {
+		return (string) $stored_db !== (string) $current_db
+			|| (string) $stored_plugin !== (string) $current_plugin;
 	}
 
 	/**
 	 * Previous OpenRouter default models — individual free models that go stale as
 	 * OpenRouter churns its catalog. Installs still on one of these (i.e. the user
-	 * never customized the field) migrate to the router chain, which never goes
-	 * stale: openrouter/free routes across the free pool, openrouter/auto is the
-	 * paid fallback.
+	 * never customized the field) migrate to openrouter/free, a router across the
+	 * free pool that never goes stale.
 	 */
 	const LEGACY_OPENROUTER_DEFAULTS = array(
 		'openai/gpt-oss-20b:free',              // 1.9.x–1.13.0
@@ -29,8 +48,46 @@ class SpamAnvil_Activator {
 	private static function maybe_upgrade_default_models() {
 		$stored = trim( (string) get_option( 'spamanvil_openrouter_model', '' ) );
 		if ( '' !== $stored && in_array( $stored, self::LEGACY_OPENROUTER_DEFAULTS, true ) ) {
-			update_option( 'spamanvil_openrouter_model', 'openrouter/free, openrouter/auto' );
+			update_option( 'spamanvil_openrouter_model', 'openrouter/free' );
+			return;
 		}
+
+		$free_only = self::free_only_chain( $stored );
+		if ( null !== $free_only ) {
+			update_option( 'spamanvil_openrouter_model', $free_only );
+		}
+	}
+
+	/**
+	 * Drop the paid openrouter/auto fallback from a model chain the plugin wrote.
+	 *
+	 * 1.13.1–1.18.1 shipped "openrouter/free, openrouter/auto" as the default, and the
+	 * 1.17.0 wizard stored "<free winner>, openrouter/free, openrouter/auto". Both were
+	 * the plugin's choice, not the user's, and both could charge an account that had
+	 * credit while the site believed it ran for free. Only chains of exactly that
+	 * shape are rewritten; any chain the user edited (a paid model of their own,
+	 * another order) is left alone.
+	 *
+	 * @param string $stored Stored spamanvil_openrouter_model value.
+	 * @return string|null The free-only chain, or null to leave the value unchanged.
+	 */
+	public static function free_only_chain( $stored ) {
+		$models = array_map( 'trim', explode( ',', (string) $stored ) );
+		$count  = count( $models );
+
+		if ( $count < 2 || 'openrouter/auto' !== $models[ $count - 1 ] || 'openrouter/free' !== $models[ $count - 2 ] ) {
+			return null;
+		}
+
+		$front = array_slice( $models, 0, $count - 2 );
+		foreach ( $front as $model ) {
+			if ( ':free' !== substr( $model, -5 ) ) {
+				return null;
+			}
+		}
+
+		$front[] = 'openrouter/free';
+		return implode( ', ', $front );
 	}
 
 	/**
@@ -199,6 +256,8 @@ class SpamAnvil_Activator {
 			'spamanvil_timetrap_seconds'     => 3,
 			'spamanvil_delete_data'          => '0',
 			'spamanvil_email_mode'           => 'smart',
+			'spamanvil_cache_enabled'        => '1',
+			'spamanvil_cache_ttl_days'       => 7,
 			'spamanvil_system_prompt'        => self::get_default_system_prompt(),
 			'spamanvil_user_prompt'          => self::get_default_user_prompt(),
 			'spamanvil_spam_words'           => self::get_default_spam_words(),

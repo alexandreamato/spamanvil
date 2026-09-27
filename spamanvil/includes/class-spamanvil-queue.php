@@ -11,6 +11,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class SpamAnvil_Queue {
 
+	/**
+	 * Comment meta holding the verdict-cache key that decided a comment, so a
+	 * moderator's later correction can evict that entry.
+	 */
+	const VERDICT_KEY_META = '_spamanvil_verdict_key';
+
+	/**
+	 * True while the plugin itself is changing a comment's status, so its own
+	 * transitions are not mistaken for a moderator's decision.
+	 *
+	 * @var bool
+	 */
+	private static $applying_verdict = false;
+
 	private $table;
 	private $provider_factory;
 	private $stats;
@@ -63,6 +77,12 @@ class SpamAnvil_Queue {
 	 * @return int Number of items processed.
 	 */
 	public function process_batch( $force = false, $time_limit = 0 ) {
+		// Turned off on the General tab: no analysis, no API spend — manual runs included.
+		// Queued items simply wait and are processed once SpamAnvil is switched back on.
+		if ( ! SpamAnvil::is_enabled() ) {
+			return 0;
+		}
+
 		// Prevent concurrent execution with a transient lock.
 		$lock_key = 'spamanvil_queue_lock';
 		if ( ! $force && get_transient( $lock_key ) ) {
@@ -412,14 +432,34 @@ class SpamAnvil_Queue {
 			return;
 		}
 
+		// A person (or another plugin) already decided while the comment waited in the
+		// queue: never overrule them — a comment sent to the trash must not come back
+		// approved. The item is closed without spending an API call.
+		$status = wp_get_comment_status( $comment );
+		if ( self::human_decided( $status, $this->expects_approved( $item ) ) ) {
+			$this->update_status( $item->id, 'completed', array(
+				'reason' => sprintf( 'Moderated manually before analysis (%s)', $status ),
+			) );
+			return 'skipped';
+		}
+
 		do_action( 'spamanvil_before_analysis', $comment, $item );
 
 		$anvil_mode = get_option( 'spamanvil_anvil_mode', '0' ) === '1';
 
-		// Reuse a recent verdict for identical comment content to avoid paying for
-		// repeated LLM calls on the same spam. Anvil Mode logs per-provider results,
-		// so it always evaluates fresh and never uses the cache.
-		$cache_key  = $anvil_mode ? '' : $this->verdict_cache_key( $comment );
+		// Build prompts.
+		$system_prompt = get_option( 'spamanvil_system_prompt', SpamAnvil_Activator::get_default_system_prompt() );
+		$user_prompt   = $this->build_user_prompt( $comment, $item );
+
+		$system_prompt = apply_filters( 'spamanvil_prompt', $system_prompt, 'system', $comment );
+		$user_prompt   = apply_filters( 'spamanvil_prompt', $user_prompt, 'user', $comment );
+
+		// Reuse a recent verdict for an identical classification request to avoid
+		// paying for repeated LLM calls on the same spam. Anvil Mode logs per-provider
+		// results, so it always evaluates fresh and never uses the cache.
+		$cache_key  = ( $anvil_mode || '1' !== get_option( 'spamanvil_cache_enabled', '1' ) )
+			? ''
+			: self::verdict_cache_key( $system_prompt, $user_prompt );
 		$result     = null;
 		$from_cache = false;
 
@@ -432,13 +472,6 @@ class SpamAnvil_Queue {
 		}
 
 		if ( ! $from_cache ) {
-			// Build prompts.
-			$system_prompt = get_option( 'spamanvil_system_prompt', SpamAnvil_Activator::get_default_system_prompt() );
-			$user_prompt   = $this->build_user_prompt( $comment, $item );
-
-			$system_prompt = apply_filters( 'spamanvil_prompt', $system_prompt, 'system', $comment );
-			$user_prompt   = apply_filters( 'spamanvil_prompt', $user_prompt, 'user', $comment );
-
 			// Choose strategy: Anvil Mode (all providers) or normal chain (first success).
 			if ( $anvil_mode ) {
 				$result = $this->try_anvil_mode( $item, $comment, $system_prompt, $user_prompt );
@@ -473,11 +506,6 @@ class SpamAnvil_Queue {
 			if ( time() - $last_success > MINUTE_IN_SECONDS ) {
 				update_option( 'spamanvil_last_llm_success', time(), false );
 			}
-
-			// Cache the fresh verdict (raw score/reason; the threshold is applied per-read).
-			if ( $cache_key ) {
-				$this->store_verdict_cache( $cache_key, $result );
-			}
 		} else {
 			$this->stats->increment( 'cache_hits' );
 		}
@@ -487,10 +515,18 @@ class SpamAnvil_Queue {
 		$threshold = apply_filters( 'spamanvil_threshold', $threshold, $comment );
 		$is_spam   = $result['score'] >= $threshold;
 
+		// The LLM call can take a minute: look again before acting. If someone
+		// moderated the comment meanwhile, record the verdict but leave their decision
+		// (and the verdict cache) alone.
+		$status     = wp_get_comment_status( $item->comment_id );
+		$overridden = self::human_decided( $status, $this->expects_approved( $item ) );
+
 		// Update queue item.
 		$this->update_status( $item->id, 'completed', array(
 			'score'    => $result['score'],
-			'reason'   => $result['reason'],
+			'reason'   => $overridden
+				? sprintf( 'Moderated manually during analysis (%s). AI verdict: %s', $status, $result['reason'] )
+				: $result['reason'],
 			'provider' => $result['provider'],
 			'model'    => $result['model'],
 		) );
@@ -509,7 +545,24 @@ class SpamAnvil_Queue {
 			) );
 		}
 
-		// Update comment status.
+		if ( $overridden ) {
+			do_action( 'spamanvil_after_analysis', $comment, $result, $is_spam );
+			return;
+		}
+
+		// Cache the fresh verdict (raw score/reason; the threshold is applied per-read),
+		// and remember which entry decided this comment so a moderator's correction
+		// can evict it (see on_comment_status_change()).
+		if ( $cache_key ) {
+			if ( ! $from_cache ) {
+				$this->store_verdict_cache( $cache_key, $result );
+			}
+			update_comment_meta( $item->comment_id, self::VERDICT_KEY_META, $cache_key );
+		}
+
+		// Update comment status. The flag tells on_comment_status_change() that this
+		// transition is the plugin's own, not a moderator's.
+		self::$applying_verdict = true;
 		if ( $is_spam ) {
 			wp_spam_comment( $item->comment_id );
 			$this->stats->increment( 'spam_detected' );
@@ -529,6 +582,7 @@ class SpamAnvil_Queue {
 			// the comment is verified ham and approved, tell the post author.
 			SpamAnvil_Notifier::send_postauthor( $item->comment_id );
 		}
+		self::$applying_verdict = false;
 
 		$this->stats->increment( 'comments_checked' );
 
@@ -536,29 +590,97 @@ class SpamAnvil_Queue {
 	}
 
 	/**
-	 * Build the verdict-cache key for a comment, or '' when caching is disabled/empty.
+	 * Build the verdict-cache key for a classification request.
 	 *
-	 * Keyed on normalized content + author URL so trivially-different reposts of the
-	 * same spam (whitespace/case) share a verdict, while a different link does not.
-	 * The verdict is content-level ("is this text spam"), independent of the post.
+	 * Keyed on the exact prompts sent to the model, so the cache can only return a
+	 * verdict for a request that is the same in every respect the model sees: the
+	 * comment, the author's name/email/URL, the post it was left on, the site
+	 * language and the prompt templates. Keying on content + author URL alone (until
+	 * 1.18.1) let a verdict follow the text onto another post, another author, or
+	 * past a prompt fix. Case and whitespace are normalized so trivial reposts of the
+	 * same spam still share an entry.
 	 *
-	 * @param WP_Comment $comment Comment being evaluated.
-	 * @return string Transient key, or '' to skip caching.
+	 * @param string $system_prompt System prompt, after filters.
+	 * @param string $user_prompt   User prompt, after filters.
+	 * @return string Transient key.
 	 */
-	private function verdict_cache_key( $comment ) {
-		if ( '1' !== get_option( 'spamanvil_cache_enabled', '1' ) ) {
-			return '';
+	public static function verdict_cache_key( $system_prompt, $user_prompt ) {
+		$normalize = function ( $text ) {
+			return preg_replace( '/\s+/u', ' ', mb_strtolower( trim( (string) $text ) ) );
+		};
+
+		return 'spamanvil_vc_' . hash( 'sha256', $normalize( $system_prompt ) . "\0" . $normalize( $user_prompt ) );
+	}
+
+	/**
+	 * Whether a comment's current status means someone other than the plugin has
+	 * already decided it, so the queued analysis must not overwrite that decision.
+	 *
+	 * Spam and trash always count. "Approved" counts only when the plugin itself
+	 * would have left the comment pending: in Open Mode and Sync mode comments are
+	 * published before analysis, so approval there is the expected state.
+	 *
+	 * @param string|false $status           From wp_get_comment_status().
+	 * @param bool         $expects_approved Whether an approved status is normal here.
+	 * @return bool
+	 */
+	public static function human_decided( $status, $expects_approved ) {
+		if ( 'spam' === $status || 'trash' === $status ) {
+			return true;
 		}
 
-		$content = trim( (string) $comment->comment_content );
-		if ( '' === $content ) {
-			return '';
+		return 'approved' === $status && ! $expects_approved;
+	}
+
+	/**
+	 * Whether a comment being analyzed is expected to be approved already.
+	 *
+	 * @param object $item Queue item (id 0 = synchronous analysis at submit time).
+	 * @return bool
+	 */
+	private function expects_approved( $item ) {
+		if ( 0 === (int) $item->id ) {
+			return true; // Sync mode: whatever WordPress decided at insert is expected.
 		}
 
-		$normalized = preg_replace( '/\s+/u', ' ', mb_strtolower( $content ) );
-		$signature  = $normalized . '|' . mb_strtolower( trim( (string) $comment->comment_author_url ) );
+		return '1' === get_option( 'spamanvil_open_mode', '0' );
+	}
 
-		return 'spamanvil_v_' . hash( 'sha256', $signature );
+	/**
+	 * Hook: transition_comment_status. A moderator's decision closes the matter.
+	 *
+	 * Open queue items for the comment are completed (no API call is spent on a
+	 * comment someone already judged), and if the verdict cache decided it, that
+	 * entry is evicted so the same text is not auto-judged the wrong way again.
+	 *
+	 * @param string     $new_status New status.
+	 * @param string     $old_status Old status.
+	 * @param WP_Comment $comment    Comment.
+	 */
+	public function on_comment_status_change( $new_status, $old_status, $comment ) {
+		if ( self::$applying_verdict || 'new' === $old_status || $new_status === $old_status ) {
+			return;
+		}
+
+		if ( ! in_array( $new_status, array( 'approved', 'spam', 'trash' ), true ) ) {
+			return;
+		}
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( $wpdb->prepare(
+			"UPDATE {$this->table} SET status = 'completed', reason = %s, updated_at = %s
+			WHERE comment_id = %d AND status IN ('queued', 'failed', 'max_retries')", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			sprintf( 'Moderated manually (%s)', $new_status ),
+			current_time( 'mysql', true ),
+			$comment->comment_ID
+		) );
+
+		$key = get_comment_meta( $comment->comment_ID, self::VERDICT_KEY_META, true );
+		if ( $key ) {
+			delete_transient( $key );
+			delete_comment_meta( $comment->comment_ID, self::VERDICT_KEY_META );
+		}
 	}
 
 	/**
@@ -1131,8 +1253,8 @@ class SpamAnvil_Queue {
 	public function auto_enqueue_pending( $limit = 100 ) {
 		global $wpdb;
 
-		// Skip if no provider is configured — nothing to process.
-		if ( '' === get_option( 'spamanvil_primary_provider', '' ) ) {
+		// Skip if SpamAnvil is off or no provider is configured — nothing to process.
+		if ( ! SpamAnvil::is_enabled() || '' === get_option( 'spamanvil_primary_provider', '' ) ) {
 			return 0;
 		}
 

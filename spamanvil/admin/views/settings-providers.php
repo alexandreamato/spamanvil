@@ -30,7 +30,7 @@ foreach ( $providers as $slug => $name ) {
 
 $default_models = array(
 	'openai'      => 'gpt-4o-mini',
-	'openrouter'  => 'openrouter/free, openrouter/auto',
+	'openrouter'  => 'openrouter/free',
 	'featherless' => 'meta-llama/Meta-Llama-3.1-8B-Instruct',
 	'anthropic'   => 'claude-sonnet-5',
 	'gemini'      => 'gemini-2.0-flash',
@@ -187,6 +187,11 @@ $signup_urls = array(
 						<p class="description">
 							<?php esc_html_e( 'You can list several models separated by commas — they are tried in order until one answers (e.g. a free model first, then a paid one).', 'spamanvil' ); ?>
 						</p>
+						<?php if ( 'openrouter' === $slug ) : ?>
+							<p class="description">
+								<?php esc_html_e( 'The default uses free models only, so it never costs anything. When no free model answers, the comment waits in the queue and is retried later. To let a paid model step in instead, add openrouter/auto at the end of the list (your OpenRouter account needs credit).', 'spamanvil' ); ?>
+							</p>
+						<?php endif; ?>
 						<?php if ( in_array( $slug, array( 'openai', 'openrouter', 'featherless', 'generic' ), true ) ) : ?>
 							<button type="button"
 									class="button button-small spamanvil-browse-models-btn"

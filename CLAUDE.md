@@ -69,6 +69,17 @@ spamanvil/                          ← Plugin root (this gets zipped for upload
 
 **Timestamp convention (critical):** The `spamanvil_queue` columns `created_at`, `updated_at`, and `retry_at` are stored in **UTC** — always write them with `current_time( 'mysql', true )` (or `gmdate()`), never `current_time( 'mysql' )`. `claim_items()`/`handle_failure()` compare these against `gmdate()`-based cutoffs via naive SQL string comparison, so a single local-time write silently breaks retry/backoff and stale-reclaim on any non-UTC site (fixed in 1.2.8). These queue columns are internal-only and never displayed; the local-time timestamps shown in the Logs and IP tabs live in other tables and are intentionally left in site-local time.
 
+## Upgrade Trigger (1.19.0)
+
+WordPress never runs the activation hook on update. `SpamAnvil::check_db_version()` (on `init`) re-runs `SpamAnvil_Activator::activate()` when `SpamAnvil_Activator::needs_upgrade()` says so: when **either** `spamanvil_db_version` ≠ `SPAMANVIL_DB_VERSION` **or** `spamanvil_plugin_version` ≠ `SPAMANVIL_VERSION`. Until 1.18.1 only the schema version was compared, and 1.16.0 changed the default prompt without a schema bump — so upgraded sites never got the fix. Every step of `activate()` must therefore stay idempotent: it runs once per release.
+
+## Master Switch and Human Decisions (1.19.0)
+
+- `SpamAnvil::is_enabled()` is the single check for `spamanvil_enabled`. `process_batch()` (cron **and** forced runs), `auto_enqueue_pending()`, the Scan/Process AJAX handlers, the comment hooks and the Open Mode `pre_option_*` filters all go through it.
+- **A human decision outranks the queue.** `SpamAnvil_Queue::human_decided( $status, $expects_approved )` (pure, unit-tested): spam/trash always win; `approved` counts as a moderator decision only when the plugin would have held the comment (i.e. not Open Mode, not Sync mode). `process_single()` checks it before the LLM call and again right before applying the verdict — an overruled verdict is logged but not applied or cached.
+- `on_comment_status_change()` (hooked to `transition_comment_status`) completes open queue rows for a comment someone moderated and evicts its verdict-cache entry. The plugin's own status changes set `SpamAnvil_Queue::$applying_verdict` so they are not mistaken for a moderator's.
+- Prompt defaults for "Reset to Default" come from PHP via `wp_localize_script` (`spamAnvil.default_prompts`) — never duplicate them in `admin.js` again.
+
 ## Comment Processing Flow
 
 ```
@@ -121,7 +132,7 @@ WP-Cron (every 5 min):
 | Provider    | Class                        | Default Model                              |
 |-------------|------------------------------|--------------------------------------------|
 | OpenAI      | SpamAnvil_OpenAI_Compatible  | gpt-4o-mini                                |
-| OpenRouter  | SpamAnvil_OpenAI_Compatible  | openrouter/free, openrouter/auto (router chain; legacy single-model defaults migrate on upgrade) |
+| OpenRouter  | SpamAnvil_OpenAI_Compatible  | openrouter/free — **free only** since 1.19.0. The paid `openrouter/auto` fallback is opt-in (user appends it); `SpamAnvil_Activator::free_only_chain()` strips it on upgrade only from chains the plugin wrote itself (old default, 1.17.0 wizard chain) |
 | Featherless | SpamAnvil_OpenAI_Compatible  | meta-llama/Meta-Llama-3.1-8B-Instruct      |
 | Anthropic   | SpamAnvil_Anthropic          | claude-sonnet-5                            |
 | Gemini      | SpamAnvil_Gemini             | gemini-2.0-flash                           |
@@ -411,7 +422,7 @@ It re-checks version consistency, then deploys trunk + tag to WordPress.org and 
 - **Honeypot** — `render_honeypot()` outputs an off-screen `spamanvil_hp` field; a filled value = bot. Cache-safe.
 - **Time-trap** — `render_time_trap()` outputs a **signed** (`hash_hmac` w/ `wp_salt('nonce')`) `spamanvil_ts` timestamp; `time_trap_triggered()` flags submissions under the threshold. **Fails open** on missing/malformed/forged fields (no false positives) and is **inert under full-page caching** (frozen timestamp). These form fields are the plugin's only intentional frontend output — invisible/functional, not promotional.
 
-**Verdict cache (1.2.9):** `process_single()` reuses a recent LLM verdict for identical comment content (transient keyed on normalized content + author URL via `verdict_cache_key()`), skipping the API call. Only raw `score`/`reason`/`provider`/`model` are cached; the threshold is applied per-read. Anvil Mode never uses the cache. Cache hits increment the `cache_hits` stat and are marked `provider (cached)` in the logs.
+**Verdict cache (1.2.9, re-keyed 1.19.0):** `process_single()` reuses a recent LLM verdict for an identical classification request, skipping the API call. Since 1.19.0 the key is `SpamAnvil_Queue::verdict_cache_key( $system_prompt, $user_prompt )` (pure, unit-tested) — a hash of the exact prompts sent, so post, author name/email/URL, site language and prompt templates are all part of it (the old content + author URL key reused verdicts across posts, authors and prompt fixes). The key that decided a comment is stored in comment meta `_spamanvil_verdict_key`; a moderator's correction evicts it. Only raw `score`/`reason`/`provider`/`model` are cached; the threshold is applied per-read. Anvil Mode never uses the cache. Cache hits increment the `cache_hits` stat and are marked `provider (cached)` in the logs.
 
 **Atomic claim (1.2.9):** `claim_items()` claims each row with a compare-and-swap `UPDATE ... WHERE id = ? AND status = 'queued'` (checking affected-rows), so concurrent cron + manual runs can never double-claim a row and pay for a duplicate LLM call.
 

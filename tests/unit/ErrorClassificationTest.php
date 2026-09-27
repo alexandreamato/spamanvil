@@ -100,12 +100,12 @@ class ErrorClassificationTest extends TestCase {
 		$this->assertSame( array( 'gpt-4o-mini' ), $factory->get_model_chain( 'openai' ) );
 	}
 
-	public function test_openrouter_default_is_the_router_chain() {
-		// The default itself is a chain: the free-pool router first, the paid
-		// auto router as fallback — neither goes stale when models churn.
+	public function test_openrouter_default_is_free_only() {
+		// 1.19.0: the free-pool router alone. The paid openrouter/auto fallback that
+		// followed it charged accounts with credit without telling them; it is opt-in now.
 		$factory = $this->make_factory();
 		$this->assertSame(
-			array( 'openrouter/free', 'openrouter/auto' ),
+			array( 'openrouter/free' ),
 			$factory->get_model_chain( 'openrouter' )
 		);
 	}

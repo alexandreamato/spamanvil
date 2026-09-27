@@ -242,10 +242,172 @@ class QueueTest extends WP_UnitTestCase {
 
 	// --- Tier 2: verdict cache ------------------------------------------------
 
+	/**
+	 * The verdict-cache key the queue will compute for this comment (1.19.0: keyed on
+	 * the exact prompts sent to the model).
+	 */
+	private function cache_key_for( $comment ) {
+		$build = new ReflectionMethod( SpamAnvil_Queue::class, 'build_user_prompt' );
+		$build->setAccessible( true );
+		$user = $build->invoke( $this->queue, $comment, (object) array( 'id' => 1, 'heuristic_score' => 0 ) );
+
+		return SpamAnvil_Queue::verdict_cache_key(
+			get_option( 'spamanvil_system_prompt', SpamAnvil_Activator::get_default_system_prompt() ),
+			$user
+		);
+	}
+
 	private function seed_verdict_cache( $comment, array $verdict ) {
-		$key = new ReflectionMethod( SpamAnvil_Queue::class, 'verdict_cache_key' );
-		$key->setAccessible( true );
-		set_transient( $key->invoke( $this->queue, $comment ), $verdict, HOUR_IN_SECONDS );
+		set_transient( $this->cache_key_for( $comment ), $verdict, HOUR_IN_SECONDS );
+	}
+
+	private function row_for_comment( $comment_id ) {
+		global $wpdb;
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE comment_id = %d", $comment_id ) );
+	}
+
+	/** Set a comment's status straight in the DB, bypassing the transition hooks. */
+	private function force_status_silently( $comment_id, $approved ) {
+		global $wpdb;
+		$wpdb->update( $wpdb->comments, array( 'comment_approved' => $approved ), array( 'comment_ID' => $comment_id ) );
+		clean_comment_cache( $comment_id );
+	}
+
+	private function spam_verdict() {
+		return array(
+			'score'    => 92,
+			'reason'   => 'cached spam verdict',
+			'provider' => 'openai',
+			'model'    => 'gpt-4o-mini',
+		);
+	}
+
+	// --- 1.19.0: the master switch stops everything ------------------------------
+
+	public function test_turned_off_plugin_processes_nothing() {
+		update_option( 'spamanvil_enabled', '0' );
+		$this->configure_succeeding_provider( 10 );
+
+		$comment_id = $this->new_comment();
+		$this->queue->enqueue( $comment_id, 0 );
+
+		$this->assertSame( 0, $this->queue->process_batch() );
+		$this->assertSame( 0, $this->queue->process_batch( true ), 'Manual runs are stopped too.' );
+		$this->assertSame( 0, $this->queue->auto_enqueue_pending( 0 ) );
+
+		$this->assertSame( 'queued', $this->row_for_comment( $comment_id )->status, 'The item waits for the switch.' );
+		$this->assertSame( 'unapproved', wp_get_comment_status( $comment_id ) );
+	}
+
+	// --- 1.19.0: a human decision outranks the queue ------------------------------
+
+	public function test_trashing_a_queued_comment_closes_its_item() {
+		$comment_id = $this->new_comment();
+		$this->queue->enqueue( $comment_id, 0 );
+
+		wp_trash_comment( $comment_id );
+
+		$row = $this->row_for_comment( $comment_id );
+		$this->assertSame( 'completed', $row->status );
+		$this->assertStringContainsString( 'Moderated manually', $row->reason );
+	}
+
+	public function test_comment_moderated_before_analysis_is_never_overruled() {
+		// Moderated by a path that fired no hook (e.g. before 1.19.0 was installed):
+		// the check at processing time must still catch it.
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved' => '0',
+			'comment_content'  => 'A comment the moderator threw away.',
+		) );
+		$this->seed_verdict_cache( get_comment( $comment_id ), array_merge( $this->spam_verdict(), array( 'score' => 5 ) ) );
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->force_status_silently( $comment_id, 'trash' );
+
+		$this->queue->process_batch();
+
+		$this->assertSame( 'trash', wp_get_comment_status( $comment_id ), 'A trashed comment must never come back approved.' );
+		$this->assertStringContainsString( 'before analysis', $this->row_for_comment( $comment_id )->reason );
+	}
+
+	public function test_comment_moderated_during_the_llm_call_is_left_alone() {
+		$comment_id = $this->new_comment();
+		update_option( 'spamanvil_primary_provider', 'openai' );
+		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		add_filter( 'pre_http_request', function () use ( $comment_id ) {
+			// The moderator marks it spam while the model is still thinking.
+			wp_spam_comment( $comment_id );
+			return array(
+				'headers'  => array(),
+				'body'     => wp_json_encode( array(
+					'choices' => array( array( 'message' => array( 'content' => '{"score": 5, "reason": "looks fine"}' ) ) ),
+				) ),
+				'response' => array( 'code' => 200, 'message' => 'OK' ),
+			);
+		} );
+
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ) );
+		$row = $this->row_for_comment( $comment_id );
+		$this->assertSame( 'completed', $row->status );
+		$this->assertSame( 5, (int) $row->score, 'The AI verdict is still recorded.' );
+		$this->assertStringContainsString( 'during analysis', $row->reason );
+		$this->assertSame( '', (string) get_comment_meta( $comment_id, SpamAnvil_Queue::VERDICT_KEY_META, true ), 'An overruled verdict is not cached for reuse.' );
+	}
+
+	public function test_open_mode_published_comment_is_still_analyzed() {
+		update_option( 'spamanvil_open_mode', '1' );
+		update_option( 'spamanvil_threshold', 70 );
+
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved' => '1',
+			'comment_content'  => 'Buy cheap watches at my store!!!',
+		) );
+		$this->seed_verdict_cache( get_comment( $comment_id ), $this->spam_verdict() );
+		$this->queue->enqueue( $comment_id, 0 );
+
+		$this->queue->process_batch();
+
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ), 'Approval is the expected state in Open Mode, not a moderator decision.' );
+	}
+
+	// --- 1.19.0: verdict cache keyed on the whole request ------------------------
+
+	public function test_same_text_on_another_post_does_not_reuse_the_verdict() {
+		// Other suites store custom templates and activate() commits them (DDL), so pin
+		// the default here; same author on both, so only the post differs.
+		update_option( 'spamanvil_user_prompt', SpamAnvil_Activator::get_default_user_prompt() );
+		$same = array(
+			'comment_approved'   => '0',
+			'comment_content'    => 'Great article, thank you!',
+			'comment_author'     => 'Ana',
+			'comment_author_url' => '',
+		);
+		$a = self::factory()->comment->create( array_merge( $same, array( 'comment_post_ID' => self::factory()->post->create( array( 'post_title' => 'Lipedema surgery' ) ) ) ) );
+		$b = self::factory()->comment->create( array_merge( $same, array( 'comment_post_ID' => self::factory()->post->create( array( 'post_title' => 'Online casino bonus' ) ) ) ) );
+
+		$this->assertNotSame( $this->cache_key_for( get_comment( $a ) ), $this->cache_key_for( get_comment( $b ) ) );
+	}
+
+	public function test_moderator_correction_evicts_the_cached_verdict() {
+		update_option( 'spamanvil_threshold', 70 );
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved' => '0',
+			'comment_content'  => 'Obrigada, a explicação sobre drenagem me ajudou muito.',
+		) );
+		$key = $this->cache_key_for( get_comment( $comment_id ) );
+		set_transient( $key, $this->spam_verdict(), HOUR_IN_SECONDS );
+
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ) );
+		$this->assertNotFalse( get_transient( $key ), 'The plugin\'s own verdict must not evict its entry.' );
+
+		// The moderator disagrees and restores it.
+		wp_set_comment_status( $comment_id, 'approve' );
+
+		$this->assertFalse( get_transient( $key ), 'A corrected verdict must not be reused for the same text.' );
 	}
 
 	public function test_cached_spam_verdict_short_circuits_the_llm() {

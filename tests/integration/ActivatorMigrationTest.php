@@ -77,6 +77,33 @@ Pre-analysis score: {heuristic_score}/100
 		}
 	}
 
+	public function test_plain_update_migrates_the_prompt_without_a_schema_change() {
+		// The 1.16.0–1.18.1 gap: WordPress never runs the activation hook on update,
+		// and the only upgrade trigger compared the schema version, which 1.16.0 did
+		// not bump. Sites that just clicked "Update" kept the old prompt.
+		$legacy = file_get_contents( dirname( __DIR__ ) . '/fixtures/system-prompt-1.12.0.txt' );
+		update_option( 'spamanvil_system_prompt', $legacy );
+		update_option( 'spamanvil_db_version', SPAMANVIL_DB_VERSION );
+		update_option( 'spamanvil_plugin_version', '0.0.1-before-this-release' );
+
+		SpamAnvil::get_instance()->run_deferred_setup();
+
+		$this->assertSame( SpamAnvil_Activator::get_default_system_prompt(), get_option( 'spamanvil_system_prompt' ) );
+		$this->assertSame( SPAMANVIL_VERSION, get_option( 'spamanvil_plugin_version' ) );
+	}
+
+	public function test_paid_fallback_is_removed_from_the_old_default_chain() {
+		update_option( 'spamanvil_openrouter_model', 'openrouter/free, openrouter/auto' );
+		SpamAnvil_Activator::activate();
+		$this->assertSame( 'openrouter/free', get_option( 'spamanvil_openrouter_model' ) );
+	}
+
+	public function test_user_chosen_paid_model_survives_the_upgrade() {
+		update_option( 'spamanvil_openrouter_model', 'openai/gpt-4o-mini, openrouter/free, openrouter/auto' );
+		SpamAnvil_Activator::activate();
+		$this->assertSame( 'openai/gpt-4o-mini, openrouter/free, openrouter/auto', get_option( 'spamanvil_openrouter_model' ) );
+	}
+
 	public function test_current_default_is_not_listed_as_legacy() {
 		// Guards the release checklist: shipping a new default without recording the
 		// outgoing one would leave every existing install on the old prompt forever.

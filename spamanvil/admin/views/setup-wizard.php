@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="spamanvil-setup-head">
 		<h1><?php esc_html_e( 'Set up SpamAnvil', 'spamanvil' ); ?></h1>
 		<p class="spamanvil-setup-lead">
-			<?php esc_html_e( 'One API key is all SpamAnvil needs. It takes about a minute, and the free option costs nothing.', 'spamanvil' ); ?>
+			<?php esc_html_e( 'One API key is all SpamAnvil needs. It takes about a minute, and it can run entirely on free models.', 'spamanvil' ); ?>
 		</p>
 	</div>
 
@@ -41,7 +41,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="spamanvil-step-body">
 				<h2><?php esc_html_e( 'Get a free API key', 'spamanvil' ); ?></h2>
 				<p>
-					<?php esc_html_e( 'SpamAnvil asks an AI model to judge each comment, so it needs access to one. OpenRouter offers free models: create an account, click "Create key", and copy it. Free usage is rate-limited, which is plenty for a normal blog — a busy site can add credit later.', 'spamanvil' ); ?>
+					<?php esc_html_e( 'SpamAnvil asks an AI model to judge each comment, so it needs access to one. OpenRouter offers free models: create an account, click "Create key", and copy it. Free usage is rate-limited, which is plenty for a normal blog. SpamAnvil uses only free models unless you add a paid one yourself on the Providers tab.', 'spamanvil' ); ?>
 				</p>
 				<a class="button button-secondary" href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">
 					<?php esc_html_e( 'Open openrouter.ai/keys', 'spamanvil' ); ?>

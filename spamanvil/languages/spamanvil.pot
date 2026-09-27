@@ -1130,7 +1130,7 @@ msgid "Set up SpamAnvil"
 msgstr ""
 
 #: admin/views/setup-wizard.php:21
-msgid "One API key is all SpamAnvil needs. It takes about a minute, and the free option costs nothing."
+msgid "One API key is all SpamAnvil needs. It takes about a minute, and it can run entirely on free models."
 msgstr ""
 
 #: admin/views/setup-wizard.php:28
@@ -1151,7 +1151,7 @@ msgid "Get a free API key"
 msgstr ""
 
 #: admin/views/setup-wizard.php:44
-msgid "SpamAnvil asks an AI model to judge each comment, so it needs access to one. OpenRouter offers free models: create an account, click \"Create key\", and copy it. Free usage is rate-limited, which is plenty for a normal blog — a busy site can add credit later."
+msgid "SpamAnvil asks an AI model to judge each comment, so it needs access to one. OpenRouter offers free models: create an account, click \"Create key\", and copy it. Free usage is rate-limited, which is plenty for a normal blog. SpamAnvil uses only free models unless you add a paid one yourself on the Providers tab."
 msgstr ""
 
 #: admin/views/setup-wizard.php:47
@@ -1385,4 +1385,12 @@ msgstr ""
 #: includes/providers/class-spamanvil-provider.php:167
 #, php-format
 msgid "Score %d is out of range (0-100)"
+msgstr ""
+
+#: admin/class-spamanvil-admin.php
+msgid "SpamAnvil is turned off. Turn it on in the General tab to analyze comments."
+msgstr ""
+
+#: admin/views/settings-providers.php
+msgid "The default uses free models only, so it never costs anything. When no free model answers, the comment waits in the queue and is retried later. To let a paid model step in instead, add openrouter/auto at the end of the list (your OpenRouter account needs credit)."
 msgstr ""

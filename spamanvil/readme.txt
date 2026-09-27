@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.1
+Stable tag: 1.19.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -241,6 +241,14 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 
 == Changelog ==
 
+= 1.19.0 =
+* Fix: **the 1.16.0 prompt fix never reached sites that simply clicked "Update".** WordPress does not run a plugin's activation code on update, so SpamAnvil re-runs its migrations when it notices a new version — but it only compared the database schema version, and 1.16.0 changed the default prompt without changing the schema. Sites that updated from 1.15.x or earlier without deactivating and reactivating stayed on the old prompt, the one that marked comments in another language, and short polite ones, as spam. Migrations now run whenever the plugin version changes, so this update applies the 1.16.0 prompt at last. As before, only unmodified default prompts are replaced; customized prompts are left alone. The 1.16.0 upgrade notice said this happened automatically; for those sites it did not.
+* Fix: "Reset to Default" on the Prompt tab restored the pre-1.16.0 prompt, from a copy kept in the JavaScript that was never updated. The button now uses the plugin's current defaults.
+* Fix: **turning SpamAnvil off did not stop the analysis.** The switch on the General tab stopped new comments from being queued, but the background job kept processing what was already queued and kept picking up pending comments, spending API calls. Now the switch stops everything: the background job, the manual "Process queue" and "Scan pending" buttons, and Open Mode's changes to WordPress' comment settings. Queued comments wait and are processed once SpamAnvil is on again.
+* Fix: **a comment that a moderator had already handled could be overruled by the queue.** The queue checked only that the comment still existed, so a comment sent to the trash while it waited could come back approved when its turn came. Now moderating a comment — approving it, marking it spam or trashing it, whether done by a person or another plugin — closes its queue entry without an API call. SpamAnvil also checks again right before applying a verdict, because a model can take a minute to answer: if someone decided in the meantime, the AI's verdict is written to the log and the comment is left as that person set it. In Open Mode and Sync mode, where comments are published before analysis, an approved comment is still analyzed as before.
+* Fix: **the verdict cache could reuse a verdict for a different situation.** It matched only the comment text and the author's website, so the same words on another post, from another author, or after a prompt change got the old verdict for up to 7 days. The cache now matches only when everything the model would see is identical: text, post, author name, email and website, and the prompts. When a moderator overturns a verdict that came from the cache, that entry is deleted so the same text is not judged the same way again.
+* Change: **OpenRouter now uses free models only by default.** Since 1.13.1 the default was "openrouter/free, openrouter/auto": when the free models could not answer — about 4 calls in 10 — the paid `openrouter/auto` stepped in. An account without credit was never charged, but one with credit paid for part of the analysis without being told, while the setup wizard said the free option "costs nothing". The default is now `openrouter/free` alone; when no free model answers, the comment waits in the queue and is retried later. Existing sites move to the new default only if they were still on a chain SpamAnvil wrote itself (the old default, or the one the 1.17.0 wizard stored); a chain you edited is left alone. To let a paid model step in again, add `openrouter/auto` at the end of the model list on the Providers tab.
+
 = 1.18.1 =
 * Fix: on sites with `WP_DEBUG` enabled, WordPress logged "Translation loading for the spamanvil domain was triggered too early" whenever the plugin had to (re)schedule its cron events. Scheduling runs on `plugins_loaded` and reaches the `cron_schedules` filter, where the interval's label is translated — before WordPress is ready for translations. Schema check and cron scheduling now run on `init` instead. Verified against WordPress 7.1-RC4: the notice is gone and the events still schedule.
 * Fix: 1.15.0 added a second `set_transient( 'spamanvil_activation_redirect' )` inside the activator, which also runs on a database-version change — so a future schema bump would have redirected people to the settings screen out of nowhere. Removed; the activation hook has always set it.
@@ -473,6 +481,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 * GDPR/LGPD privacy-first design
 
 == Upgrade Notice ==
+
+= 1.19.0 =
+If you updated from 1.15 or earlier without reactivating, you are still on the old prompt that marked real comments as spam. This update replaces it (unless you customized it). OpenRouter now uses free models only by default, and turning SpamAnvil off stops all analysis.
 
 = 1.18.0 =
 Includes a review screen for comments the pre-1.16.0 prompt may have marked as spam by mistake. Worth a look soon: WordPress deletes spam older than 30 days on its own.
