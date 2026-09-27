@@ -100,6 +100,24 @@ class QueueDecisionTest extends TestCase {
 		$this->assertSame( 8, SpamAnvil_Queue::call_timeout( 8.0 ) );
 	}
 
+	public function test_time_is_reserved_for_the_models_behind() {
+		// 1.20.1: 50s left, one fallback behind → the primary may take 42s, not 50.
+		$this->assertSame( 42, SpamAnvil_Queue::call_timeout( 50.0, 1 ) );
+		$this->assertSame( 34, SpamAnvil_Queue::call_timeout( 50.0, 2 ) );
+	}
+
+	public function test_reserve_never_starves_the_current_call() {
+		$this->assertSame( 8, SpamAnvil_Queue::call_timeout( 20.0, 3 ), 'Still gets the minimum while it fits.' );
+		$this->assertSame( 0, SpamAnvil_Queue::call_timeout( 7.0, 2 ) );
+	}
+
+	public function test_calls_after_counts_the_rest_of_the_chain() {
+		$counts = array( 2, 1 ); // Provider A: two models; provider B: one.
+		$this->assertSame( 2, SpamAnvil_Queue::calls_after( $counts, 0, 0 ) );
+		$this->assertSame( 1, SpamAnvil_Queue::calls_after( $counts, 0, 1 ) );
+		$this->assertSame( 0, SpamAnvil_Queue::calls_after( $counts, 1, 0 ) );
+	}
+
 	// --- pick_comment_ip() (1.20.0) ----------------------------------------------
 
 	public function test_resolved_ip_wins_over_the_proxy_address() {

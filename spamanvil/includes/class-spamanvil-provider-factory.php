@@ -535,16 +535,17 @@ class SpamAnvil_Provider_Factory {
 	 *
 	 * @param string $slug          Provider slug.
 	 * @param string $exclude_model The model that failed.
+	 * @param int    $timeout       HTTP timeout for listing the models, in seconds.
 	 * @return string A free model id, or '' if none is available.
 	 */
-	public function find_free_alternative( $slug, $exclude_model ) {
+	public function find_free_alternative( $slug, $exclude_model, $timeout = 30 ) {
 		$provider = $this->create( $slug );
 
 		if ( is_wp_error( $provider ) || ! method_exists( $provider, 'list_models' ) ) {
 			return '';
 		}
 
-		$models = $provider->list_models();
+		$models = $provider->list_models( $timeout );
 		if ( is_wp_error( $models ) ) {
 			return '';
 		}

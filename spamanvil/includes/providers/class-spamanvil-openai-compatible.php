@@ -103,7 +103,7 @@ class SpamAnvil_OpenAI_Compatible extends SpamAnvil_Provider {
 	 * @return array|WP_Error List of models (each: id, name, and optionally context/free),
 	 *                        or WP_Error on failure.
 	 */
-	public function list_models() {
+	public function list_models( $timeout = 30 ) {
 		$url = $this->get_models_url();
 
 		if ( '' === $url ) {
@@ -117,7 +117,7 @@ class SpamAnvil_OpenAI_Compatible extends SpamAnvil_Provider {
 			$url,
 			array(
 				'headers' => $this->get_headers(),
-				'timeout' => 30,
+				'timeout' => max( 1, (int) $timeout ),
 			)
 		);
 

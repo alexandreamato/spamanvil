@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.0
+Stable tag: 1.20.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,10 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 8. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.20.1 =
+* Fix: **with a slow first model, the fallback model was never tried** (introduced in 1.20.0). The time limit gave the first model in the list all the time the run had left. When that model hung, it used up the whole budget, no time remained for the next model, and the next run started again from the first — so a healthy fallback could go unused indefinitely while the comment waited. Each call now leaves at least 8 seconds for every model still behind it in the list, so a hanging first model is cut off in time for the fallback to answer in the same run.
+* Fix: the automatic search for a replacement free model (used when a configured model has disappeared) listed the provider's models with a fixed 30-second timeout, outside the run's time limit. It now gets only the time that is left, minus what the classification call after it needs.
 
 = 1.20.0 =
 * Fix: **the background job could run far past its time limit.** It allows itself 50 seconds per run, but only checked the clock after finishing a whole comment — and a single comment can go through several models, each allowed 60 seconds to answer. On a slow day one run could take minutes, pile up against the next one, or be killed by the host halfway through. Every model call is now limited to the time the run has left, and a call is not started at all when fewer than 8 seconds remain: the comment goes back to the queue untouched and is picked up on the next run. If some models were asked and none answered in time, it counts as a normal failed attempt with the usual backoff, so a model that always hangs cannot keep a comment cycling forever.
@@ -498,6 +502,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 * GDPR/LGPD privacy-first design
 
 == Upgrade Notice ==
+
+= 1.20.1 =
+Fixes a 1.20.0 regression: when the first AI model in your list was slow, the fallback model was never tried. Recommended if you list more than one model.
 
 = 1.19.1 =
 A moderator's decision now always wins over the queue, including when made in another tab while the AI is answering. Also: the Privacy Notice option now shows a one-line disclosure above your comment form (on by default; turn it off in General settings).

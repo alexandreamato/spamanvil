@@ -451,6 +451,80 @@ class QueueTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_hanging_primary_model_still_leaves_time_for_the_fallback() {
+		// The 1.20.0 regression: the primary got the whole budget, hung until it ran
+		// out, and the healthy fallback was never called — on every retry. Here the
+		// primary really hangs for its entire timeout.
+		update_option( 'spamanvil_primary_provider', 'openai' );
+		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		update_option( 'spamanvil_openai_model', 'slow-model, healthy-model' );
+		$asked = array();
+		add_filter( 'pre_http_request', function ( $pre, $args ) use ( &$asked ) {
+			$body    = json_decode( $args['body'], true );
+			$asked[] = $body['model'];
+			if ( 'slow-model' === $body['model'] ) {
+				sleep( (int) $args['timeout'] );
+				return new WP_Error( 'http_request_failed', 'cURL error 28: Operation timed out' );
+			}
+			return array(
+				'headers'  => array(),
+				'body'     => wp_json_encode( array(
+					'choices' => array( array( 'message' => array( 'content' => '{"score": 5, "reason": "fine"}' ) ) ),
+				) ),
+				'response' => array( 'code' => 200, 'message' => 'OK' ),
+			);
+		}, 10, 2 );
+
+		$comment_id = $this->new_comment();
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch( false, 18 ); // Primary gets 10s, fallback the last 8.
+
+		$this->assertSame( array( 'slow-model', 'healthy-model' ), $asked, 'The fallback must be reached within the same run.' );
+		$this->assertSame( 'completed', $this->row_for_comment( $comment_id )->status );
+		$this->assertSame( 'approved', wp_get_comment_status( $comment_id ) );
+	}
+
+	public function test_model_discovery_is_bounded_by_the_batch_budget() {
+		update_option( 'spamanvil_primary_provider', 'openrouter' );
+		update_option( 'spamanvil_openrouter_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		update_option( 'spamanvil_openrouter_model', 'gone-model:free' );
+		update_option( 'spamanvil_auto_free_fallback', '1' );
+		$list_timeouts = array();
+		add_filter( 'pre_http_request', function ( $pre, $args ) use ( &$list_timeouts ) {
+			if ( 'GET' === $args['method'] ) {
+				$list_timeouts[] = $args['timeout'];
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode( array( 'data' => array(
+						array( 'id' => 'meta-llama/llama-3.3-70b-instruct:free', 'pricing' => array( 'prompt' => '0', 'completion' => '0' ) ),
+					) ) ),
+					'response' => array( 'code' => 200, 'message' => 'OK' ),
+				);
+			}
+			$body = json_decode( $args['body'], true );
+			if ( 'gone-model:free' === $body['model'] ) {
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode( array( 'error' => array( 'message' => 'No endpoints found for gone-model:free' ) ) ),
+					'response' => array( 'code' => 404, 'message' => 'Not Found' ),
+				);
+			}
+			return array(
+				'headers'  => array(),
+				'body'     => wp_json_encode( array(
+					'choices' => array( array( 'message' => array( 'content' => '{"score": 5, "reason": "fine"}' ) ) ),
+				) ),
+				'response' => array( 'code' => 200, 'message' => 'OK' ),
+			);
+		}, 10, 2 );
+
+		$this->queue->enqueue( $this->new_comment(), 0 );
+		$this->queue->process_batch( false, 20 );
+
+		$this->assertCount( 1, $list_timeouts, 'The free-model discovery ran.' );
+		$this->assertLessThanOrEqual( 12, $list_timeouts[0], 'Listing gets what is left minus the classification call, not a fixed 30s.' );
+	}
+
 	public function test_item_goes_back_untouched_when_no_time_is_left() {
 		update_option( 'spamanvil_primary_provider', 'openai' );
 		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );

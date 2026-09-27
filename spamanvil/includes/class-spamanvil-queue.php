@@ -719,19 +719,70 @@ class SpamAnvil_Queue {
 	/**
 	 * HTTP timeout for the next model call given the time left in the batch.
 	 *
-	 * @param float|null $remaining Seconds left before the deadline; null = no deadline.
-	 * @param int        $default   Timeout to use when time is plentiful.
-	 * @param int        $min       Below this, do not start a call at all.
+	 * Time is held back for the models still behind this one in the chain
+	 * (MIN_CALL_SECONDS each). Without that reserve (1.20.0) a primary model that
+	 * hangs took the whole budget on every attempt, the chain restarted from it on
+	 * the next run, and the healthy fallback was never called at all. The call
+	 * always gets at least MIN_CALL_SECONDS while that much time is left.
+	 *
+	 * @param float|null $remaining   Seconds left before the deadline; null = no deadline.
+	 * @param int        $calls_after Models still behind this one in the chain.
+	 * @param int        $default     Timeout to use when time is plentiful.
+	 * @param int        $min         Below this, do not start a call at all.
 	 * @return int Seconds to allow, or 0 when there is no time for a call.
 	 */
-	public static function call_timeout( $remaining, $default = self::DEFAULT_CALL_SECONDS, $min = self::MIN_CALL_SECONDS ) {
+	public static function call_timeout( $remaining, $calls_after = 0, $default = self::DEFAULT_CALL_SECONDS, $min = self::MIN_CALL_SECONDS ) {
 		if ( null === $remaining ) {
 			return (int) $default;
 		}
 		if ( $remaining < $min ) {
 			return 0;
 		}
-		return (int) min( $default, floor( $remaining ) );
+
+		$share = max( $min, $remaining - ( max( 0, (int) $calls_after ) * $min ) );
+
+		return (int) min( $default, floor( $share ), floor( $remaining ) );
+	}
+
+	/**
+	 * Seconds left before the batch deadline, or null when there is none.
+	 *
+	 * @return float|null
+	 */
+	private function remaining_seconds() {
+		return $this->deadline > 0 ? $this->deadline - microtime( true ) : null;
+	}
+
+	/**
+	 * Model list per provider, in chain order ('' when none is configured, so
+	 * create() surfaces the no-model error).
+	 *
+	 * @param string[] $chain Provider slugs.
+	 * @return array<int, string[]>
+	 */
+	private function model_lists( $chain ) {
+		$lists = array();
+		foreach ( array_values( $chain ) as $slug ) {
+			$models  = $this->provider_factory->get_model_chain( $slug );
+			$lists[] = empty( $models ) ? array( '' ) : array_values( $models );
+		}
+		return $lists;
+	}
+
+	/**
+	 * How many models of a chain come after position ($provider_index, $model_index).
+	 *
+	 * @param int[] $counts         Models per provider, in chain order.
+	 * @param int   $provider_index Current provider position.
+	 * @param int   $model_index    Current model position within that provider.
+	 * @return int
+	 */
+	public static function calls_after( array $counts, $provider_index, $model_index ) {
+		$after = max( 0, (int) $counts[ $provider_index ] - $model_index - 1 );
+		for ( $i = $provider_index + 1, $n = count( $counts ); $i < $n; $i++ ) {
+			$after += (int) $counts[ $i ];
+		}
+		return $after;
 	}
 
 	/**
@@ -739,8 +790,8 @@ class SpamAnvil_Queue {
 	 *
 	 * @return int
 	 */
-	private function call_budget() {
-		return self::call_timeout( $this->deadline > 0 ? $this->deadline - microtime( true ) : null );
+	private function call_budget( $calls_after = 0 ) {
+		return self::call_timeout( $this->remaining_seconds(), $calls_after );
 	}
 
 	/**
@@ -929,15 +980,15 @@ class SpamAnvil_Queue {
 
 		$all_permanent = true;
 
-		foreach ( $chain as $slug ) {
-			$models = $this->provider_factory->get_model_chain( $slug );
-			if ( empty( $models ) ) {
-				$models = array( '' ); // Let create() surface the no-model error.
-			}
+		$model_lists = $this->model_lists( $chain );
+		$counts      = array_map( 'count', $model_lists );
+
+		foreach ( array_values( $chain ) as $p_index => $slug ) {
+			$models = $model_lists[ $p_index ];
 
 			$last_error = null;
 
-			foreach ( $models as $model ) {
+			foreach ( $models as $m_index => $model ) {
 				$provider = $this->provider_factory->create( $slug, '' !== $model ? array( 'model' => $model ) : array() );
 
 				if ( is_wp_error( $provider ) ) {
@@ -961,7 +1012,7 @@ class SpamAnvil_Queue {
 					continue 2; // Next provider.
 				}
 
-				$timeout = $this->call_budget();
+				$timeout = $this->call_budget( self::calls_after( $counts, $p_index, $m_index ) );
 				if ( 0 === $timeout ) {
 					return $this->out_of_time_error( $errors );
 				}
@@ -1040,13 +1091,19 @@ class SpamAnvil_Queue {
 
 		// Discovery lists models over HTTP and then makes one more call; not worth
 		// starting when the batch cannot afford it.
-		if ( $this->call_budget() < 2 * self::MIN_CALL_SECONDS ) {
+		// Listing is an HTTP call too: it gets what is left minus the time the
+		// classification call after it needs, never the fixed 30s it used to.
+		$remaining = $this->remaining_seconds();
+		if ( null !== $remaining && $remaining < 2 * self::MIN_CALL_SECONDS ) {
 			return $original_error;
 		}
+		$list_timeout = null === $remaining
+			? 30
+			: (int) min( 30, floor( $remaining - self::MIN_CALL_SECONDS ) );
 
 		$model_chain   = $this->provider_factory->get_model_chain( $slug );
 		$current_model = ! empty( $model_chain ) ? $model_chain[0] : '';
-		$alt           = $this->provider_factory->find_free_alternative( $slug, $current_model );
+		$alt           = $this->provider_factory->find_free_alternative( $slug, $current_model, $list_timeout );
 
 		if ( '' === $alt ) {
 			return $original_error;
@@ -1127,13 +1184,13 @@ class SpamAnvil_Queue {
 		$all_permanent = true;
 		$out_of_time   = false;
 
-		foreach ( $chain as $slug ) {
-			$models = $this->provider_factory->get_model_chain( $slug );
-			if ( empty( $models ) ) {
-				$models = array( '' );
-			}
+		$model_lists = $this->model_lists( $chain );
+		$counts      = array_map( 'count', $model_lists );
 
-			foreach ( $models as $model ) {
+		foreach ( array_values( $chain ) as $p_index => $slug ) {
+			$models = $model_lists[ $p_index ];
+
+			foreach ( $models as $m_index => $model ) {
 				$provider = $this->provider_factory->create( $slug, '' !== $model ? array( 'model' => $model ) : array() );
 
 				if ( is_wp_error( $provider ) ) {
@@ -1155,7 +1212,7 @@ class SpamAnvil_Queue {
 					continue 2; // Creation failures are per-provider — next provider.
 				}
 
-				$timeout = $this->call_budget();
+				$timeout = $this->call_budget( self::calls_after( $counts, $p_index, $m_index ) );
 				if ( 0 === $timeout ) {
 					$out_of_time = true;
 					break 2; // Out of time: judge on the results gathered so far.
