@@ -5,7 +5,7 @@ Tags: antispam, comment spam, spam protection, ai, moderation
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.0
+Stable tag: 1.19.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -240,6 +240,13 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 8. Smart email notifications - No more one email per spam attempt: get notified only after the verdict, or a single daily digest
 
 == Changelog ==
+
+= 1.19.1 =
+* Fix: **1.19.0's second check before applying a verdict did not work on most sites.** It re-read the comment's status through WordPress' in-request cache, which the background job had filled when it loaded the comment — so a moderator acting in another browser tab while the model was answering was invisible to it, and the verdict overwrote their decision anyway. The status (and the moderation mark below) is now read straight from the database. The 1.19.0 test changed the comment inside the same request, where the cache is cleared, so it passed without proving anything; the new test writes the database the way a separate request does, and fails against the 1.19.0 code.
+* Fix: **sending a comment back to "pending" did not count as a moderator's decision.** A comment the AI marked as spam, returned to pending by a moderator, could be picked up again by the automatic scan of pending comments and get the same verdict from the cache; a comment a moderator unapproved could be approved automatically. Now every status change a person (or another plugin) makes — approve, pending, spam, trash — is recorded on the comment, evicts its cached verdict and closes its queue entry, and the automatic paths leave that comment alone. The manual "Scan pending" button is how you ask for a fresh analysis. SpamAnvil's own verdicts, honeypot, time trap and heuristic blocks are not recorded as moderation.
+* Fix: the verdict cache ignored which provider and model answered, so switching to another model kept serving the old model's verdicts. The provider configuration is now part of the cache key.
+* New: **the "Privacy Notice" option now does what it says.** The checkbox (on by default) was saved but nothing ever displayed it. When SpamAnvil is on and a provider is configured, commenters now see one line above the submit button saying their comment, name, email and website are sent to an external AI service to filter spam. Moderators, whose comments are never analyzed, do not see it. SpamAnvil also suggests matching text for your privacy policy under Settings → Privacy. Turn the option off on the General tab if your privacy policy already covers it.
+* Fix: uninstalling with "Delete data" on left behind the cached verdicts and per-comment bookkeeping; they are now removed. The daily email digest is now unscheduled on uninstall, and re-scheduled if its cron event goes missing.
 
 = 1.19.0 =
 * Fix: **the 1.16.0 prompt fix never reached sites that simply clicked "Update".** WordPress does not run a plugin's activation code on update, so SpamAnvil re-runs its migrations when it notices a new version — but it only compared the database schema version, and 1.16.0 changed the default prompt without changing the schema. Sites that updated from 1.15.x or earlier without deactivating and reactivating stayed on the old prompt, the one that marked comments in another language, and short polite ones, as spam. Migrations now run whenever the plugin version changes, so this update applies the 1.16.0 prompt at last. As before, only unmodified default prompts are replaced; customized prompts are left alone. The 1.16.0 upgrade notice said this happened automatically; for those sites it did not.
@@ -481,6 +488,9 @@ SpamAnvil is 100% free and always will be. No premium tier, no "pro" upsells. If
 * GDPR/LGPD privacy-first design
 
 == Upgrade Notice ==
+
+= 1.19.1 =
+A moderator's decision now always wins over the queue, including when made in another tab while the AI is answering. Also: the Privacy Notice option now shows a one-line disclosure above your comment form (on by default; turn it off in General settings).
 
 = 1.19.0 =
 If you updated from 1.15 or earlier without reactivating, you are still on the old prompt that marked real comments as spam. This update replaces it (unless you customized it). OpenRouter now uses free models only by default, and turning SpamAnvil off stops all analysis.

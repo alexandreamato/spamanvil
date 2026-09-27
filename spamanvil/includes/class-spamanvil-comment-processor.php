@@ -181,7 +181,9 @@ class SpamAnvil_Comment_Processor {
 
 		// Auto-spam if heuristic score is very high.
 		if ( $analysis['score'] >= $heuristic_threshold ) {
-			wp_spam_comment( $comment_id );
+			SpamAnvil_Queue::as_plugin( function () use ( $comment_id ) {
+				return wp_spam_comment( $comment_id );
+			} );
 			$this->stats->increment( 'heuristic_blocked' );
 			$this->stats->increment( 'comments_checked' );
 			$this->stats->log_evaluation( array(
@@ -255,6 +257,41 @@ class SpamAnvil_Comment_Processor {
 	}
 
 	/**
+	 * Filter: comment_form_submit_field. Tell commenters, before they submit, that
+	 * their comment goes to an external AI service (the "Privacy Notice" option).
+	 *
+	 * Shown just above the submit button, where it is read before the data leaves.
+	 * Only when there is something to disclose: SpamAnvil on, a provider configured,
+	 * and the visitor not a moderator whose comments are never analyzed.
+	 *
+	 * @param string $submit_field Submit button markup.
+	 * @return string
+	 */
+	public function render_privacy_notice( $submit_field ) {
+		if ( ! $this->is_enabled()
+			|| '1' !== get_option( 'spamanvil_privacy_notice', '1' )
+			|| '' === get_option( 'spamanvil_primary_provider', '' )
+			|| $this->should_skip_user() ) {
+			return $submit_field;
+		}
+
+		$notice = '<p class="spamanvil-privacy-notice comment-notes"><small>'
+			. esc_html( self::privacy_notice_text() )
+			. '</small></p>';
+
+		return $notice . $submit_field;
+	}
+
+	/**
+	 * The commenter-facing disclosure, also offered for the site's privacy policy.
+	 *
+	 * @return string
+	 */
+	public static function privacy_notice_text() {
+		return __( 'To filter spam, your comment and the name, email and website you enter are sent to an external AI service for analysis.', 'spamanvil' );
+	}
+
+	/**
 	 * Whether the honeypot field was filled on the current submission.
 	 *
 	 * @return bool
@@ -282,7 +319,9 @@ class SpamAnvil_Comment_Processor {
 	 * @param string $reason     Log reason.
 	 */
 	private function mark_trap_spam( $comment_id, $stat_key, $provider, $reason ) {
-		wp_spam_comment( $comment_id );
+		SpamAnvil_Queue::as_plugin( function () use ( $comment_id ) {
+			return wp_spam_comment( $comment_id );
+		} );
 		$this->stats->increment( $stat_key );
 		$this->stats->increment( 'comments_checked' );
 		$this->stats->log_evaluation( array(

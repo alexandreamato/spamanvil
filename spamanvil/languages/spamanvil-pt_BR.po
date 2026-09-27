@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SpamAnvil 1.19.0\n"
+"Project-Id-Version: SpamAnvil 1.19.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/spamanvil\n"
 "POT-Creation-Date: 2026-08-16T23:02:48+00:00\n"
 "PO-Revision-Date: 2026-02-14 19:00-0300\n"
@@ -1682,3 +1682,11 @@ msgstr ""
 "modelo gratuito responde, o comentário espera na fila e é tentado de novo "
 "mais tarde. Para que um modelo pago assuma nesses casos, adicione "
 "openrouter/auto ao fim da lista (sua conta no OpenRouter precisa ter crédito)."
+
+#: includes/class-spamanvil-comment-processor.php
+msgid "To filter spam, your comment and the name, email and website you enter are sent to an external AI service for analysis."
+msgstr "Para filtrar spam, seu comentário e o nome, e-mail e site que você informar são enviados a um serviço externo de IA para análise."
+
+#: includes/class-spamanvil.php
+msgid "The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. Visitor IP addresses used for spam blocking are stored only as salted, keyed hashes."
+msgstr "O serviço é o provedor de IA configurado no SpamAnvil, e a política de privacidade dele se aplica a esses dados. Os endereços IP de visitantes usados para bloquear spam são guardados apenas como hashes com sal e chave."

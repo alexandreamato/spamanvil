@@ -18,6 +18,13 @@ class SpamAnvil_Queue {
 	const VERDICT_KEY_META = '_spamanvil_verdict_key';
 
 	/**
+	 * Comment meta recording that a person (or another plugin) moderated the
+	 * comment — the status they chose. While it is present the automatic paths
+	 * leave the comment alone; a manual "Scan pending" is the request to re-analyze.
+	 */
+	const MODERATED_META = '_spamanvil_moderated';
+
+	/**
 	 * True while the plugin itself is changing a comment's status, so its own
 	 * transitions are not mistaken for a moderator's decision.
 	 *
@@ -435,8 +442,9 @@ class SpamAnvil_Queue {
 		// A person (or another plugin) already decided while the comment waited in the
 		// queue: never overrule them — a comment sent to the trash must not come back
 		// approved. The item is closed without spending an API call.
-		$status = wp_get_comment_status( $comment );
-		if ( self::human_decided( $status, $this->expects_approved( $item ) ) ) {
+		$state  = $this->fresh_moderation_state( $item->comment_id );
+		$status = $state['status'];
+		if ( self::human_decided( $status, $this->expects_approved( $item ), $state['moderated'] ) ) {
 			$this->update_status( $item->id, 'completed', array(
 				'reason' => sprintf( 'Moderated manually before analysis (%s)', $status ),
 			) );
@@ -459,7 +467,7 @@ class SpamAnvil_Queue {
 		// results, so it always evaluates fresh and never uses the cache.
 		$cache_key  = ( $anvil_mode || '1' !== get_option( 'spamanvil_cache_enabled', '1' ) )
 			? ''
-			: self::verdict_cache_key( $system_prompt, $user_prompt );
+			: self::verdict_cache_key( $system_prompt, $user_prompt, $this->provider_factory->get_config_hash() );
 		$result     = null;
 		$from_cache = false;
 
@@ -518,8 +526,9 @@ class SpamAnvil_Queue {
 		// The LLM call can take a minute: look again before acting. If someone
 		// moderated the comment meanwhile, record the verdict but leave their decision
 		// (and the verdict cache) alone.
-		$status     = wp_get_comment_status( $item->comment_id );
-		$overridden = self::human_decided( $status, $this->expects_approved( $item ) );
+		$state      = $this->fresh_moderation_state( $item->comment_id );
+		$status     = $state['status'];
+		$overridden = self::human_decided( $status, $this->expects_approved( $item ), $state['moderated'] );
 
 		// Update queue item.
 		$this->update_status( $item->id, 'completed', array(
@@ -562,6 +571,7 @@ class SpamAnvil_Queue {
 
 		// Update comment status. The flag tells on_comment_status_change() that this
 		// transition is the plugin's own, not a moderator's.
+		$previous_flag          = self::$applying_verdict;
 		self::$applying_verdict = true;
 		if ( $is_spam ) {
 			wp_spam_comment( $item->comment_id );
@@ -582,7 +592,7 @@ class SpamAnvil_Queue {
 			// the comment is verified ham and approved, tell the post author.
 			SpamAnvil_Notifier::send_postauthor( $item->comment_id );
 		}
-		self::$applying_verdict = false;
+		self::$applying_verdict = $previous_flag;
 
 		$this->stats->increment( 'comments_checked' );
 
@@ -600,16 +610,21 @@ class SpamAnvil_Queue {
 	 * past a prompt fix. Case and whitespace are normalized so trivial reposts of the
 	 * same spam still share an entry.
 	 *
+	 * The provider configuration (chain, models, keys) is part of the key too
+	 * (1.19.1): switching to another model must not keep serving the old model's
+	 * verdicts.
+	 *
 	 * @param string $system_prompt System prompt, after filters.
 	 * @param string $user_prompt   User prompt, after filters.
+	 * @param string $config_hash   SpamAnvil_Provider_Factory::get_config_hash().
 	 * @return string Transient key.
 	 */
-	public static function verdict_cache_key( $system_prompt, $user_prompt ) {
+	public static function verdict_cache_key( $system_prompt, $user_prompt, $config_hash = '' ) {
 		$normalize = function ( $text ) {
 			return preg_replace( '/\s+/u', ' ', mb_strtolower( trim( (string) $text ) ) );
 		};
 
-		return 'spamanvil_vc_' . hash( 'sha256', $normalize( $system_prompt ) . "\0" . $normalize( $user_prompt ) );
+		return 'spamanvil_vc_' . hash( 'sha256', (string) $config_hash . "\0" . $normalize( $system_prompt ) . "\0" . $normalize( $user_prompt ) );
 	}
 
 	/**
@@ -620,12 +635,17 @@ class SpamAnvil_Queue {
 	 * would have left the comment pending: in Open Mode and Sync mode comments are
 	 * published before analysis, so approval there is the expected state.
 	 *
-	 * @param string|false $status           From wp_get_comment_status().
+	 * A recorded moderation (MODERATED_META) always wins, whatever the status —
+	 * including a comment a moderator sent back to pending, which by status alone
+	 * looks exactly like one still waiting for its first analysis.
+	 *
+	 * @param string|false $status           'approved' / 'unapproved' / 'spam' / 'trash'.
 	 * @param bool         $expects_approved Whether an approved status is normal here.
+	 * @param bool         $moderated        Whether a moderation was recorded.
 	 * @return bool
 	 */
-	public static function human_decided( $status, $expects_approved ) {
-		if ( 'spam' === $status || 'trash' === $status ) {
+	public static function human_decided( $status, $expects_approved, $moderated = false ) {
+		if ( $moderated || 'spam' === $status || 'trash' === $status ) {
 			return true;
 		}
 
@@ -647,6 +667,76 @@ class SpamAnvil_Queue {
 	}
 
 	/**
+	 * Read a comment's status and moderation mark straight from the database.
+	 *
+	 * Not wp_get_comment_status(): that reads the per-request object cache, which
+	 * the cron request filled when it started. A moderator acting in another request
+	 * while the model was answering would be invisible to it — the re-check before
+	 * applying a verdict would always see the stale copy (1.19.0 shipped exactly that).
+	 *
+	 * @param int $comment_id Comment ID.
+	 * @return array{status: string|false, moderated: bool}
+	 */
+	private function fresh_moderation_state( $comment_id ) {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- bypassing the cache is the point.
+		$approved  = $wpdb->get_var( $wpdb->prepare(
+			"SELECT comment_approved FROM {$wpdb->comments} WHERE comment_ID = %d",
+			$comment_id
+		) );
+		$moderated = (bool) $wpdb->get_var( $wpdb->prepare(
+			"SELECT meta_id FROM {$wpdb->commentmeta} WHERE comment_id = %d AND meta_key = %s LIMIT 1",
+			$comment_id,
+			self::MODERATED_META
+		) );
+		// phpcs:enable
+
+		return array(
+			'status'    => self::status_name( $approved ),
+			'moderated' => $moderated,
+		);
+	}
+
+	/**
+	 * Map a raw comment_approved value to wp_get_comment_status() vocabulary.
+	 *
+	 * @param string|null $approved Raw DB value.
+	 * @return string|false
+	 */
+	public static function status_name( $approved ) {
+		switch ( (string) $approved ) {
+			case '1':
+				return 'approved';
+			case '0':
+				return 'unapproved';
+			case 'spam':
+				return 'spam';
+			case 'trash':
+			case 'post-trashed':
+				return 'trash';
+		}
+		return false;
+	}
+
+	/**
+	 * Run a status change the plugin makes on its own behalf (verdicts, traps,
+	 * heuristics), so on_comment_status_change() does not record it as a moderator's.
+	 *
+	 * @param callable $change Callback that changes the comment status.
+	 * @return mixed The callback's return value.
+	 */
+	public static function as_plugin( $change ) {
+		$previous               = self::$applying_verdict;
+		self::$applying_verdict = true;
+		try {
+			return call_user_func( $change );
+		} finally {
+			self::$applying_verdict = $previous;
+		}
+	}
+
+	/**
 	 * Hook: transition_comment_status. A moderator's decision closes the matter.
 	 *
 	 * Open queue items for the comment are completed (no API call is spent on a
@@ -662,9 +752,13 @@ class SpamAnvil_Queue {
 			return;
 		}
 
-		if ( ! in_array( $new_status, array( 'approved', 'spam', 'trash' ), true ) ) {
+		if ( ! in_array( $new_status, array( 'approved', 'unapproved', 'spam', 'trash' ), true ) ) {
 			return;
 		}
+
+		// Remembered durably, so every later automatic path — the queue, auto-enqueue
+		// of pending comments — knows a person has already looked at this comment.
+		update_comment_meta( $comment->comment_ID, self::MODERATED_META, $new_status );
 
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -1250,7 +1344,7 @@ class SpamAnvil_Queue {
 	 * @param int $limit Max comments to scan. 0 = unlimited. Default 100 (safe for cron).
 	 * @return int Number of comments enqueued for LLM analysis.
 	 */
-	public function auto_enqueue_pending( $limit = 100 ) {
+	public function auto_enqueue_pending( $limit = 100, $manual = false ) {
 		global $wpdb;
 
 		// Skip if SpamAnvil is off or no provider is configured — nothing to process.
@@ -1263,10 +1357,24 @@ class SpamAnvil_Queue {
 			"SELECT comment_id FROM {$this->table} WHERE status IN ('queued', 'processing', 'failed', 'max_retries')"
 		);
 
-		$comments = get_comments( array(
+		$query = array(
 			'status' => 'hold',
 			'number' => $limit,
-		) );
+		);
+
+		// A comment a moderator sent back to pending is theirs: the automatic path
+		// leaves it alone. The manual "Scan pending" button is the explicit request
+		// to analyze it again, so it includes them and clears the mark below.
+		if ( ! $manual ) {
+			$query['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				array(
+					'key'     => self::MODERATED_META,
+					'compare' => 'NOT EXISTS',
+				),
+			);
+		}
+
+		$comments = get_comments( $query );
 
 		if ( empty( $comments ) ) {
 			return 0;
@@ -1288,8 +1396,15 @@ class SpamAnvil_Queue {
 				'comment_author_url'   => $comment->comment_author_url,
 			) );
 
+			if ( $manual ) {
+				delete_comment_meta( $comment->comment_ID, self::MODERATED_META );
+			}
+
 			if ( $analysis['score'] >= $heuristic_threshold ) {
-				wp_spam_comment( $comment->comment_ID );
+				$comment_id = $comment->comment_ID;
+				self::as_plugin( function () use ( $comment_id ) {
+					return wp_spam_comment( $comment_id );
+				} );
 				$this->stats->increment( 'heuristic_blocked' );
 				$this->stats->increment( 'comments_checked' );
 				$this->stats->log_evaluation( array(

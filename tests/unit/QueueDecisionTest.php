@@ -32,6 +32,29 @@ class QueueDecisionTest extends TestCase {
 		$this->assertFalse( SpamAnvil_Queue::human_decided( false, false ) );
 	}
 
+	public function test_recorded_moderation_wins_even_when_pending() {
+		// 1.19.1: a moderator sent it back to pending. By status alone that looks like
+		// a comment still waiting for its first analysis.
+		$this->assertTrue( SpamAnvil_Queue::human_decided( 'unapproved', false, true ) );
+		$this->assertTrue( SpamAnvil_Queue::human_decided( 'approved', true, true ) );
+	}
+
+	public function test_raw_db_status_maps_to_status_names() {
+		$this->assertSame( 'approved', SpamAnvil_Queue::status_name( '1' ) );
+		$this->assertSame( 'unapproved', SpamAnvil_Queue::status_name( '0' ) );
+		$this->assertSame( 'spam', SpamAnvil_Queue::status_name( 'spam' ) );
+		$this->assertSame( 'trash', SpamAnvil_Queue::status_name( 'trash' ) );
+		$this->assertSame( 'trash', SpamAnvil_Queue::status_name( 'post-trashed' ) );
+		$this->assertFalse( SpamAnvil_Queue::status_name( null ) );
+	}
+
+	public function test_switching_model_changes_the_key() {
+		$this->assertNotSame(
+			SpamAnvil_Queue::verdict_cache_key( 'rules', 'comment', 'config-a' ),
+			SpamAnvil_Queue::verdict_cache_key( 'rules', 'comment', 'config-b' )
+		);
+	}
+
 	// --- verdict_cache_key() ----------------------------------------------------
 
 	public function test_identical_requests_share_a_key_despite_case_and_spacing() {

@@ -40,7 +40,7 @@ Traditional spam filters rely on static word lists and link counting. Spammers h
 | Provider | Free Option | Default Model |
 |----------|:-----------:|---------------|
 | **OpenAI** | No | `gpt-4o-mini` |
-| **OpenRouter** | Yes | `openrouter/free, openrouter/auto` (router chain: free pool first, paid auto as fallback) |
+| **OpenRouter** | Yes | `openrouter/free` (free models only; add `openrouter/auto` to the list to allow a paid fallback) |
 | **Anthropic Claude** | No | `claude-sonnet-5` |
 | **Google Gemini** | Free tier | `gemini-2.0-flash` |
 | **Featherless.ai** | Free tier | `meta-llama/Meta-Llama-3.1-8B-Instruct` |

@@ -1079,7 +1079,7 @@ class SpamAnvil_Admin {
 		// Capture stats before to compute auto_spam count.
 		$heuristic_before = $this->stats->get_total( 'heuristic_blocked' );
 
-		$enqueued = $this->queue->auto_enqueue_pending( 0 ); // 0 = scan all (manual action).
+		$enqueued = $this->queue->auto_enqueue_pending( 0, true ); // 0 = scan all; manual = re-analyze moderated too.
 
 		$heuristic_after = $this->stats->get_total( 'heuristic_blocked' );
 		$auto_spam       = $heuristic_after - $heuristic_before;

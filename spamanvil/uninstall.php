@@ -6,6 +6,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 // Always clear scheduled hooks (safe, no data loss).
 wp_clear_scheduled_hook( 'spamanvil_process_queue' );
 wp_clear_scheduled_hook( 'spamanvil_cleanup_logs' );
+wp_clear_scheduled_hook( 'spamanvil_email_digest' );
 
 // Only delete data if the user opted in.
 if ( '1' !== get_option( 'spamanvil_delete_data', '0' ) ) {
@@ -45,3 +46,18 @@ $options = $wpdb->get_col(
 foreach ( $options as $option ) {
 	delete_option( $option );
 }
+
+// Cached verdicts, rate-limit counters and other transients (option rows named
+// _transient_spamanvil_* / _transient_timeout_spamanvil_*).
+$wpdb->query(
+	$wpdb->prepare(
+		"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+		$wpdb->esc_like( '_transient_spamanvil_' ) . '%',
+		$wpdb->esc_like( '_transient_timeout_spamanvil_' ) . '%'
+	)
+);
+
+// Per-comment bookkeeping: which cached verdict decided a comment, and whether a
+// moderator has handled it.
+delete_metadata( 'comment', 0, '_spamanvil_verdict_key', '', true );
+delete_metadata( 'comment', 0, '_spamanvil_moderated', '', true );

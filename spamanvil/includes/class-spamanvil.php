@@ -86,6 +86,7 @@ class SpamAnvil {
 		add_action( 'comment_post', array( $this->comment_processor, 'process_new_comment' ), 10, 2 );
 		add_action( 'comment_form', array( $this->comment_processor, 'render_honeypot' ) );
 		add_action( 'comment_form', array( $this->comment_processor, 'render_time_trap' ) );
+		add_filter( 'comment_form_submit_field', array( $this->comment_processor, 'render_privacy_notice' ) );
 
 		// A moderator's decision (or another plugin's) outranks a queued analysis.
 		add_action( 'transition_comment_status', array( $this->queue, 'on_comment_status_change' ), 10, 3 );
@@ -117,6 +118,7 @@ class SpamAnvil {
 		if ( is_admin() && $this->admin ) {
 			add_action( 'admin_menu', array( $this->admin, 'add_menu_page' ) );
 			add_action( 'admin_init', array( $this->admin, 'register_settings' ) );
+			add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 			add_action( 'admin_init', array( $this->admin, 'maybe_redirect_after_activation' ) );
 			add_action( 'admin_init', array( $this->admin, 'maybe_handle_review_action' ) );
 			add_action( 'admin_init', array( $this->admin, 'maybe_handle_recovery_action' ) );
@@ -183,6 +185,10 @@ class SpamAnvil {
 		if ( ! wp_next_scheduled( 'spamanvil_cleanup_logs' ) ) {
 			wp_schedule_event( time(), 'daily', 'spamanvil_cleanup_logs' );
 		}
+		if ( ! wp_next_scheduled( 'spamanvil_email_digest' ) ) {
+			// The handler no-ops unless the email mode is 'digest'.
+			wp_schedule_event( time(), 'daily', 'spamanvil_email_digest' );
+		}
 	}
 
 	/**
@@ -212,6 +218,21 @@ class SpamAnvil {
 	 */
 	public static function is_enabled() {
 		return '1' === get_option( 'spamanvil_enabled', '1' );
+	}
+
+	/**
+	 * Suggest a paragraph for the site's privacy policy (Settings → Privacy guide).
+	 */
+	public function add_privacy_policy_content() {
+		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+			return;
+		}
+
+		$content = '<p>' . esc_html( SpamAnvil_Comment_Processor::privacy_notice_text() ) . ' '
+			. esc_html__( 'The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. Visitor IP addresses used for spam blocking are stored only as salted, keyed hashes.', 'spamanvil' )
+			. '</p>';
+
+		wp_add_privacy_policy_content( 'SpamAnvil', wp_kses_post( $content ) );
 	}
 
 	// Getters for components (useful for extensions).

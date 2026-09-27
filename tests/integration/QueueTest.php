@@ -253,7 +253,8 @@ class QueueTest extends WP_UnitTestCase {
 
 		return SpamAnvil_Queue::verdict_cache_key(
 			get_option( 'spamanvil_system_prompt', SpamAnvil_Activator::get_default_system_prompt() ),
-			$user
+			$user,
+			( new SpamAnvil_Provider_Factory( new SpamAnvil_Encryptor() ) )->get_config_hash()
 		);
 	}
 
@@ -354,6 +355,79 @@ class QueueTest extends WP_UnitTestCase {
 		$this->assertSame( 5, (int) $row->score, 'The AI verdict is still recorded.' );
 		$this->assertStringContainsString( 'during analysis', $row->reason );
 		$this->assertSame( '', (string) get_comment_meta( $comment_id, SpamAnvil_Queue::VERDICT_KEY_META, true ), 'An overruled verdict is not cached for reuse.' );
+	}
+
+	public function test_moderation_in_another_request_is_seen_before_applying() {
+		// The 1.19.0 re-check used wp_get_comment_status(), which reads the object
+		// cache this request filled when it loaded the comment. A moderator acts in a
+		// *different* request: simulate that by writing the DB directly, without
+		// touching this request's cache — exactly what the cron process experiences.
+		global $wpdb;
+		$comment_id = $this->new_comment();
+		update_option( 'spamanvil_primary_provider', 'openai' );
+		update_option( 'spamanvil_openai_api_key', ( new SpamAnvil_Encryptor() )->encrypt( 'sk-test-key' ) );
+		add_filter( 'pre_http_request', function () use ( $wpdb, $comment_id ) {
+			$wpdb->update( $wpdb->comments, array( 'comment_approved' => 'spam' ), array( 'comment_ID' => $comment_id ) );
+			$wpdb->insert( $wpdb->commentmeta, array(
+				'comment_id' => $comment_id,
+				'meta_key'   => SpamAnvil_Queue::MODERATED_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'spam', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			) );
+			return array(
+				'headers'  => array(),
+				'body'     => wp_json_encode( array(
+					'choices' => array( array( 'message' => array( 'content' => '{"score": 5, "reason": "looks fine"}' ) ) ),
+				) ),
+				'response' => array( 'code' => 200, 'message' => 'OK' ),
+			);
+		} );
+
+		get_comment( $comment_id ); // Prime this request's cache, as the cron run does.
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+
+		clean_comment_cache( $comment_id );
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ), 'The verdict must not overwrite a decision made in another request.' );
+		$this->assertStringContainsString( 'during analysis', $this->row_for_comment( $comment_id )->reason );
+	}
+
+	public function test_comment_returned_to_pending_is_left_to_the_moderator() {
+		// AI marks it spam; the moderator disagrees and sends it back to pending.
+		update_option( 'spamanvil_threshold', 70 );
+		$comment_id = self::factory()->comment->create( array(
+			'comment_approved' => '0',
+			'comment_content'  => 'Tenho lipedema e a parte sobre compressão me ajudou.',
+		) );
+		update_option( 'spamanvil_primary_provider', 'openai' ); // auto-enqueue needs a provider.
+		$key = $this->cache_key_for( get_comment( $comment_id ) );
+		set_transient( $key, $this->spam_verdict(), HOUR_IN_SECONDS );
+
+		$this->queue->enqueue( $comment_id, 0 );
+		$this->queue->process_batch();
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ) );
+
+		wp_set_comment_status( $comment_id, 'hold' );
+
+		$this->assertFalse( get_transient( $key ), 'Sending it back to pending is a correction: the cached verdict goes.' );
+		$this->assertSame( 'unapproved', get_comment_meta( $comment_id, SpamAnvil_Queue::MODERATED_META, true ) );
+		$this->assertSame( 0, $this->queue->auto_enqueue_pending(), 'The automatic path must not pick it up again.' );
+		$this->assertSame( 'unapproved', wp_get_comment_status( $comment_id ) );
+
+		// "Scan pending" is the explicit request to analyze it again.
+		$this->assertSame( 1, $this->queue->auto_enqueue_pending( 0, true ) );
+		$this->assertSame( '', get_comment_meta( $comment_id, SpamAnvil_Queue::MODERATED_META, true ) );
+	}
+
+	public function test_plugin_own_status_changes_are_not_recorded_as_moderation() {
+		$ours = $this->new_comment();
+		SpamAnvil_Queue::as_plugin( function () use ( $ours ) {
+			return wp_spam_comment( $ours );
+		} );
+		$this->assertSame( '', get_comment_meta( $ours, SpamAnvil_Queue::MODERATED_META, true ) );
+
+		$theirs = $this->new_comment();
+		wp_spam_comment( $theirs );
+		$this->assertSame( 'spam', get_comment_meta( $theirs, SpamAnvil_Queue::MODERATED_META, true ) );
 	}
 
 	public function test_open_mode_published_comment_is_still_analyzed() {

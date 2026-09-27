@@ -1394,3 +1394,11 @@ msgstr ""
 #: admin/views/settings-providers.php
 msgid "The default uses free models only, so it never costs anything. When no free model answers, the comment waits in the queue and is retried later. To let a paid model step in instead, add openrouter/auto at the end of the list (your OpenRouter account needs credit)."
 msgstr ""
+
+#: includes/class-spamanvil-comment-processor.php
+msgid "To filter spam, your comment and the name, email and website you enter are sent to an external AI service for analysis."
+msgstr ""
+
+#: includes/class-spamanvil.php
+msgid "The service is the AI provider configured in SpamAnvil; its own privacy policy applies to that data. Visitor IP addresses used for spam blocking are stored only as salted, keyed hashes."
+msgstr ""

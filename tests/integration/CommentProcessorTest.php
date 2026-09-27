@@ -249,4 +249,43 @@ class CommentProcessorTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'spam', $this->processor->hold_for_review( 'spam', array() ) );
 	}
+
+	// --- 1.19.1: privacy notice ------------------------------------------------
+
+	public function test_privacy_notice_is_shown_above_the_submit_button() {
+		update_option( 'spamanvil_primary_provider', 'openrouter' );
+		update_option( 'spamanvil_privacy_notice', '1' );
+
+		$html = $this->processor->render_privacy_notice( '<p class="form-submit">SUBMIT</p>' );
+
+		$this->assertStringContainsString( 'spamanvil-privacy-notice', $html );
+		$this->assertStringContainsString( 'external AI service', $html );
+		$this->assertLessThan( strpos( $html, 'SUBMIT' ), strpos( $html, 'external AI service' ), 'Read before submitting.' );
+	}
+
+	public function test_privacy_notice_respects_the_option_and_the_setup() {
+		$submit = '<p class="form-submit">SUBMIT</p>';
+
+		update_option( 'spamanvil_primary_provider', 'openrouter' );
+		update_option( 'spamanvil_privacy_notice', '0' );
+		$this->assertSame( $submit, $this->processor->render_privacy_notice( $submit ), 'Option off.' );
+
+		update_option( 'spamanvil_privacy_notice', '1' );
+		update_option( 'spamanvil_primary_provider', '' );
+		$this->assertSame( $submit, $this->processor->render_privacy_notice( $submit ), 'Nothing is sent without a provider.' );
+
+		update_option( 'spamanvil_primary_provider', 'openrouter' );
+		update_option( 'spamanvil_enabled', '0' );
+		$this->assertSame( $submit, $this->processor->render_privacy_notice( $submit ), 'Nothing is sent while SpamAnvil is off.' );
+	}
+
+	public function test_trap_verdict_is_not_recorded_as_a_moderator_decision() {
+		$comment_id           = $this->new_comment();
+		$_POST['spamanvil_hp'] = 'http://bot.example';
+
+		$this->processor->process_new_comment( $comment_id, 0 );
+
+		$this->assertSame( 'spam', wp_get_comment_status( $comment_id ) );
+		$this->assertSame( '', get_comment_meta( $comment_id, SpamAnvil_Queue::MODERATED_META, true ) );
+	}
 }
